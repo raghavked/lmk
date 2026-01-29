@@ -2,9 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, ExternalLink, Zap } from 'lucide-react';
-import RatingModal from './RatingModal';
-import RecommendationDetailModal from './RecommendationDetailModal';
+import { Star, MapPin, ExternalLink, Bookmark, Share2 } from 'lucide-react';
 import haptics from '@/lib/haptics';
 
 interface ObjectCardProps {
@@ -16,21 +14,20 @@ interface ObjectCardProps {
     why_youll_like?: string;
     friend_callout?: string;
     caveats?: string;
-    detailed_ratings?: Record<string, number>;
+    metrics?: Record<string, number>;
     tags?: string[];
     tagline?: string;
   };
 }
 
 export default function ObjectCard({ object, rank, score, explanation }: ObjectCardProps) {
-  const [ratingModalOpen, setRatingModalOpen] = useState(false);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   const handleImageError = useCallback(() => {
     setImageError(true);
   }, []);
-  
+
   const getCategoryIcon = (category: string) => {
     switch (category?.toLowerCase()) {
       case 'restaurants': return '🍽️';
@@ -43,176 +40,209 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
     }
   };
 
-  const renderRatingBar = (label: string, value: unknown) => {
-    const numValue = typeof value === 'number' && Number.isFinite(value) ? value : 7.5;
+  // Get category-specific metrics
+  const getMetrics = () => {
+    const category = object.category?.toLowerCase();
+    const baseMetrics = explanation?.metrics || {};
+
+    if (category === 'restaurants') {
+      return {
+        'Cuisine Diversity': baseMetrics['cuisine_diversity'] || 8.5,
+        'Authenticity': baseMetrics['authenticity'] || 8.0,
+        'Ambiance': baseMetrics['ambiance'] || 8.5,
+        'Value': baseMetrics['value'] || 8.0,
+      };
+    } else if (category === 'movies') {
+      return {
+        'Plot Depth': baseMetrics['plot_depth'] || 8.5,
+        'Cinematography': baseMetrics['cinematography'] || 9.0,
+        'Emotional Impact': baseMetrics['emotional_impact'] || 8.5,
+        'Originality': baseMetrics['originality'] || 8.0,
+      };
+    } else if (category === 'tv_shows') {
+      return {
+        'Character Development': baseMetrics['character_development'] || 8.5,
+        'Pacing': baseMetrics['pacing'] || 8.0,
+        'Storytelling': baseMetrics['storytelling'] || 9.0,
+        'Production Quality': baseMetrics['production_quality'] || 8.5,
+      };
+    } else if (category === 'youtube_videos') {
+      return {
+        'Production Quality': baseMetrics['production_quality'] || 8.5,
+        'Entertainment': baseMetrics['entertainment'] || 8.0,
+        'Educational Value': baseMetrics['educational_value'] || 8.5,
+        'Engagement': baseMetrics['engagement'] || 8.0,
+      };
+    } else if (category === 'reading') {
+      return {
+        'Writing Quality': baseMetrics['writing_quality'] || 8.5,
+        'Pacing': baseMetrics['pacing'] || 8.0,
+        'Character Development': baseMetrics['character_development'] || 8.5,
+        'Originality': baseMetrics['originality'] || 8.0,
+      };
+    } else if (category === 'activities') {
+      return {
+        'Adventure Level': baseMetrics['adventure_level'] || 8.5,
+        'Social Opportunity': baseMetrics['social_opportunity'] || 8.0,
+        'Value': baseMetrics['value'] || 8.5,
+        'Accessibility': baseMetrics['accessibility'] || 8.0,
+      };
+    }
+    return {};
+  };
+
+  const renderMetric = (label: string, value: number) => {
+    const stars = Math.round(value / 2);
     return (
       <div key={label} className="space-y-2">
-        <div className="flex justify-between items-end">
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">{label}</span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-[#fea4a7]">{numValue.toFixed(1)}</span>
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{label}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold text-[#fea4a7]">{value.toFixed(1)}</span>
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
-                <Star 
-                  key={star} 
-                  // Scale 0-10 to 0-5 stars
-                  className={`w-2.5 h-2.5 ${star <= Math.ceil(numValue / 2) ? 'fill-[#fea4a7] text-[#fea4a7]' : 'fill-gray-700 text-gray-700'}`} 
+                <Star
+                  key={star}
+                  className={`w-3 h-3 ${star <= stars ? 'fill-[#fea4a7] text-[#fea4a7]' : 'fill-gray-700 text-gray-700'}`}
                 />
               ))}
             </div>
           </div>
         </div>
-        <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-[#fea4a7]/70 to-[#fea4a7] rounded-full transition-all duration-1000 ease-out"
-            style={{ width: `${numValue * 10}%` }}
+        <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#fea4a7]/70 to-[#fea4a7] rounded-full transition-all duration-1000"
+            style={{ width: `${value * 10}%` }}
           />
         </div>
       </div>
     );
   };
 
+  const imageUrl = object.primary_image?.url || object.image_url || object.poster_path;
   const displayTags = explanation?.tags || object.tags || [];
-  const imageUrl = object.primary_image?.url || object.image_url;
-  
-  // Find the best external rating to display
-  const externalRating = object.external_ratings?.find((r: any) => r.source === 'yelp' || r.source === 'tmdb' || r.source === 'imdb');
-  const displayScore = externalRating ? externalRating.score : null;
-  const displaySource = externalRating ? externalRating.source.toUpperCase() : null;
-
-  // Calculate AI Match Score percentage (0-100)
-  const aiMatchScore = score ? Math.min(Math.max(Math.round(score * 10), 0), 100) : 85;
+  const metrics = getMetrics();
 
   return (
-    <>
-      <div 
-        className="bg-[#230f10] rounded-[32px] shadow-lg border border-gray-700 overflow-hidden active:scale-[0.98] transition-all duration-500 group flex flex-col h-full hover:border-[#fea4a7]/30 hover:shadow-[#fea4a7]/20 cursor-pointer"
-        onClick={() => {
-          haptics.impact();
-          setDetailModalOpen(true);
-        }}
-      >
-        {/* Image Section */}
-        <div className="relative h-64 w-full overflow-hidden">
-          {imageUrl && !imageError ? (
-            <Image
-              src={imageUrl}
-              alt={object.title || 'Image'}
-              fill
-              className="object-cover transition-transform duration-700 group-hover:scale-110"
-              sizes="(max-width: 768px) 100vw, 400px"
-              onError={handleImageError}
-              unoptimized={true}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-5xl">
-              {getCategoryIcon(object.category)}
-            </div>
-          )}
-          
-          {/* Gradient overlay for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#230f10] via-transparent to-transparent" />
-          
-
-
-          {/* Category Badge */}
-          <div className="absolute bottom-4 left-4">
-            <span className="bg-[#230f10]/90 backdrop-blur-md text-gray-50 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] shadow-sm border border-gray-600">
-              {object.category?.replace('_', ' ') || 'Recommendation'}
-            </span>
+    <div className="bg-[#230f10] rounded-3xl shadow-lg border border-gray-700 overflow-hidden hover:border-[#fea4a7]/30 hover:shadow-[#fea4a7]/20 transition-all duration-300 flex flex-col h-full">
+      {/* Image Section */}
+      <div className="relative h-80 w-full overflow-hidden bg-gray-800">
+        {imageUrl && !imageError ? (
+          <Image
+            src={imageUrl}
+            alt={object.title || 'Image'}
+            fill
+            className="object-cover transition-transform duration-700 hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 400px"
+            onError={handleImageError}
+            unoptimized={true}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-6xl">
+            {getCategoryIcon(object.category)}
           </div>
-        </div>
-        
-        {/* Content Section */}
-        <div className="p-8 flex flex-col flex-1">
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-gray-50 leading-tight mb-2 group-hover:text-[#fea4a7] transition-colors">
-              {object.title}
-            </h3>
-            
-            {/* Tagline / Quick Look Info */}
-            {explanation?.tagline && (
-              <p className="text-[#fea4a7] font-semibold text-[11px] uppercase tracking-[0.15em] leading-relaxed">
-                {explanation.tagline}
-              </p>
-            )}
+        )}
 
-            {object.location?.city && (
-              <div className="flex items-center gap-2 text-gray-400 mt-3">
-                <MapPin className="w-4 h-4" />
-                <span className="text-xs font-medium truncate">
-                  {object.location.city}, {object.location.state || object.location.country}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <p className="text-gray-300 text-sm font-medium leading-relaxed mb-8">
-            {explanation?.why_youll_like || object.description || "The AI is generating a personalized description..."}
-          </p>
-          
-          {/* Detailed Ratings - Dynamic Metrics */}
-          {explanation?.detailed_ratings && Object.keys(explanation.detailed_ratings).length > 0 && (
-            <div className="space-y-5 mb-8">
-              {Object.entries(explanation.detailed_ratings).map(([label, val]) => 
-                renderRatingBar(label, val as number)
-              )}
-            </div>
-          )}
-          
-          {/* Tags & Footer */}
-          <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-700">
-            <div className="flex flex-wrap gap-2 max-w-[70%]">
-              {displayTags.slice(0, 2).map((tag: string) => (
-                <span key={tag} className="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-xl text-[10px] font-semibold uppercase tracking-widest border border-gray-700 hover:border-coral/50 hover:text-coral transition-colors">
-                  #{tag.replace(/\s+/g, '').replace('#', '')}
-                </span>
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  haptics.notification('success');
-                  setRatingModalOpen(true);
-                }}
-                className="w-12 h-12 bg-[#fea4a7] text-[#230f10] rounded-[16px] flex items-center justify-center shadow-lg shadow-[#fea4a7]/30 active:scale-90 transition-all hover:bg-[#fea4a7]/90"
-                aria-label="Rate this item"
-              >
-                <Star className="w-5 h-5 fill-current" />
-              </button>
-              {object.source_links?.[0]?.url && (
-                <a 
-                  href={object.source_links[0].url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-12 h-12 bg-gray-800 text-gray-400 rounded-[16px] flex items-center justify-center active:scale-90 transition-all border border-gray-700 hover:border-[#fea4a7]/50 hover:text-[#fea4a7]"
-                  aria-label="View source"
-                >
-                  <ExternalLink className="w-5 h-5" />
-                </a>
-              )}
-            </div>
-          </div>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#230f10] via-transparent to-transparent" />
+
+        {/* Category Badge */}
+        <div className="absolute top-4 left-4">
+          <span className="bg-white text-[#230f10] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+            {object.category?.replace('_', ' ') || 'Recommendation'}
+          </span>
         </div>
       </div>
-      
-      {ratingModalOpen && (
-        <RatingModal
-          object={object}
-          onClose={() => setRatingModalOpen(false)}
-        />
-      )}
-      
-      {detailModalOpen && (
-        <RecommendationDetailModal
-          object={object}
-          score={score}
-          explanation={explanation}
-          onClose={() => setDetailModalOpen(false)}
-        />
-      )}
-    </>
+
+      {/* Content Section */}
+      <div className="p-6 flex flex-col flex-1 space-y-4">
+        {/* Title and Tagline */}
+        <div>
+          <h3 className="text-2xl font-bold text-gray-50 leading-tight mb-2">
+            {object.title}
+          </h3>
+          {explanation?.tagline && (
+            <p className="text-[#fea4a7] font-bold text-xs uppercase tracking-wider">
+              {explanation.tagline}
+            </p>
+          )}
+        </div>
+
+        {/* Location */}
+        {(object.location?.city || object.location?.address) && (
+          <div className="flex items-center gap-2 text-gray-400">
+            <MapPin className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm font-medium">
+              {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
+            </span>
+          </div>
+        )}
+
+        {/* Description */}
+        {explanation?.why_youll_like && (
+          <p className="text-gray-300 text-sm leading-relaxed">
+            {explanation.why_youll_like}
+          </p>
+        )}
+
+        {/* Metrics */}
+        {Object.keys(metrics).length > 0 && (
+          <div className="space-y-4 pt-4 border-t border-gray-700">
+            {Object.entries(metrics).map(([label, value]) =>
+              renderMetric(label, value as number)
+            )}
+          </div>
+        )}
+
+        {/* Tags */}
+        {displayTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-700">
+            {displayTags.slice(0, 4).map((tag: string) => (
+              <span
+                key={tag}
+                className="text-xs text-gray-400 font-medium"
+              >
+                #{tag.toLowerCase().replace(/\s+/g, '')}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-4 border-t border-gray-700 mt-auto">
+          <button
+            onClick={() => {
+              haptics.impact();
+              setIsSaved(!isSaved);
+            }}
+            className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+              isSaved
+                ? 'bg-[#fea4a7] text-[#230f10] shadow-lg shadow-[#fea4a7]/30'
+                : 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700'
+            }`}
+          >
+            <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+            Save
+          </button>
+          {object.source_links?.[0]?.url && (
+            <a
+              href={object.source_links[0].url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3 bg-gray-800 text-gray-50 rounded-full font-bold hover:bg-gray-700 transition-all flex items-center justify-center gap-2 border border-gray-700 hover:border-[#fea4a7]/50 hover:text-[#fea4a7]"
+            >
+              <ExternalLink className="w-4 h-4" />
+              View
+            </a>
+          )}
+          <button
+            onClick={() => haptics.impact()}
+            className="py-3 px-4 bg-gray-800 text-gray-50 rounded-full hover:bg-gray-700 transition-all border border-gray-700 hover:border-[#fea4a7]/50 hover:text-[#fea4a7]"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
