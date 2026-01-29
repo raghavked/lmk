@@ -157,7 +157,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
           <p className="text-text-secondary mb-8 max-w-xs mx-auto">Start rating items to build your taste profile!</p>
           <button 
             onClick={() => window.location.href = '/discover'}
-            className="w-full py-4 bg-coral text-[background-primary] rounded-2xl font-extrabold text-lg shadow-lg shadow-coral/30"
+            className="w-full py-4 bg-coral text-background-primary rounded-2xl font-extrabold text-lg shadow-lg shadow-coral/30"
           >
             Go Discover
           </button>
@@ -293,7 +293,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
           <p className="text-text-secondary mb-6">Profile not found</p>
           <button 
             onClick={() => window.location.href = '/discover'}
-            className="px-8 py-3 bg-coral text-[background-primary] rounded-2xl font-extrabold shadow-lg shadow-coral/30"
+            className="px-8 py-3 bg-coral text-background-primary rounded-2xl font-extrabold shadow-lg shadow-coral/30"
           >
             Go to Discover
           </button>
@@ -347,7 +347,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center gap-2 px-5 py-3 rounded-2xl font-bold whitespace-nowrap transition-all active:scale-95 ${
                   activeTab === tab.id
-                    ? 'bg-coral text-[background-primary] shadow-md shadow-coral/20'
+                    ? 'bg-coral text-background-primary shadow-md shadow-coral/20'
                     : 'bg-background-secondary text-text-secondary hover:text-text-primary'
                 }`}
               >
