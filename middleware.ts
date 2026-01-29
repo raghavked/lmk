@@ -42,6 +42,7 @@ export const config = {
   matcher: [
     '/discover/:path*',
     '/decide/:path*',
+    '/friends/:path*',
     '/groups/:path*',
     '/profile/:path*',
   ],
