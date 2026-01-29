@@ -1,17 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Loader2 } from 'lucide-react';
 
 export default function SignInPage() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClientComponentClient();
-  const router = useRouter();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,87 +20,111 @@ export default function SignInPage() {
     setError(null);
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) {
-        setError(signInError.message);
-        return;
+      if (error) {
+        setError(error.message);
+      } else {
+        router.push('/discover');
       }
-
-      router.push('/discover');
-    } catch (err: any) {
-      setError(err.message || 'An error occurred');
+    } catch (err) {
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) setError(error.message);
+    } catch (err) {
+      setError('Failed to sign in with Google');
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) setError(error.message);
+    } catch (err) {
+      setError('Failed to sign in with Apple');
+    }
+  };
+
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row bg-background-light dark:bg-background-dark">
+    <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left Section: Visual Impact */}
       <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-zinc-900 overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: 'url("https://images.unsplash.com/photo-1517457373614-b7152f800fd1?w=1200&h=1200&fit=crop")',
+            backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBVkcWgswKaSl-l6B2yZcVxVulRtQ6k1UKhzsAZo408-wb-CyCr1NC7GNqGURLRDihUUOEdHMbWFdkMk6a7Tht1qwnxEzrL0_usUdAT5Oeo68Bem8hpeSfYG1bGFoj36-kIiotQJsBlgSf8oTOpc74LgigAC50ZLvG9bOSS9yyod8qVnm1Dp-TZoCrxiLRlXxKnmG6H0wx7nhEDgQj4e5FIlIzjMuwEiv9fKuzpb-BQdpOuBqIYO3F2XZb1QOCQX-YqRCUA3ckNSJE")`,
           }}
         />
         {/* Dark Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-background-dark/20 to-background-dark" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-900/20 to-zinc-900"></div>
         <div className="relative z-10 flex flex-col justify-between p-16 w-full h-full">
           <div className="flex items-center gap-3">
-            <div className="size-8 text-coral">
+            <div className="size-8 text-[#fea4a7]">
               <svg fill="currentColor" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" />
+                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
               </svg>
             </div>
             <span className="text-2xl font-bold tracking-tight text-white">LMK</span>
           </div>
           <div className="max-w-md">
-            <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
-              Discover what's happening around you.
-            </h2>
-            <p className="text-lg text-slate-300 font-medium">
-              Join a community of tech-savvy explorers getting personalized lifestyle recommendations.
-            </p>
+            <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">Discover what's happening around you.</h2>
+            <p className="text-lg text-slate-300 font-medium">Join a community of tech-savvy explorers getting personalized lifestyle recommendations.</p>
           </div>
         </div>
       </div>
 
       {/* Right Section: Sign In Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-background-light dark:bg-background-dark">
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-white dark:bg-[#121212]">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="size-6 text-coral">
+            <div className="size-6 text-[#fea4a7]">
               <svg fill="currentColor" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd" />
+                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
               </svg>
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">LMK</span>
           </div>
 
           <div className="text-center lg:text-left mb-10">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-              Welcome back
-            </h1>
-            <p className="mt-3 text-base text-slate-600 dark:text-slate-400">
-              Sign in to LMK for your personalized recommendations.
-            </p>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">Welcome back</h1>
+            <p className="mt-3 text-base text-slate-600 dark:text-slate-400">Sign in to LMK for your personalized recommendations.</p>
           </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
 
           <div className="mt-10">
             <form onSubmit={handleSignIn} className="space-y-6">
               {/* Email Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 ml-1">
+                <label className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 ml-1" htmlFor="email">
                   Email address
                 </label>
-                <div className="mt-2 relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="mt-2">
                   <input
                     id="email"
                     name="email"
@@ -109,7 +134,7 @@ export default function SignInPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="block w-full rounded-xl border-0 py-4 pl-12 pr-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-coral sm:text-sm sm:leading-6 transition-all"
+                    className="block w-full rounded-xl border-0 py-4 px-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
@@ -117,12 +142,11 @@ export default function SignInPage() {
               {/* Password Field */}
               <div>
                 <div className="flex items-center justify-between ml-1">
-                  <label htmlFor="password" className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200">
+                  <label className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200" htmlFor="password">
                     Password
                   </label>
                 </div>
-                <div className="mt-2 relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="mt-2">
                   <input
                     id="password"
                     name="password"
@@ -132,66 +156,70 @@ export default function SignInPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="block w-full rounded-xl border-0 py-4 pl-12 pr-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-coral sm:text-sm sm:leading-6 transition-all"
+                    className="block w-full rounded-xl border-0 py-4 px-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
                   />
                 </div>
               </div>
 
-              {error && (
-                <div className="rounded-lg bg-red-950/30 border border-red-900/50 p-4">
-                  <p className="text-sm text-red-300">{error}</p>
-                </div>
-              )}
-
               <div className="flex items-center justify-end">
-                <a href="#" className="text-sm font-semibold text-coral hover:text-coral/80 underline underline-offset-4">
+                <Link className="text-sm font-semibold text-[#fea4a7] hover:text-[#fea4a7]/80 underline underline-offset-4 decoration-[#fea4a7]/30" href="/auth/forgot-password">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               {/* Login Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center rounded-full bg-coral px-3 py-4 text-sm font-bold leading-6 text-background-primary shadow-sm hover:bg-coral/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
+              <div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center rounded-full bg-[#fea4a7] px-3 py-4 text-sm font-bold leading-6 text-black shadow-sm hover:bg-[#fea4a7]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fea4a7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+              </div>
             </form>
 
             {/* Divider */}
             <div className="relative mt-10">
               <div aria-hidden="true" className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+                <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
               </div>
               <div className="relative flex justify-center text-sm font-medium leading-6">
-                <span className="bg-background-light dark:bg-background-dark px-4 text-slate-500">Or continue with</span>
+                <span className="bg-white dark:bg-[#121212] px-4 text-slate-500">Or continue with</span>
               </div>
             </div>
 
             {/* Social Logins */}
             <div className="mt-8 grid grid-cols-2 gap-4">
-              <button className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors font-bold">
-                Google
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <span className="text-sm font-bold">Google</span>
               </button>
-              <button className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors font-bold">
-                Apple
+              <button
+                type="button"
+                onClick={handleAppleSignIn}
+                className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                <span className="text-sm font-bold">Apple</span>
               </button>
             </div>
           </div>
 
           <p className="mt-10 text-center text-sm text-slate-500">
             Don't have an account?{' '}
-            <a href="/auth/signup" className="font-bold leading-6 text-coral hover:text-coral/80 transition-colors">
+            <Link className="font-bold leading-6 text-[#fea4a7] hover:text-[#fea4a7]/80 transition-colors" href="/auth/signup">
               Sign up for free
-            </a>
+            </Link>
           </p>
         </div>
 
@@ -200,9 +228,9 @@ export default function SignInPage() {
           <p className="text-xs text-slate-500">
             © 2024 LMK Technologies Inc. All rights reserved.
             <span className="mx-1">·</span>
-            <a href="#" className="hover:underline">
+            <Link className="hover:underline" href="#">
               Privacy Policy
-            </a>
+            </Link>
           </p>
         </div>
       </div>
