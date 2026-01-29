@@ -21,7 +21,9 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
-  swcMinify: true,
+  experimental: {
+    allowedDevOrigins: ['*.replit.dev', 'localhost'],
+  },
 };
 
 module.exports = nextConfig;
