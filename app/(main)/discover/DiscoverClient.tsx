@@ -244,22 +244,22 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {/* Pull to Refresh Indicator */}
         {pullDistance > 0 && (
           <div className="flex justify-center pt-4 pb-2">
-            <div className="text-text-secondary text-sm">
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
               {pullDistance >= 70 ? '↓ Release to refresh' : '↓ Pull to refresh'}
                   </div>
         
                           {/* Location Status */}
                           {userLocation && (
-                            <div className="text-xs text-text-secondary mt-2 pt-2 border-t border-border-color flex justify-between items-center">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
                               <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
-                              <span className="text-coral font-medium">Radius: {distanceFilter} miles</span>
+                              <span className="text-orange-500 font-medium">Radius: {distanceFilter} miles</span>
                             </div>
                           )}
                         </div>
                 )}
 
         {/* Category Filters */}
-                        <div className="sticky top-0 bg-background-primary border-b border-border-color px-4 py-4 z-10 shadow-xl">
+                        <div className="sticky top-0 bg-white dark:bg-slate-950 border-b border-gray-300 dark:border-gray-700 px-4 py-4 z-10 shadow-xl">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
@@ -267,8 +267,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                 onClick={() => setCategory(cat.id)}
                 className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                   category === cat.id
-                    ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
-                    : 'bg-background-tertiary text-text-primary hover:bg-background-secondary border border-border-color'
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                    : 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700'
                 }`}
               >
                 {cat.icon} {cat.label}
@@ -279,13 +279,13 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                   {/* Filtering and Sorting Bar */}
                   <div className="mt-4 flex gap-2 items-center">
                     <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
                       <input
                         type="text"
                         placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none"
                       />
                     </div>
                     
@@ -293,7 +293,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                     <button
                       onClick={detectLocation}
                       disabled={isLocating}
-                      className="p-3 bg-background-tertiary border border-border-color rounded-full font-medium hover:bg-background-secondary transition disabled:opacity-50 text-text-secondary hover:text-coral"
+                      className="p-3 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition disabled:opacity-50 text-gray-500 dark:text-gray-400 hover:text-orange-500"
                       aria-label="Detect Location"
                     >
                       {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
@@ -307,14 +307,14 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                       <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer"
+                        className="appearance-none w-full pl-4 pr-8 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 text-sm font-medium focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none cursor-pointer"
                       >
                         <option value="personalized_score">Best Match (AI Score)</option>
                         <option value="distance">Closest Distance</option>
                         <option value="rating">Highest External Rating</option>
                         <option value="reviews">Most Reviews</option>
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
                     </div>
         
                     {/* Distance Filter Dropdown */}
@@ -323,7 +323,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                         value={distanceFilter}
                         onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
                         disabled={!userLocation}
-                        className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
+                        className="appearance-none w-full pl-4 pr-8 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 text-sm font-medium focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none cursor-pointer disabled:opacity-50"
                       >
                         <option value={5}>5 miles</option>
                         <option value={10}>10 miles</option>
@@ -331,7 +331,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                         <option value={50}>50 miles</option>
                         <option value={100}>100 miles</option>
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
                     </div>
                   </div>
         </div>
@@ -350,15 +350,15 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {loading && recommendations.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
-              <p className="text-text-secondary">Loading recommendations...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">Loading recommendations...</p>
             </div>
           </div>
         ) : recommendations.length === 0 && !error ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <p className="text-text-secondary text-lg">No recommendations found</p>
-              <p className="text-text-secondary text-sm mt-2">Try adjusting your filters or preferences</p>
+              <p className="text-gray-600 dark:text-gray-400 text-lg">No recommendations found</p>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">Try adjusting your filters or preferences</p>
             </div>
           </div>
         ) : (
