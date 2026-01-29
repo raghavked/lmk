@@ -88,23 +88,23 @@ export default function DecideClient({ profile }: { profile: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-[background-primary]">
+    <div className="min-h-screen bg-background-primary">
       <Navigation profile={profile} />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-extrabold text-[text-primary] mb-2">
+          <h1 className="text-4xl font-extrabold text-text-primary mb-2">
             Quick Decide
           </h1>
-          <p className="text-[text-secondary] text-lg">
+          <p className="text-text-secondary text-lg">
             Can't decide? Let us help you pick!
           </p>
         </div>
 
         {/* Category Selector */}
         <div className="mb-8">
-          <label className="block text-sm font-bold text-[text-primary] mb-3">
+          <label className="block text-sm font-bold text-text-primary mb-3">
             Choose a category:
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -114,8 +114,8 @@ export default function DecideClient({ profile }: { profile: any }) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-lg font-bold transition ${
                   selectedCategory === cat
-                    ? 'bg-coral text-[background-primary] shadow-lg'
-                    : 'bg-[background-secondary] text-[text-primary] border border-[border-color] hover:border-coral'
+                    ? 'bg-coral text-background-primary shadow-lg'
+                    : 'bg-background-secondary text-text-primary border border-border-color hover:border-coral'
                 }`}
               >
                 {categoryLabels[cat]}
@@ -141,7 +141,7 @@ export default function DecideClient({ profile }: { profile: any }) {
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
-              <p className="text-[text-secondary]">Loading next item...</p>
+              <p className="text-text-secondary">Loading next item...</p>
             </div>
           </div>
         )}
@@ -152,7 +152,7 @@ export default function DecideClient({ profile }: { profile: any }) {
             <p className="text-red-700 font-bold mb-4">{error}</p>
             <button
               onClick={loadNextItem}
-              className="px-4 py-2 bg-red-500 text-[background-primary] rounded-lg hover:bg-red-600 transition font-bold"
+              className="px-4 py-2 bg-red-500 text-background-primary rounded-lg hover:bg-red-600 transition font-bold"
             >
               Try Again
             </button>
@@ -199,7 +199,7 @@ export default function DecideClient({ profile }: { profile: any }) {
                 setDecisions({ yes: 0, no: 0 });
                 loadNextItem();
               }}
-              className="px-6 py-3 bg-[background-secondary] border border-[border-color] text-[text-primary] rounded-lg hover:bg-[background-tertiary] transition font-bold flex items-center justify-center gap-2 mx-auto"
+              className="px-6 py-3 bg-background-secondary border border-border-color text-text-primary rounded-lg hover:bg-background-tertiary transition font-bold flex items-center justify-center gap-2 mx-auto"
             >
               <RotateCcw className="w-4 h-4" />
               Start Over
@@ -209,10 +209,10 @@ export default function DecideClient({ profile }: { profile: any }) {
 
         {/* Empty State */}
         {!loading && !currentItem && !error && (
-          <div className="bg-[background-tertiary] rounded-lg p-12 text-center border border-[border-color]">
+          <div className="bg-background-tertiary rounded-lg p-12 text-center border border-border-color">
             <div className="text-5xl mb-4">🤔</div>
-            <h3 className="text-xl font-bold text-[text-primary] mb-2">No items to decide on</h3>
-            <p className="text-[text-secondary]">
+            <h3 className="text-xl font-bold text-text-primary mb-2">No items to decide on</h3>
+            <p className="text-text-secondary">
               Try a different category or check back later
             </p>
           </div>
