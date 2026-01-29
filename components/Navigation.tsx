@@ -21,7 +21,7 @@ export default function Navigation({ profile }: NavigationProps) {
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-[background-primary]/95 backdrop-blur-md border-b border-[border-color]">
+    <nav className="sticky top-0 z-40 bg-[background-primary] border-b border-[border-color] shadow-lg">
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Logo className="text-coral" size={28} />

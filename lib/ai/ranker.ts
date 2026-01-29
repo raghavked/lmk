@@ -161,7 +161,7 @@ export class AIRanker {
   }
   
   private getSystemPrompt(category: string, hasLocation: boolean): string {
-    const locationInstruction = hasLocation ? '- PROXIMITY: If an item is very close, factor that into the score and mention it.' : '';
+    const locationInstruction = hasLocation ? '- PROXIMITY: If an item is very close, factor that into the score and mention it. The user is reporting a lack of localization, so make sure to mention the distance if it is under 5 miles.' : '';
     
     return `You are the LMK AI, a highly intelligent and context-aware recommendation engine.
 
@@ -181,7 +181,7 @@ CRITICAL INSTRUCTIONS FOR CONTENT:
 
 ${locationInstruction}
 
-Respond ONLY with a JSON object containing a "rankings" array. The JSON MUST be wrapped in \`\`\`json ... \`\`\`. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics).
+	Respond ONLY with a JSON object containing a "rankings" array. The JSON MUST be wrapped in \`\`\`json ... \`\`\`. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics). DO NOT include any text or markdown outside of the JSON block.
 
 **FINAL INSTRUCTION**: Since the user is reporting a lack of personalization, you MUST be extremely aggressive in using the 'Taste Profile' data in the 'why_youll_like' field. The description MUST be written in a sophisticated, high-end editorial tone, matching the style of the provided image examples. For example, if the user likes 'Spicy Food' and the restaurant has 'High Yelp Review Count', the 'why_youll_like' must say something like: "Given your preference for Spicy Food, this restaurant's high Yelp Review Count of 395 suggests a reliable source for the authentic heat you crave."`;
   }

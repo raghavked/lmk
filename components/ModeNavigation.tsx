@@ -1,35 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import { Map, Users, MessageSquare, Star, Bookmark, User, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Users, Star, User, Sparkles, Zap, MessageSquare } from 'lucide-react';
 
-interface ModeNavigationProps {
-  currentMode: string;
-  onModeChange: (mode: string) => void;
-}
+export default function ModeNavigation({ currentMode, onModeChange }: { currentMode?: string, onModeChange?: (mode: string) => void }) {
+  const pathname = usePathname();
 
-export default function ModeNavigation({ currentMode, onModeChange }: ModeNavigationProps) {
   const modes = [
-    { id: 'discover', label: 'Discover', icon: Sparkles, description: 'AI Recommendations' },
-
-    { id: 'friends', label: 'Friends', icon: Users, description: 'Friends\' picks' },
-    { id: 'chats', label: 'Chats', icon: MessageSquare, description: 'Group chats' },
-    { id: 'ratings', label: 'Ratings', icon: Star, description: 'Your ratings' },
-    { id: 'saved', label: 'Saved', icon: Bookmark, description: 'Saved items' },
-    { id: 'profile', label: 'Profile', icon: User, description: 'Your profile' },
+    { id: 'discover', label: 'Discover', icon: Sparkles, href: '/discover' },
+    { id: 'decide', label: 'Decide', icon: Zap, href: '/decide' },
+    { id: 'groups', label: 'Groups', icon: Users, href: '/groups' },
+    { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];
 
   return (
-    <div className="w-full bg-[background-primary] border-b border-[border-color] px-4 py-4 overflow-x-auto">
+    <div className="w-full bg-[background-primary] border-b border-[border-color] px-4 py-4 overflow-x-auto sticky top-0 z-20 shadow-lg">
       <div className="flex gap-2 min-w-max">
         {modes.map((mode) => {
           const Icon = mode.icon;
-          const isActive = currentMode === mode.id;
+          const isActive = pathname === mode.href;
 
           return (
-            <button
+            <Link
               key={mode.id}
-              onClick={() => onModeChange(mode.id)}
+              href={mode.href}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                 isActive
                   ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
@@ -38,7 +33,7 @@ export default function ModeNavigation({ currentMode, onModeChange }: ModeNaviga
             >
               <Icon className="w-4 h-4" />
               <span className="text-sm">{mode.label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>

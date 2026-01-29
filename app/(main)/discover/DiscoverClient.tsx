@@ -24,7 +24,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const [showPreferenceTest, setShowPreferenceTest] = useState(false);
   const [category, setCategory] = useState<string>('restaurants');
   const [query, setQuery] = useState('');
-  const [currentMode, setCurrentMode] = useState<string>('discover');
+
   const [sortBy, setSortBy] = useState<string>('personalized_score');
   const [offset, setOffset] = useState(0);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
@@ -55,6 +55,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const detectLocation = useCallback(() => {
     haptics.impact();
     if (!navigator.geolocation) {
+      // Fallback to profile location if geolocation is not available
       if (profile?.location?.coordinates) {
         setUserLocation({
           lat: profile.location.coordinates[0],
@@ -77,6 +78,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       (err) => {
         console.error('Location error:', err);
         setIsLocating(false);
+        // Fallback to profile location on error
         if (profile?.location?.coordinates) {
           setUserLocation({
             lat: profile.location.coordinates[0],
@@ -103,7 +105,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     try {
       const params = new URLSearchParams();
       params.append('category', category);
-      params.append('mode', currentMode);
+      params.append('mode', 'discover');
       if (query) params.append('query', query);
         // Always append location if available for personalization and distance sorting
       if (userLocation) {
@@ -153,7 +155,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       setIsRefreshing(false);
       setPullDistance(0);
     }
-  }, [category, currentMode, query, userLocation, distanceFilter, sortBy]);
+  }, [category, query, userLocation, distanceFilter, sortBy]);
 
   useEffect(() => {
     const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
@@ -173,7 +175,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     if (!showWalkthrough && !showPreferenceTest) {
       loadRecommendations();
     }
-  }, [category, currentMode, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, sortBy, loadRecommendations]);
+  }, [category, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, sortBy, loadRecommendations]);
 
   // Touch Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -223,11 +225,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     detectLocation();
   };
 
-  const handleModeChange = (mode: string) => {
-    setCurrentMode(mode);
-    setOffset(0);
-    setSeenIds(new Set());
-  };
+
 
   if (showWalkthrough) {
     return <Walkthrough onComplete={handleWalkthroughComplete} />;
@@ -240,7 +238,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   return (
     <div className="flex flex-col h-screen w-full bg-[background-primary]">
       <Navigation profile={profile} />
-      <ModeNavigation currentMode={currentMode} onModeChange={handleModeChange} />
+      <ModeNavigation />
       
       <div className="flex-1 overflow-y-auto" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         {/* Pull to Refresh Indicator */}
@@ -261,7 +259,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 	        )}
 
         {/* Category Filters */}
-        <div className="sticky top-0 bg-[background-primary] border-b border-[border-color] px-4 py-4 z-10">
+		        <div className="sticky top-0 bg-[background-primary] border-b border-[border-color] px-4 py-4 z-10 shadow-xl">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
