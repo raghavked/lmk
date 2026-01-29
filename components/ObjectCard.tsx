@@ -50,13 +50,13 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
         <div className="flex justify-between items-end">
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">{label}</span>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-coral">{numValue.toFixed(1)}</span>
+            <span className="text-xs font-bold text-[#fea4a7]">{numValue.toFixed(1)}</span>
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star 
                   key={star} 
                   // Scale 0-10 to 0-5 stars
-                  className={`w-2.5 h-2.5 ${star <= Math.ceil(numValue / 2) ? 'fill-coral text-coral' : 'fill-gray-700 text-gray-700'}`} 
+                  className={`w-2.5 h-2.5 ${star <= Math.ceil(numValue / 2) ? 'fill-[#fea4a7] text-[#fea4a7]' : 'fill-gray-700 text-gray-700'}`} 
                 />
               ))}
             </div>
@@ -64,7 +64,7 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
         </div>
         <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-coral/70 to-coral rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-gradient-to-r from-[#fea4a7]/70 to-[#fea4a7] rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${numValue * 10}%` }}
           />
         </div>
@@ -86,7 +86,7 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
   return (
     <>
       <div 
-        className="bg-background-secondary rounded-[32px] shadow-lg border border-gray-700 overflow-hidden active:scale-[0.98] transition-all duration-500 group flex flex-col h-full hover:border-coral/30 hover:shadow-coral/20 cursor-pointer"
+        className="bg-[#230f10] rounded-[32px] shadow-lg border border-gray-700 overflow-hidden active:scale-[0.98] transition-all duration-500 group flex flex-col h-full hover:border-[#fea4a7]/30 hover:shadow-[#fea4a7]/20 cursor-pointer"
         onClick={() => {
           haptics.impact();
           setDetailModalOpen(true);
@@ -111,19 +111,13 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
           )}
           
           {/* Gradient overlay for text legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background-secondary via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#230f10] via-transparent to-transparent" />
           
-          {/* AI Match Score Badge - Prominent Coral Accent */}
-          <div className="absolute top-4 right-4">
-            <div className="bg-coral/90 backdrop-blur-md text-background-primary px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] shadow-lg shadow-coral/30 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              {aiMatchScore}% Match
-            </div>
-          </div>
+
 
           {/* Category Badge */}
           <div className="absolute bottom-4 left-4">
-            <span className="bg-background-secondary/90 backdrop-blur-md text-gray-50 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] shadow-sm border border-gray-600">
+            <span className="bg-[#230f10]/90 backdrop-blur-md text-gray-50 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] shadow-sm border border-gray-600">
               {object.category?.replace('_', ' ') || 'Recommendation'}
             </span>
           </div>
@@ -132,13 +126,13 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
         {/* Content Section */}
         <div className="p-8 flex flex-col flex-1">
           <div className="mb-6">
-            <h3 className="text-2xl font-bold text-gray-50 leading-tight mb-2 group-hover:text-coral transition-colors">
+            <h3 className="text-2xl font-bold text-gray-50 leading-tight mb-2 group-hover:text-[#fea4a7] transition-colors">
               {object.title}
             </h3>
             
             {/* Tagline / Quick Look Info */}
             {explanation?.tagline && (
-              <p className="text-coral font-semibold text-[11px] uppercase tracking-[0.15em] leading-relaxed">
+              <p className="text-[#fea4a7] font-semibold text-[11px] uppercase tracking-[0.15em] leading-relaxed">
                 {explanation.tagline}
               </p>
             )}
@@ -182,7 +176,7 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
                   haptics.notification('success');
                   setRatingModalOpen(true);
                 }}
-                className="w-12 h-12 bg-coral text-background-primary rounded-[16px] flex items-center justify-center shadow-lg shadow-coral/30 active:scale-90 transition-all hover:bg-coral/90"
+                className="w-12 h-12 bg-[#fea4a7] text-[#230f10] rounded-[16px] flex items-center justify-center shadow-lg shadow-[#fea4a7]/30 active:scale-90 transition-all hover:bg-[#fea4a7]/90"
                 aria-label="Rate this item"
               >
                 <Star className="w-5 h-5 fill-current" />
@@ -193,7 +187,7 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="w-12 h-12 bg-gray-800 text-gray-400 rounded-[16px] flex items-center justify-center active:scale-90 transition-all border border-gray-700 hover:border-coral/50 hover:text-coral"
+                  className="w-12 h-12 bg-gray-800 text-gray-400 rounded-[16px] flex items-center justify-center active:scale-90 transition-all border border-gray-700 hover:border-[#fea4a7]/50 hover:text-[#fea4a7]"
                   aria-label="View source"
                 >
                   <ExternalLink className="w-5 h-5" />
