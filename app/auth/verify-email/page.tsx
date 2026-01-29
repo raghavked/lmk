@@ -146,7 +146,7 @@ export default function VerifyEmailPage() {
                     Checking...
                   </>
                 ) : (
-                  'I've verified my email'
+                  "I've verified my email"
                 )}
               </button>
 
