@@ -12,6 +12,7 @@ export default function SignInPage() {
   const supabase = createClientComponentClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,18 +140,35 @@ export default function SignInPage() {
                     Password
                   </label>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 relative">
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="block w-full rounded-xl border-0 py-4 px-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
+                    className="block w-full rounded-xl border-0 py-4 px-5 pr-12 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-4.753 4.753m4.753-4.753L3.596 3.596m16.807 16.807L3.596 3.596m0 0A10.05 10.05 0 1120.404 20.404m0 0L3.596 3.596" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -179,33 +197,7 @@ export default function SignInPage() {
               </div>
             </form>
 
-            {/* Divider */}
-            <div className="relative mt-10">
-              <div aria-hidden="true" className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
-              </div>
-              <div className="relative flex justify-center text-sm font-medium leading-6">
-                <span className="bg-white dark:bg-[#121212] px-4 text-slate-500">Or continue with</span>
-              </div>
-            </div>
 
-            {/* Social Logins */}
-            <div className="mt-8 grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <span className="text-sm font-bold">Google</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleAppleSignIn}
-                className="flex w-full items-center justify-center gap-3 rounded-full bg-white dark:bg-zinc-900 px-3 py-3 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <span className="text-sm font-bold">Apple</span>
-              </button>
-            </div>
           </div>
 
           <p className="mt-10 text-center text-sm text-slate-500">
