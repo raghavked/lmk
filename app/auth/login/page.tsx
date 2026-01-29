@@ -57,10 +57,11 @@ export default function SignInPage() {
         // Clear form
         setEmail('');
         setPassword('');
-        // Redirect to discover
-        // Supabase sign-in does not automatically redirect, so we force a refresh
-        // to trigger the server-side auth check and redirect from / to /discover
-        router.refresh();
+        setLoading(false);
+        // Wait a moment for session to be established, then redirect
+        setTimeout(() => {
+          router.push('/discover');
+        }, 500);
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);
