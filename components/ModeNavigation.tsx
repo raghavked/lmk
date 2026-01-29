@@ -15,7 +15,7 @@ export default function ModeNavigation({ currentMode, onModeChange }: { currentM
   ];
 
   return (
-    <div className="w-full bg-[background-primary] border-b border-[border-color] px-4 py-4 overflow-x-auto sticky top-0 z-20 shadow-lg">
+    <div className="w-full bg-background-primary border-b border-border-color px-4 py-4 overflow-x-auto sticky top-0 z-20 shadow-lg">
       <div className="flex gap-2 min-w-max">
         {modes.map((mode) => {
           const Icon = mode.icon;
@@ -27,8 +27,8 @@ export default function ModeNavigation({ currentMode, onModeChange }: { currentM
               href={mode.href}
               className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                 isActive
-                  ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
-                  : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color] hover:border-coral'
+                  ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
+                  : 'bg-background-tertiary text-text-primary hover:bg-background-secondary border border-border-color hover:border-coral'
               }`}
             >
               <Icon className="w-4 h-4" />
