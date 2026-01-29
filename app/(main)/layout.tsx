@@ -22,9 +22,8 @@ export default function MainLayout({
         } = await supabase.auth.getSession();
 
         if (!session) {
-          // Allow access to /discover without authentication for testing
-          // In production, this should redirect to /auth/login
-          setIsLoading(false);
+          // Redirect to login if no session
+          router.push('/auth/login');
           return;
         }
 
@@ -38,8 +37,8 @@ export default function MainLayout({
         setIsLoading(false);
       } catch (error) {
         console.error('Auth check error:', error);
-        // Allow access without authentication for testing
-        setIsLoading(false);
+        // Redirect to login on error
+        router.push('/auth/login');
       }
     };
 
