@@ -111,7 +111,7 @@ export class AIRanker {
             why_youll_like: finalWhyYoullLike,
             friend_callout: ranking.friend_callout,
             caveats: ranking.caveats,
-            detailed_ratings: ranking.detailed_ratings || {},
+            detailed_ratings: ranking.detailed_ratings || ranking.detailed_ratings || {},
             tags: ranking.tags || [],
             tagline: ranking.tagline,
           },

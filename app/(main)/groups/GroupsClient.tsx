@@ -170,16 +170,38 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
         .select()
         .single();
 
-      if (poll) {
-        // Add poll message
-        await supabase
-          .from('group_messages')
-          .insert({
-            group_id: selectedGroup.id,
-            user_id: profile.id,
-            content: `Created a poll: ${pollTitle}`,
-            poll_id: poll.id,
-          });
+	      if (poll) {
+	        // Call the recommendation API to get personalized options for the poll
+	        const params = new URLSearchParams();
+	        params.append('category', pollCategory);
+	        params.append('limit', '5'); // Get 5 options for the poll
+	        params.append('mode', 'decide'); // Use decide mode for quick options
+	        if (profile?.taste_profile) {
+	          params.append('taste_profile', JSON.stringify(profile.taste_profile));
+	        }
+	
+	        const response = await fetch(`/api/recommend?${params.toString()}`);
+	        const data = await response.json();
+	        const pollOptions = data.results?.map((r: any) => ({
+	          poll_id: poll.id,
+	          title: r.object.title,
+	          description: r.explanation.why_youll_like,
+	          personalized_score: r.personalized_score,
+	        })) || [];
+	
+	        if (pollOptions.length > 0) {
+	          await supabase.from('poll_options').insert(pollOptions);
+	        }
+	
+	        // Add poll message
+	        await supabase
+	          .from('group_messages')
+	          .insert({
+	            group_id: selectedGroup.id,
+	            user_id: profile.id,
+	            content: `Created a poll: ${pollTitle}`,
+	            poll_id: poll.id,
+	          });
 
         setPollTitle('');
         setShowCreatePoll(false);

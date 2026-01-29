@@ -111,6 +111,9 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       }
       params.append('limit', '10');
       params.append('offset', newOffset.toString());
+      if (profile?.taste_profile) {
+        params.append('taste_profile', JSON.stringify(profile.taste_profile));
+      }
       if (seenIds.size > 0) {
         params.append('seen_ids', Array.from(seenIds).join(','));
       }

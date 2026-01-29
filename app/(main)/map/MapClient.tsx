@@ -42,7 +42,19 @@ export default function MapClient({ profile }: { profile: any }) {
     setSelectedItem(null);
 
     try {
-      const response = await fetch(`/api/recommend?category=${selectedCategory}&limit=20`, {
+      const params = new URLSearchParams();
+      params.append('category', selectedCategory);
+      params.append('limit', '20');
+      params.append('mode', 'map');
+      if (profile?.taste_profile) {
+        params.append('taste_profile', JSON.stringify(profile.taste_profile));
+      }
+      if (userLocation) {
+        params.append('lat', userLocation.lat.toString());
+        params.append('lng', userLocation.lng.toString());
+      }
+
+      const response = await fetch(`/api/recommend?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

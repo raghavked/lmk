@@ -23,7 +23,15 @@ export default function DecideClient({ profile }: { profile: any }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/recommend?category=${selectedCategory}&limit=1&mode=decide`, {
+      const params = new URLSearchParams();
+      params.append('category', selectedCategory);
+      params.append('limit', '1');
+      params.append('mode', 'decide');
+      if (profile?.taste_profile) {
+        params.append('taste_profile', JSON.stringify(profile.taste_profile));
+      }
+
+      const response = await fetch(`/api/recommend?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

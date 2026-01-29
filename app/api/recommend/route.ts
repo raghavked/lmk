@@ -19,6 +19,8 @@ export async function GET(request: Request) {
   const category = requestUrl.searchParams.get('category') || 'restaurants';
   const limit = parseInt(requestUrl.searchParams.get('limit') || '10', 10);
   const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
+  const tasteProfileParam = requestUrl.searchParams.get('taste_profile');
+  const tasteProfile = tasteProfileParam ? JSON.parse(tasteProfileParam) : [];
   const seenIds = requestUrl.searchParams.get('seen_ids')?.split(',') || [];
 
   const cookieStore = await cookies();
@@ -52,7 +54,7 @@ export async function GET(request: Request) {
         console.error('Error creating profile in API:', newProfileError);
         return NextResponse.json({ error: 'Error creating user profile' }, { status: 500 });
       }
-      finalProfile = newProfile;
+      finalProfile = { ...newProfile, taste_profile: tasteProfile };
     } else if (profileError) {
       console.error('Error fetching profile:', profileError);
       return NextResponse.json({ error: 'Error fetching user profile' }, { status: 500 });
@@ -65,19 +67,21 @@ export async function GET(request: Request) {
     }
 
     const apiInstance = new ApiClass();
+    const profileWithTaste = { ...finalProfile, taste_profile: finalProfile.taste_profile || tasteProfile };
+
     const rawRecommendations = await apiInstance.getRecommendations({
       category,
       limit,
       offset,
       seenIds,
-      profile: finalProfile as any,
+      profile: profileWithTaste as any,
     });
 
     // 3. Rank Recommendations
     const ranker = new AIRanker();
     const rankedResults = await ranker.rank(
       rawRecommendations,
-      finalProfile as any,
+      profileWithTaste as any,
       {
         category,
         mode: 'feed',
