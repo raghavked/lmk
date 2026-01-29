@@ -43,8 +43,11 @@ Preferred communication style: Simple, everyday language.
 ### Recent Enhancements (January 2026)
 - **Dark/Coral Theme**: Consistent dark mode (#0D1117 background) with coral accent (#FF6B6B) across all pages
 - **Location-Based Recommendations**: Real-time geolocation with distance calculation and sorting (closest first)
+- **Location Fallback**: Uses profile location when geolocation is unavailable; proper null checks for 0 coordinates
 - **Sorting Options**: AI Score, Distance, Rating, and Review Count sorting for all recommendations
-- **Distance Display**: Distance shown in miles/feet on cards for location-aware categories
+- **Distance Display**: Distance shown in miles/feet on cards; "Nearby" for very close distances (<0.01 mi)
+- **3 Real API Metrics**: ObjectCard displays category-specific metrics from actual API data (rating/reviews/price for restaurants, rating/votes/year for movies, views/likes/channel for YouTube, length/published/author for books) with fallback to category/genre/type when data is sparse
+- **Longer Descriptions**: AI explanation and object description displayed in separate paragraphs for richer content
 - **Decide Tab**: Reshuffle button, decision history modal, localStorage persistence for seen items
 - **Friends System**: Real user search, friend request management, view friend's ratings/recommendations modal
 - **Groups**: Server-side friend loading for invites, proper name/avatar display
