@@ -53,20 +53,20 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
     return (
       <div key={label} className="space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-[text-secondary] uppercase tracking-wider">{label}</span>
+          <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">{label}</span>
           <div className="flex items-center gap-1">
             <span className="text-xs font-bold text-coral">{value.toFixed(1)}</span>
             <div className="flex gap-0.5">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`w-3 h-3 ${star <= stars ? 'fill-coral text-coral' : 'fill-[background-tertiary] text-[background-tertiary]'}`}
+                  className={`w-3 h-3 ${star <= stars ? 'fill-coral text-coral' : 'fill-background-tertiary text-background-tertiary'}`}
                 />
               ))}
             </div>
           </div>
         </div>
-        <div className="w-full bg-[background-tertiary] h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-background-tertiary h-1.5 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-coral/70 to-coral rounded-full transition-all duration-1000"
             style={{ width: `${value * 10}%` }}
@@ -93,12 +93,12 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
   }, [object.location, object.title]);
 
   return (
-	    <div 
-	      className="bg-[background-secondary] rounded-3xl shadow-lg border border-[border-color] overflow-hidden hover:border-coral/30 hover:shadow-coral/20 transition-all duration-300 flex flex-col h-full cursor-pointer"
-	      onClick={() => setIsExpanded(!isExpanded)}
-	    >
+            <div 
+              className="bg-background-secondary rounded-3xl shadow-lg border border-border-color overflow-hidden hover:border-coral/30 hover:shadow-coral/20 transition-all duration-300 flex flex-col h-full cursor-pointer"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
       {/* Image Section */}
-      <div className="relative h-80 w-full overflow-hidden bg-[background-tertiary]">
+      <div className="relative h-80 w-full overflow-hidden bg-background-tertiary">
         {imageUrl && !imageError ? (
           <Image
             src={imageUrl}
@@ -116,11 +116,11 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
         )}
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[background-secondary] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background-secondary via-transparent to-transparent" />
 
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
-          <span className="bg-coral text-[background-primary] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+          <span className="bg-coral text-background-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
             {object.category?.replace('_', ' ') || 'Recommendation'}
           </span>
         </div>
@@ -128,89 +128,89 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
 
       {/* Content Section */}
       <div className="p-6 flex flex-col flex-1 space-y-4">
-	        {/* Title and Tagline */}
-	        <div>
-	          <h3 className="text-2xl font-bold text-[text-primary] leading-tight mb-2">
-	            {object.title}
-	          </h3>
-	          {explanation?.tagline && (
-	            <p className="text-coral font-bold text-xs uppercase tracking-wider">
-	              {explanation.tagline}
-	            </p>
-	          )}
-	        </div>
+                {/* Title and Tagline */}
+                <div>
+                  <h3 className="text-2xl font-bold text-text-primary leading-tight mb-2">
+                    {object.title}
+                  </h3>
+                  {explanation?.tagline && (
+                    <p className="text-coral font-bold text-xs uppercase tracking-wider">
+                      {explanation.tagline}
+                    </p>
+                  )}
+                </div>
 
-	        {/* Location */}
-	        {(object.location?.city || object.location?.address) && (
-	          <div className="flex items-center gap-2 text-[text-secondary]">
-	            <MapPin className="w-4 h-4 flex-shrink-0" />
-	            <span className="text-sm font-medium">
-	              {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
-	            </span>
-	          </div>
-	        )}
-	        
-	        {/* Expanded Detail View */}
-	        {isExpanded && (
-	          <div className="mt-4 space-y-4 pt-4 border-t border-[border-color] animate-in fade-in duration-300">
-	            <h4 className="text-lg font-bold text-[text-primary]">More Details</h4>
-	            
-	            {/* Map Integration */}
-	            {mapUrl && (
-	              <div className="space-y-2">
-	                <p className="text-sm font-medium text-[text-secondary] flex items-center gap-2">
-	                  <MapPin className="w-4 h-4 text-coral" />
-	                  Location on Map
-	                </p>
-	                <a
-	                  href={mapUrl}
-	                  target="_blank"
-	                  rel="noopener noreferrer"
-	                  onClick={(e) => e.stopPropagation()} // Prevent card collapse
-	                  className="flex items-center justify-center w-full py-3 bg-coral text-[background-primary] rounded-xl font-bold hover:bg-coral/90 transition-all shadow-lg shadow-coral/30"
-	                >
-	                  <ExternalLink className="w-4 h-4 mr-2" />
-	                  Get Directions
-	                </a>
-	              </div>
-	            )}
-	            
-	            {/* Additional Factual Data (Example: External Rating) */}
-	            {object.external_rating && (
-	              <div className="flex justify-between items-center text-sm">
-	                <span className="text-[text-secondary]">External Rating:</span>
-	                <span className="font-bold text-[text-primary]">{object.external_rating.toFixed(1)} / 10</span>
-	              </div>
-	            )}
-	            {object.review_count && (
-	              <div className="flex justify-between items-center text-sm">
-	                <span className="text-[text-secondary]">Review Count:</span>
-	                <span className="font-bold text-[text-primary]">{object.review_count.toLocaleString()}</span>
-	              </div>
-	            )}
-	            
-	            {/* Add more details here based on category if needed */}
-	            
-	          </div>
-	        )}
+                {/* Location */}
+                {(object.location?.city || object.location?.address) && (
+                  <div className="flex items-center gap-2 text-text-secondary">
+                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">
+                      {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Expanded Detail View */}
+                {isExpanded && (
+                  <div className="mt-4 space-y-4 pt-4 border-t border-border-color animate-in fade-in duration-300">
+                    <h4 className="text-lg font-bold text-text-primary">More Details</h4>
+                    
+                    {/* Map Integration */}
+                    {mapUrl && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-text-secondary flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-coral" />
+                          Location on Map
+                        </p>
+                        <a
+                          href={mapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()} // Prevent card collapse
+                          className="flex items-center justify-center w-full py-3 bg-coral text-background-primary rounded-xl font-bold hover:bg-coral/90 transition-all shadow-lg shadow-coral/30"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Get Directions
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* Additional Factual Data (Example: External Rating) */}
+                    {object.external_rating && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-text-secondary">External Rating:</span>
+                        <span className="font-bold text-text-primary">{object.external_rating.toFixed(1)} / 10</span>
+                      </div>
+                    )}
+                    {object.review_count && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-text-secondary">Review Count:</span>
+                        <span className="font-bold text-text-primary">{object.review_count.toLocaleString()}</span>
+                      </div>
+                    )}
+                    
+                    {/* Add more details here based on category if needed */}
+                    
+                  </div>
+                )}
 
-	        {/* Description */}
-	        {explanation?.why_youll_like && (
-	          <div className="space-y-2">
-	            {hook && (
-	              <p className="text-coral font-bold text-xs uppercase tracking-wider">
-	                {hook}
-	              </p>
-	            )}
-	            <p className="text-[text-primary] text-sm leading-relaxed">
-	              {explanation.why_youll_like}
-	            </p>
-	          </div>
-	        )}
+                {/* Description */}
+                {explanation?.why_youll_like && (
+                  <div className="space-y-2">
+                    {hook && (
+                      <p className="text-coral font-bold text-xs uppercase tracking-wider">
+                        {hook}
+                      </p>
+                    )}
+                    <p className="text-text-primary text-sm leading-relaxed">
+                      {explanation.why_youll_like}
+                    </p>
+                  </div>
+                )}
 
         {/* Metrics */}
         {Object.keys(metrics).length > 0 && (
-          <div className="space-y-4 pt-4 border-t border-[border-color]">
+          <div className="space-y-4 pt-4 border-t border-border-color">
             {Object.entries(metrics).map(([label, value]) =>
               renderMetric(label, value as number)
             )}
@@ -219,11 +219,11 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
 
         {/* Tags */}
         {displayTags.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-4 border-t border-[border-color]">
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-border-color">
             {displayTags.slice(0, 4).map((tag: string) => (
               <span
                 key={tag}
-                className="text-xs text-[text-secondary] font-medium"
+                className="text-xs text-text-secondary font-medium"
               >
                 #{tag.toLowerCase().replace(/\s+/g, '')}
               </span>
@@ -231,45 +231,45 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
           </div>
         )}
 
-	        {/* Action Buttons */}
-	        <div className="flex gap-3 pt-4 border-t border-[border-color] mt-auto">
-	          <button
-	            onClick={(e) => {
-	              e.stopPropagation(); // Prevent card collapse
-	              haptics.impact();
-	              setIsSaved(!isSaved);
-	            }}
-	            className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
-	              isSaved
-	                ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
-	                : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color]'
-	            }`}
-	          >
-	            <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
-	            Save
-	          </button>
-	          {object.source_links?.[0]?.url && (
-	            <a
-	              href={object.source_links[0].url}
-	              target="_blank"
-	              rel="noopener noreferrer"
-	              onClick={(e) => e.stopPropagation()} // Prevent card collapse
-	              className="flex-1 py-3 bg-[background-tertiary] text-[text-primary] rounded-full font-bold hover:bg-[background-secondary] transition-all flex items-center justify-center gap-2 border border-[border-color] hover:border-coral/50 hover:text-coral"
-	            >
-	              <ExternalLink className="w-4 h-4" />
-	              View
-	            </a>
-	          )}
-	          <button
-	            onClick={(e) => {
-	              e.stopPropagation(); // Prevent card collapse
-	              haptics.impact();
-	            }}
-	            className="py-3 px-4 bg-[background-tertiary] text-[text-primary] rounded-full hover:bg-[background-secondary] transition-all border border-[border-color] hover:border-coral/50 hover:text-coral"
-	          >
-	            <Share2 className="w-4 h-4" />
-	          </button>
-	        </div>
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t border-border-color mt-auto">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card collapse
+                      haptics.impact();
+                      setIsSaved(!isSaved);
+                    }}
+                    className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+                      isSaved
+                        ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
+                        : 'bg-background-tertiary text-text-primary hover:bg-background-secondary border border-border-color'
+                    }`}
+                  >
+                    <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+                    Save
+                  </button>
+                  {object.source_links?.[0]?.url && (
+                    <a
+                      href={object.source_links[0].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()} // Prevent card collapse
+                      className="flex-1 py-3 bg-background-tertiary text-text-primary rounded-full font-bold hover:bg-background-secondary transition-all flex items-center justify-center gap-2 border border-border-color hover:border-coral/50 hover:text-coral"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      View
+                    </a>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent card collapse
+                      haptics.impact();
+                    }}
+                    className="py-3 px-4 bg-background-tertiary text-text-primary rounded-full hover:bg-background-secondary transition-all border border-border-color hover:border-coral/50 hover:text-coral"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </div>
       </div>
     </div>
   );

@@ -236,7 +236,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[background-primary]">
+    <div className="flex flex-col h-screen w-full bg-background-primary">
       <Navigation profile={profile} />
       <ModeNavigation />
       
@@ -244,22 +244,22 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {/* Pull to Refresh Indicator */}
         {pullDistance > 0 && (
           <div className="flex justify-center pt-4 pb-2">
-            <div className="text-[text-secondary] text-sm">
+            <div className="text-text-secondary text-sm">
               {pullDistance >= 70 ? '↓ Release to refresh' : '↓ Pull to refresh'}
-	          </div>
-	
-		          {/* Location Status */}
-		          {userLocation && (
-		            <div className="text-xs text-[text-secondary] mt-2 pt-2 border-t border-[border-color] flex justify-between items-center">
-		              <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
-		              <span className="text-coral font-medium">Radius: {distanceFilter} miles</span>
-		            </div>
-		          )}
-		        </div>
-	        )}
+                  </div>
+        
+                          {/* Location Status */}
+                          {userLocation && (
+                            <div className="text-xs text-text-secondary mt-2 pt-2 border-t border-border-color flex justify-between items-center">
+                              <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
+                              <span className="text-coral font-medium">Radius: {distanceFilter} miles</span>
+                            </div>
+                          )}
+                        </div>
+                )}
 
         {/* Category Filters */}
-		        <div className="sticky top-0 bg-[background-primary] border-b border-[border-color] px-4 py-4 z-10 shadow-xl">
+                        <div className="sticky top-0 bg-background-primary border-b border-border-color px-4 py-4 z-10 shadow-xl">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
@@ -267,8 +267,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                 onClick={() => setCategory(cat.id)}
                 className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                   category === cat.id
-                    ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
-                    : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color]'
+                    ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
+                    : 'bg-background-tertiary text-text-primary hover:bg-background-secondary border border-border-color'
                 }`}
               >
                 {cat.icon} {cat.label}
@@ -276,64 +276,64 @@ export default function DiscoverClient({ profile }: { profile: any }) {
             ))}
           </div>
 
-	          {/* Filtering and Sorting Bar */}
-	          <div className="mt-4 flex gap-2 items-center">
-	            <div className="flex-1 relative">
-	              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary]" />
-	              <input
-	                type="text"
-	                placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
-	                value={query}
-	                onChange={(e) => setQuery(e.target.value)}
-	                className="w-full pl-10 pr-4 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] placeholder:text-[text-secondary] focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
-	              />
-	            </div>
-	            
-	            {/* Location Button */}
-	            <button
-	              onClick={detectLocation}
-	              disabled={isLocating}
-	              className="p-3 bg-[background-tertiary] border border-[border-color] rounded-full font-medium hover:bg-[background-secondary] transition disabled:opacity-50 text-[text-secondary] hover:text-coral"
-	              aria-label="Detect Location"
-	            >
-	              {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-	            </button>
-	          </div>
-	
-	          {/* Sort and Filter Dropdowns */}
-	          <div className="mt-3 flex gap-3">
-	            {/* Sort By Dropdown */}
-	            <div className="relative flex-1">
-	              <select
-	                value={sortBy}
-	                onChange={(e) => setSortBy(e.target.value)}
-	                className="appearance-none w-full pl-4 pr-8 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer"
-	              >
-	                <option value="personalized_score">Best Match (AI Score)</option>
-	                <option value="distance">Closest Distance</option>
-	                <option value="rating">Highest External Rating</option>
-	                <option value="reviews">Most Reviews</option>
-	              </select>
-	              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary] pointer-events-none" />
-	            </div>
-	
-	            {/* Distance Filter Dropdown */}
-	            <div className="relative flex-1">
-	              <select
-	                value={distanceFilter}
-	                onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
-	                disabled={!userLocation}
-	                className="appearance-none w-full pl-4 pr-8 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
-	              >
-	                <option value={5}>5 miles</option>
-	                <option value={10}>10 miles</option>
-	                <option value={25}>25 miles</option>
-	                <option value={50}>50 miles</option>
-	                <option value={100}>100 miles</option>
-	              </select>
-	              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary] pointer-events-none" />
-	            </div>
-	          </div>
+                  {/* Filtering and Sorting Bar */}
+                  <div className="mt-4 flex gap-2 items-center">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                      <input
+                        type="text"
+                        placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                      />
+                    </div>
+                    
+                    {/* Location Button */}
+                    <button
+                      onClick={detectLocation}
+                      disabled={isLocating}
+                      className="p-3 bg-background-tertiary border border-border-color rounded-full font-medium hover:bg-background-secondary transition disabled:opacity-50 text-text-secondary hover:text-coral"
+                      aria-label="Detect Location"
+                    >
+                      {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                    </button>
+                  </div>
+        
+                  {/* Sort and Filter Dropdowns */}
+                  <div className="mt-3 flex gap-3">
+                    {/* Sort By Dropdown */}
+                    <div className="relative flex-1">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer"
+                      >
+                        <option value="personalized_score">Best Match (AI Score)</option>
+                        <option value="distance">Closest Distance</option>
+                        <option value="rating">Highest External Rating</option>
+                        <option value="reviews">Most Reviews</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                    </div>
+        
+                    {/* Distance Filter Dropdown */}
+                    <div className="relative flex-1">
+                      <select
+                        value={distanceFilter}
+                        onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
+                        disabled={!userLocation}
+                        className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
+                      >
+                        <option value={5}>5 miles</option>
+                        <option value={10}>10 miles</option>
+                        <option value={25}>25 miles</option>
+                        <option value={50}>50 miles</option>
+                        <option value={100}>100 miles</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                    </div>
+                  </div>
         </div>
 
         {/* Content */}
@@ -351,14 +351,14 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
-              <p className="text-[text-secondary]">Loading recommendations...</p>
+              <p className="text-text-secondary">Loading recommendations...</p>
             </div>
           </div>
         ) : recommendations.length === 0 && !error ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <p className="text-[text-secondary] text-lg">No recommendations found</p>
-              <p className="text-[text-secondary] text-sm mt-2">Try adjusting your filters or preferences</p>
+              <p className="text-text-secondary text-lg">No recommendations found</p>
+              <p className="text-text-secondary text-sm mt-2">Try adjusting your filters or preferences</p>
             </div>
           </div>
         ) : (
@@ -380,7 +380,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           <div className="flex justify-center py-8">
             <button
               onClick={() => loadRecommendations(false, offset)}
-              className="px-6 py-3 bg-coral text-[background-primary] rounded-full font-bold hover:bg-coral/90 transition flex items-center gap-2 shadow-lg shadow-coral/30"
+              className="px-6 py-3 bg-coral text-background-primary rounded-full font-bold hover:bg-coral/90 transition flex items-center gap-2 shadow-lg shadow-coral/30"
             >
               <ArrowDown className="w-4 h-4" />
               Show More
