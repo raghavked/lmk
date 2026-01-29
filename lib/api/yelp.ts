@@ -152,13 +152,15 @@ export class YelpAPI {
   private normalize(biz: any) {
     const cuisineTypes = biz.categories?.map((c: any) => c.title).join(', ') || '';
     const priceDesc = biz.price ? `${biz.price} price range` : 'Moderate pricing';
-    const ratingDesc = biz.rating ? `${biz.rating}/5 stars with ${biz.review_count || 0} reviews` : '';
+    const ratingDesc = biz.rating ? `Rated ${biz.rating}/5 stars with ${biz.review_count || 0} reviews on Yelp` : '';
+    const locationDesc = biz.location?.city ? `Located in ${biz.location.city}` : '';
+    const distanceDesc = biz.distance ? `${(biz.distance * 0.000621371).toFixed(1)} miles away` : '';
     
     return {
       id: biz.id,
       category: 'restaurants',
       title: biz.name,
-      description: `${cuisineTypes}. ${priceDesc}. ${ratingDesc}`.trim(),
+      description: [cuisineTypes, priceDesc, ratingDesc, locationDesc, distanceDesc].filter(Boolean).join('. ').trim() + '.',
       primary_image: biz.image_url ? {
         url: biz.image_url,
         width: 1000,

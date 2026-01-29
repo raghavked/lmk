@@ -238,7 +238,7 @@ export class TMDBAPI {
       id: `tmdb_movie_${movie.id}`,
       category: 'movies',
       title: movie.title,
-      description: movie.overview || `${genreNames} film${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      description: movie.overview ? `${movie.overview}${genreNames ? ` A ${genreNames} film` : ''}${year ? ` from ${year}` : ''}.${ratingInfo ? ` Rated ${ratingInfo} on TMDB.` : ''}` : `${genreNames} film${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
       external_rating: movie.vote_average,
       primary_image: movie.poster_path ? {
         url: `${this.imageBaseUrl}/w500${movie.poster_path}`,
@@ -293,7 +293,7 @@ export class TMDBAPI {
       id: `tmdb_tv_${tv.id}`,
       category: 'tv_shows',
       title: tv.name,
-      description: tv.overview || `${genreNames} series${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      description: tv.overview ? `${tv.overview}${genreNames ? ` A ${genreNames} series` : ''}${year ? ` from ${year}` : ''}.${ratingInfo ? ` Rated ${ratingInfo} on TMDB.` : ''}` : `${genreNames} series${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
       external_rating: tv.vote_average,
       primary_image: tv.poster_path ? {
         url: `${this.imageBaseUrl}/w500${tv.poster_path}`,

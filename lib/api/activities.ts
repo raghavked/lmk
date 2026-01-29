@@ -21,18 +21,35 @@ export class ActivitiesAPI {
     offset = 0,
     seenIds = [],
     profile,
+    query,
   }: {
     limit?: number;
     offset?: number;
     seenIds?: string[];
     profile?: any;
+    query?: string;
   }) {
     try {
-      // Get user location from profile or use default
       const lat = profile?.location?.coordinates?.[0] || 40.7128;
       const lng = profile?.location?.coordinates?.[1] || -74.0060;
       
-      // Search for various activity categories
+      if (query && query.length >= 2) {
+        const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+          headers: {
+            'Authorization': `Bearer ${this.yelpApiKey}`,
+          },
+          params: {
+            latitude: lat,
+            longitude: lng,
+            radius: 16000,
+            term: query,
+            limit: Math.max(limit, 20),
+            sort_by: 'best_match',
+          },
+        });
+        return (response.data.businesses || []).map(this.normalize);
+      }
+      
       const categories = ['arts', 'active', 'nightlife', 'parks', 'tours', 'landmarks'];
       
       const allActivities: any[] = [];
