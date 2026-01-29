@@ -57,11 +57,12 @@ export default function SignInPage() {
         // Clear form
         setEmail('');
         setPassword('');
-        setLoading(false);
-        // Wait a moment for session to be established, then redirect
+        
+        // Wait for session to be fully established in cookies
+        // Then perform a hard redirect to ensure session is recognized
         setTimeout(() => {
-          router.push('/discover');
-        }, 500);
+          window.location.href = '/discover';
+        }, 1000);
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);
