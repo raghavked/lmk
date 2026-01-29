@@ -161,7 +161,7 @@ export class YouTubeAPI {
     
     return {
       id: `youtube_${videoId}`, // Explicit ID for de-duplication
-      category: 'youtube_video',
+      category: 'youtube_videos',
       title: item.snippet.title,
       description: item.snippet.description,
       primary_image: {
