@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Loader2 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -79,11 +80,7 @@ export default function SignInPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-900/20 to-zinc-900"></div>
         <div className="relative z-10 flex flex-col justify-between p-16 w-full h-full">
           <div className="flex items-center gap-3">
-            <div className="size-8 text-[#fea4a7]">
-              <svg fill="currentColor" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
-              </svg>
-            </div>
+            <Logo className="text-[#8b3a3a]" size={32} />
             <span className="text-2xl font-bold tracking-tight text-white">LMK</span>
           </div>
           <div className="max-w-md">
@@ -98,11 +95,7 @@ export default function SignInPage() {
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <div className="size-6 text-[#fea4a7]">
-              <svg fill="currentColor" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                <path clipRule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fillRule="evenodd"></path>
-              </svg>
-            </div>
+            <Logo className="text-[#8b3a3a]" size={24} />
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">LMK</span>
           </div>
 

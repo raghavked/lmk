@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Loader2 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -110,11 +111,7 @@ export default function SignUpPage() {
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#fea4a7]/10 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#fea4a7]/5 rounded-full blur-[100px]"></div>
         <div className="relative z-10 flex items-center gap-3">
-          <div className="flex items-center justify-center size-10 bg-[#fea4a7] rounded-xl">
-            <svg className="w-6 h-6 text-[#230f10]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <Logo className="text-[#8b3a3a]" size={40} />
           <h2 className="text-white text-2xl font-bold tracking-tight">LMK</h2>
         </div>
         <div className="relative z-10 max-w-md">
@@ -140,11 +137,7 @@ export default function SignUpPage() {
       <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-white dark:bg-[#230f10] overflow-y-auto">
         {/* Mobile Logo */}
         <div className="md:hidden flex items-center gap-2 mb-8">
-          <div className="flex items-center justify-center size-8 bg-[#fea4a7] rounded-lg">
-            <svg className="w-5 h-5 text-[#230f10]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+          <Logo className="text-[#8b3a3a]" size={32} />
           <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">LMK</h2>
         </div>
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Loader2 } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -55,12 +56,8 @@ export default function VerifyEmailPage() {
   return (
     <>
       <header className="w-full border-b border-gray-200 dark:border-[#2a2a2a] px-6 lg:px-40 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[#fea4a7]">
-          <div className="size-8 bg-[#fea4a7]/10 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-[#fea4a7]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
+        <div className="flex items-center gap-2">
+          <Logo className="text-[#8b3a3a]" size={32} />
           <h2 className="text-gray-900 dark:text-white text-xl font-bold leading-tight tracking-tight">LMK</h2>
         </div>
         <div className="flex items-center gap-4">

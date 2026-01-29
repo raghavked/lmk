@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
+import Logo from '@/components/Logo';
 
 interface NavigationProps {
   profile: any;
@@ -23,7 +24,7 @@ export default function Navigation({ profile }: NavigationProps) {
     <nav className="sticky top-0 z-40 bg-background-primary/95 backdrop-blur-md border-b border-gray-800">
       <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="text-2xl font-black">✨</div>
+          <Logo className="text-[#8b3a3a]" size={28} />
           <div>
             <h1 className="text-lg font-black text-gray-50">LMK</h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-widest">Personalized</p>
