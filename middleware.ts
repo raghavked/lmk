@@ -5,9 +5,14 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow public routes
-  const publicRoutes = ['/auth/login', '/auth/signup', '/auth/callback'];
+  // Allow public routes and static assets
+  const publicRoutes = ['/auth/login', '/auth/signup', '/auth/callback', '/api'];
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    return NextResponse.next();
+  }
+
+  // Allow static files
+  if (pathname.startsWith('/_next') || pathname.startsWith('/favicon') || pathname.includes('.')) {
     return NextResponse.next();
   }
 
@@ -16,41 +21,28 @@ export async function middleware(request: NextRequest) {
   const supabase = createMiddlewareClient({ req: request, res: response });
 
   try {
-    // Get session
+    // Refresh session if needed
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
     // Protect routes that require authentication
-    if (!session && !publicRoutes.some((route) => pathname.startsWith(route))) {
+    if (!session) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth/login';
-      return NextResponse.redirect(url);
-    }
-
-    // Redirect to discover if logged in and trying to access auth routes
-    if (session && publicRoutes.some((route) => pathname.startsWith(route))) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/discover';
       return NextResponse.redirect(url);
     }
 
     return response;
   } catch (error) {
     console.error('Middleware error:', error);
+    // On error, allow the request to proceed
     return response;
   }
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)',
   ],
 };

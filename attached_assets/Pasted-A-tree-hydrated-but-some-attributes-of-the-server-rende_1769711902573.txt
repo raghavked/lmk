@@ -1,0 +1,58 @@
+A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+See more info here: https://nextjs.org/docs/messages/react-hydration-error
+
+
+  ...
+    <ErrorBoundaryHandler pathname="/discover" errorComponent={function Error} errorStyles={<SegmentViewNode>} ...>
+      <LoadingBoundary name="/" loading={[...]}>
+        <Suspense name="/" fallback={<Fragment>}>
+          <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
+            <HTTPAccessFallbackErrorBoundary pathname="/discover" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <InnerLayoutRouter url="/discover" tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
+                    <SegmentViewNode type="layout" pagePath="(main)/lay...">
+                      <SegmentTrieNode>
+                      <script>
+                      <script>
+                      <script>
+                      <ClientSegmentRoot Component={function MainLayout} slots={{...}} ...>
+                        <MainLayout params={Promise}>
+                          <div
++                           className="flex items-center justify-center min-h-screen bg-[background-primary]"
+-                           className="flex items-center justify-center min-h-screen bg-white dark:bg-slate-950"
+                          >
+                            <div className="text-center">
+                              <div>
+                              <p
++                               className="text-[text-secondary] font-bold"
+-                               className="text-gray-600 dark:text-gray-300 font-bold"
+                              >
++                               Loading...
+                  ...
+app/(main)/layout.tsx (69:23) @ MainLayout
+
+  67 |         if (isMounted) {
+  68 |           setIsLoading(false);
+> 69 |           router.push('/auth/login');
+     |                       ^
+  70 |         }
+  71 |       }
+  72 |     };
+Call Stack
+17
+Show 15 ignore-listed frame(s)
+p
+unknown (0:0)
+MainLayout
+app/(main)/layout.tsx (69:23)
+1
+2
