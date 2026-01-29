@@ -12,6 +12,7 @@ import Logo from '@/components/Logo';
 export default function SignInPage() {
   const router = useRouter();
   const supabase = createClientComponentClient();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -54,22 +55,28 @@ export default function SignInPage() {
       }
 
       if (data?.user) {
+        console.log('Login successful, redirecting...');
         // Clear form
         setEmail('');
         setPassword('');
         
-        // Wait for session to be fully established in cookies
-        // Then perform a hard redirect to ensure session is recognized
+        // Use hard redirect to ensure session is recognized
         setTimeout(() => {
           window.location.href = '/discover';
-        }, 1000);
+        }, 500);
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);
       setError(err.message || 'An unexpected error occurred');
-    } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Toggle password visibility:', !showPassword);
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -117,7 +124,7 @@ export default function SignInPage() {
             <div className="flex flex-col gap-2">
               <label className="text-gray-50 text-sm font-medium ml-1">Email</label>
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
                 <input
@@ -135,7 +142,7 @@ export default function SignInPage() {
             <div className="flex flex-col gap-2">
               <label className="text-gray-50 text-sm font-medium ml-1">Password</label>
               <div className="relative">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 <input
@@ -150,9 +157,11 @@ export default function SignInPage() {
                   type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Password toggle clicked');
                     setShowPassword(!showPassword);
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors z-10"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors z-20 p-1 cursor-pointer"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (

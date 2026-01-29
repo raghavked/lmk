@@ -79,12 +79,17 @@ export async function GET(request: Request) {
 
     // 3. Rank Recommendations
     const ranker = new AIRanker();
+    const lat = requestUrl.searchParams.get('lat');
+    const lng = requestUrl.searchParams.get('lng');
+    const location = lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : undefined;
+    
     const rankedResults = await ranker.rank(
       rawRecommendations,
       profileWithTaste as any,
       {
         category,
         mode: (requestUrl.searchParams.get('mode') as any) || 'feed',
+        location,
       }
     );
 

@@ -9,11 +9,9 @@ const nextConfig = {
   },
   reactStrictMode: true,
   allowedDevOrigins: [
-    'localhost',
+    'localhost:3000',
+    'localhost:5173',
     replitDevDomain,
-    /\.replit\.dev$/,
-    /\.worf\.replit\.dev$/,
-    /\.repl\.co$/,
   ].filter(Boolean),
   async headers() {
     return [
