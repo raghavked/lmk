@@ -252,6 +252,18 @@ export class YouTubeAPI {
     return hours * 3600 + minutes * 60 + seconds;
   }
   
+  async getRecommendations({ category, limit, offset, profile }: { category: string, limit: number, offset: number, profile: any }) {
+    const allSections = await this.getAllYouTubeSections(profile.taste_profile);
+    
+    // Combine all results and remove duplicates
+    const combined = [...allSections.trending, ...allSections.latest, ...allSections.popular, ...allSections.recommended];
+    const unique = combined.filter((item, index, self) =>
+      index === self.findIndex((t) => t.id === item.id)
+    );
+    
+    return unique.slice(offset, offset + limit);
+  }
+
   private inferMoodTags(title: string, description: string): string[] {
     const moods: string[] = [];
     const text = (title + ' ' + description).toLowerCase();

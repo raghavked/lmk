@@ -328,6 +328,27 @@ export class TMDBAPI {
     };
   }
   
+  async getRecommendations({ category, limit, offset }: { category: string, limit: number, offset: number, profile: any }) {
+    if (category === 'movies') {
+      const allSections = await this.getAllMovieCategories();
+      const combined = [...allSections.trending, ...allSections.nowPlaying, ...allSections.popular, ...allSections.topRated];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex((t) => t.id === item.id)
+      );
+      return unique.slice(offset, offset + limit);
+    } else if (category === 'tv_shows') {
+      const allSections = await this.getAllTVShowCategories();
+      const combined = [...allSections.trending, ...allSections.airing, ...allSections.popular, ...allSections.topRated];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex((t) => t.id === item.id)
+      );
+      return unique.slice(offset, offset + limit);
+    }
+    
+    // Fallback search
+    return this.searchMovies({ query: category, page: Math.floor(offset / limit) + 1 });
+  }
+
   private inferMoodTags(genres: string[]): string[] {
     const moodMap: Record<string, string[]> = {
       action: ['energetic', 'thrilling'],

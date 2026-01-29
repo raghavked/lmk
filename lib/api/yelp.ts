@@ -106,6 +106,39 @@ export class YelpAPI {
     };
   }
   
+  async getRecommendations({ category, limit, offset, profile }: { category: string, limit: number, offset: number, profile: any }) {
+    const lat = profile.location?.coordinates[0] || 34.0522; // Default to LA
+    const lng = profile.location?.coordinates[1] || -118.2437;
+    const radius = 16000; // 10 miles
+
+    if (category === 'restaurants') {
+      const allSections = await this.getAllRestaurantSections(lat, lng, radius);
+      // Combine all results and remove duplicates
+      const combined = [...allSections.trending, ...allSections.newOpenings, ...allSections.popular, ...allSections.topRated];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex((t) => t.id === item.id)
+      );
+      return unique.slice(offset, offset + limit);
+    } else if (category === 'activities') {
+      const allSections = await this.getAllActivitySections(lat, lng, radius);
+      const combined = [...allSections.trending, ...allSections.newEvents, ...allSections.popular, ...allSections.topRated];
+      const unique = combined.filter((item, index, self) =>
+        index === self.findIndex((t) => t.id === item.id)
+      );
+      return unique.slice(offset, offset + limit);
+    }
+    
+    // Fallback search
+    return this.search({
+      latitude: lat,
+      longitude: lng,
+      radius,
+      term: category,
+      limit,
+      offset,
+    });
+  }
+
   private normalize(biz: any) {
     return {
       id: biz.id, // Explicit ID for de-duplication

@@ -23,6 +23,27 @@ export class OpenLibraryAPI {
     }
   }
 
+  async getRecommendations({ category, limit, offset, profile }: { category: string, limit: number, offset: number, profile: any }) {
+    const tasteProfile = profile.taste_profile || [];
+    const query = tasteProfile.length > 0 ? tasteProfile[0] : 'fiction';
+    
+    try {
+      const response = await axios.get(`${this.baseUrl}/search.json`, {
+        params: {
+          q: query,
+          limit: limit,
+          offset: offset,
+          sort: 'rating',
+        },
+      });
+
+      return response.data.docs?.map((book: any) => this.normalizeBook(book)) || [];
+    } catch (error) {
+      console.error('OpenLibrary search error:', error);
+      return [];
+    }
+  }
+
   private normalizeBook(book: any) {
     return {
       id: `book_${book.key?.replace(/[^a-zA-Z0-9]/g, '')}`,
