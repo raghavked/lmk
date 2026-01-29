@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, ArrowDown, MapPin, Navigation as NavIcon, Search,
 import ObjectCard from '@/components/ObjectCard';
 import Navigation from '@/components/Navigation';
 import Walkthrough from '@/components/Walkthrough';
+import PreferenceTest from '@/components/PreferenceTest';
 import haptics from '@/lib/haptics';
 
 interface Section {
@@ -19,6 +20,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [showPreferenceTest, setShowPreferenceTest] = useState(false);
   const [category, setCategory] = useState<string>('restaurants'); // Default to first category
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'feed' | 'quick'>('feed'); // New state for mode
@@ -149,20 +151,23 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 
   useEffect(() => {
     const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
-    const hasTasteProfile = profile?.taste_profile && profile.taste_profile.length > 0;
+    const preferencesCompleted = profile?.preferences_completed;
+    const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
     
-    if (!walkthroughCompleted && !hasTasteProfile) {
+    if (!walkthroughCompleted) {
       setShowWalkthrough(true);
+    } else if (!preferencesCompleted && !hasTasteProfile) {
+      setShowPreferenceTest(true);
     } else {
       detectLocation();
     }
   }, [profile, detectLocation]);
 
   useEffect(() => {
-    if (!showWalkthrough) {
-      loadRecommendations(false, 0); // Load initial recommendations on category/location change
+    if (!showWalkthrough && !showPreferenceTest) {
+      loadRecommendations();
     }
-  }, [category, showWalkthrough, userLocation, radius, loadRecommendations]);
+  }, [category, showWalkthrough, showPreferenceTest, userLocation, radius, loadRecommendations]);
 
   // Touch Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -205,7 +210,11 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       onTouchMove={mode === 'feed' ? handleTouchMove : undefined}
       onTouchEnd={mode === 'feed' ? handleTouchEnd : undefined}
     >
-      {showWalkthrough && <Walkthrough onComplete={() => setShowWalkthrough(false)} />}
+      {showWalkthrough && <Walkthrough onComplete={() => {
+        setShowWalkthrough(false);
+        setShowPreferenceTest(true);
+      }} />}
+      {showPreferenceTest && <PreferenceTest onComplete={() => setShowPreferenceTest(false)} />}
       <Navigation profile={profile} />
       
       {/* Pull to Refresh Indicator */}
