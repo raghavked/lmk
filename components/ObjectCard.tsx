@@ -43,137 +43,37 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
     }
   };
 
-  // Get category-specific metrics from actual source data
-  const getSourceMetrics = () => {
-    const metrics: { label: string; value: string; subtext?: string }[] = [];
-    const category = object.category?.toLowerCase();
-    
-    // External ratings from APIs (Yelp, TMDB, etc.)
-    if (object.external_ratings && object.external_ratings.length > 0) {
-      const rating = object.external_ratings[0];
-      const source = rating.source?.toUpperCase() || 'Rating';
-      
-      if (category === 'restaurants' || category === 'activities') {
-        // Yelp uses 1-5 scale
-        const yelpRating = rating.score ? (rating.score / 2).toFixed(1) : null;
-        if (yelpRating) {
-          metrics.push({ 
-            label: 'Yelp Rating', 
-            value: `${yelpRating}/5`,
-            subtext: rating.count ? `${rating.count.toLocaleString()} reviews` : undefined
-          });
-        }
-      } else if (category === 'movies' || category === 'tv_shows') {
-        // TMDB uses 1-10 scale
-        if (rating.score) {
-          metrics.push({ 
-            label: 'TMDB Rating', 
-            value: `${rating.score.toFixed(1)}/10`,
-            subtext: rating.count ? `${rating.count.toLocaleString()} votes` : undefined
-          });
-        }
-      }
-    }
-    
-    // Fallback to external_rating if external_ratings not available
-    if (metrics.length === 0 && object.external_rating) {
-      if (category === 'restaurants' || category === 'activities') {
-        metrics.push({ 
-          label: 'Rating', 
-          value: `${(object.external_rating / 2).toFixed(1)}/5`
-        });
-      } else {
-        metrics.push({ 
-          label: 'Rating', 
-          value: `${object.external_rating.toFixed(1)}/10`
-        });
-      }
-    }
-    
-    // Review/vote count if not already shown
-    if (object.review_count && !metrics.some(m => m.subtext?.includes('reviews'))) {
-      metrics.push({ 
-        label: 'Reviews', 
-        value: object.review_count.toLocaleString()
-      });
-    }
-    
-    // Price level for restaurants
-    if (object.price_level) {
-      metrics.push({ 
-        label: 'Price', 
-        value: object.price_level
-      });
-    }
-    
-    // Runtime for movies
-    if (object.runtime) {
-      const hours = Math.floor(object.runtime / 60);
-      const mins = object.runtime % 60;
-      metrics.push({ 
-        label: 'Runtime', 
-        value: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-      });
-    }
-    
-    // Release year for movies/TV
-    if (object.release_date || object.first_air_date) {
-      const date = object.release_date || object.first_air_date;
-      const year = new Date(date).getFullYear();
-      if (!isNaN(year)) {
-        metrics.push({ 
-          label: category === 'tv_shows' ? 'First Aired' : 'Released', 
-          value: year.toString()
-        });
-      }
-    }
-    
-    // YouTube specific
-    if (object.view_count) {
-      metrics.push({ 
-        label: 'Views', 
-        value: formatCount(object.view_count)
-      });
-    }
-    if (object.like_count) {
-      metrics.push({ 
-        label: 'Likes', 
-        value: formatCount(object.like_count)
-      });
-    }
-    
-    // Book specific
-    if (object.page_count) {
-      metrics.push({ 
-        label: 'Pages', 
-        value: object.page_count.toString()
-      });
-    }
-    if (object.publish_year) {
-      metrics.push({ 
-        label: 'Published', 
-        value: object.publish_year.toString()
-      });
-    }
-    
-    return metrics;
-  };
-  
-  const formatCount = (count: number) => {
-    if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
-    return count.toString();
+  // Get detailed ratings from AI explanation (3 metrics max)
+  const getDetailedRatings = (): Array<{ label: string; value: number }> => {
+    const ratings = explanation?.detailed_ratings || {};
+    return Object.entries(ratings)
+      .slice(0, 3)
+      .map(([label, value]) => ({ label, value: value as number }));
   };
 
-  const renderSourceMetric = (metric: { label: string; value: string; subtext?: string }) => {
+  const renderDetailedRating = (label: string, value: number) => {
+    const stars = Math.round(value / 2);
     return (
-      <div key={metric.label} className="flex justify-between items-center py-2">
-        <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">{metric.label}</span>
-        <div className="text-right">
-          <span className="text-sm font-bold text-text-primary">{metric.value}</span>
-          {metric.subtext && (
-            <span className="text-xs text-text-secondary ml-2">({metric.subtext})</span>
-          )}
+      <div key={label} className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-bold text-coral uppercase tracking-wider">{label.replace(/_/g, ' ')}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-bold text-coral">{value.toFixed(1)}</span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-3 h-3 ${star <= stars ? 'fill-coral text-coral' : 'fill-background-tertiary text-background-tertiary'}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="w-full bg-background-tertiary h-1.5 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-coral/70 to-coral rounded-full transition-all duration-1000"
+            style={{ width: `${value * 10}%` }}
+          />
         </div>
       </div>
     );
@@ -182,7 +82,7 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
   const imageUrl = object.primary_image?.url || object.image_url || object.poster_path;
   const displayTags = explanation?.tags || object.tags || [];
   const hook = explanation?.hook || '';
-  const sourceMetrics = getSourceMetrics();
+  const detailedRatings = getDetailedRatings();
 
   const mapUrl = useMemo(() => {
     if (object.location?.lat && object.location?.lng && object.title) {
@@ -302,10 +202,10 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
                   </div>
                 )}
 
-        {/* Source Metrics */}
-        {sourceMetrics.length > 0 && (
-          <div className="space-y-1 pt-4 border-t border-border-color">
-            {sourceMetrics.map((metric) => renderSourceMetric(metric))}
+        {/* Detailed Ratings */}
+        {detailedRatings.length > 0 && (
+          <div className="space-y-4 pt-4 border-t border-border-color">
+            {detailedRatings.map(({ label, value }) => renderDetailedRating(label, value))}
           </div>
         )}
 
