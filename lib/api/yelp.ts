@@ -106,14 +106,25 @@ export class YelpAPI {
     };
   }
   
-  async getRecommendations({ category, limit, offset, profile, lat: userLat, lng: userLng, radius: userRadius }: { category: string, limit: number, offset: number, profile: any, lat?: number, lng?: number, radius?: number }) {
+  async getRecommendations({ category, limit, offset, profile, query, lat: userLat, lng: userLng, radius: userRadius }: { category: string, limit: number, offset: number, profile: any, query?: string, lat?: number, lng?: number, radius?: number }) {
     const lat = userLat || profile.location?.coordinates?.[0] || 34.0522;
     const lng = userLng || profile.location?.coordinates?.[1] || -118.2437;
     const radius = userRadius || 16000;
 
+    if (query && query.length >= 2) {
+      return this.search({
+        latitude: lat,
+        longitude: lng,
+        radius,
+        term: category === 'restaurants' ? `${query} restaurant` : query,
+        limit: Math.max(limit, 20),
+        offset,
+        sort_by: 'best_match',
+      });
+    }
+
     if (category === 'restaurants') {
       const allSections = await this.getAllRestaurantSections(lat, lng, radius);
-      // Combine all results and remove duplicates
       const combined = [...allSections.trending, ...allSections.newOpenings, ...allSections.popular, ...allSections.topRated];
       const unique = combined.filter((item, index, self) =>
         index === self.findIndex((t) => t.id === item.id)
@@ -128,7 +139,6 @@ export class YelpAPI {
       return unique.slice(offset, offset + limit);
     }
     
-    // Fallback search
     return this.search({
       latitude: lat,
       longitude: lng,

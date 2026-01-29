@@ -252,10 +252,13 @@ export class YouTubeAPI {
     return hours * 3600 + minutes * 60 + seconds;
   }
   
-  async getRecommendations({ category, limit, offset, profile }: { category: string, limit: number, offset: number, profile: any }) {
+  async getRecommendations({ category, limit, offset, profile, query }: { category: string, limit: number, offset: number, profile: any, query?: string }) {
+    if (query && query.length >= 2) {
+      return this.search({ query, maxResults: Math.max(limit, 20), order: 'relevance' });
+    }
+
     const allSections = await this.getAllYouTubeSections(profile.taste_profile);
     
-    // Combine all results and remove duplicates
     const combined = [...allSections.trending, ...allSections.latest, ...allSections.popular, ...allSections.recommended];
     const unique = combined.filter((item, index, self) =>
       index === self.findIndex((t) => t.id === item.id)
