@@ -70,9 +70,9 @@ export default function SignInPage() {
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left Section: Visual Impact */}
       <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#181011] overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-coral/5 via-transparent to-transparent"></div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-coral/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-coral/5 rounded-full blur-[120px]"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#fea4a7]/5 via-transparent to-transparent"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#fea4a7]/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#fea4a7]/5 rounded-full blur-[120px]"></div>
         
         <div className="relative z-10 flex flex-col justify-between p-16 w-full h-full">
           <div className="flex items-center gap-3">
@@ -120,7 +120,7 @@ export default function SignInPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@example.com"
-                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-coral/50 focus:border-coral/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
                 />
               </div>
             </div>
@@ -138,7 +138,7 @@ export default function SignInPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Enter your password"
-                  className="w-full h-14 pl-12 pr-12 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-coral/50 focus:border-coral/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-12 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
                 />
                 <button
                   type="button"
@@ -162,7 +162,7 @@ export default function SignInPage() {
 
             {/* Forgot Password Link */}
             <div className="flex justify-end">
-              <Link href="#" className="text-sm text-coral hover:underline font-medium">
+              <Link href="#" className="text-sm text-[#fea4a7] hover:underline font-medium">
                 Forgot password?
               </Link>
             </div>
@@ -171,7 +171,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 mt-6 bg-coral text-[#0D1117] font-bold text-lg rounded-full hover:bg-coral/90 active:scale-[0.98] transition-all shadow-lg shadow-coral/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full h-14 mt-6 bg-[#fea4a7] text-[#230f10] font-bold text-lg rounded-full hover:bg-[#fea4a7]/90 active:scale-[0.98] transition-all shadow-lg shadow-[#fea4a7]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                 <>
