@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { Star, MapPin, ExternalLink, Bookmark, Share2 } from 'lucide-react';
 import haptics from '@/lib/haptics';
@@ -24,6 +24,7 @@ interface ObjectCardProps {
 export default function ObjectCard({ object, rank, score, explanation }: ObjectCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleImageError = useCallback(() => {
     setImageError(true);
@@ -80,8 +81,22 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
   const hook = explanation?.hook || '';
   const metrics = getMetrics();
 
+  const mapUrl = useMemo(() => {
+    if (object.location?.lat && object.location?.lng && object.title) {
+      const lat = object.location.lat;
+      const lng = object.location.lng;
+      const title = encodeURIComponent(object.title);
+      // Universal map URL scheme for Google Maps
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}&query_place_id=${title}`;
+    }
+    return null;
+  }, [object.location, object.title]);
+
   return (
-    <div className="bg-[background-secondary] rounded-3xl shadow-lg border border-[border-color] overflow-hidden hover:border-coral/30 hover:shadow-coral/20 transition-all duration-300 flex flex-col h-full">
+	    <div 
+	      className="bg-[background-secondary] rounded-3xl shadow-lg border border-[border-color] overflow-hidden hover:border-coral/30 hover:shadow-coral/20 transition-all duration-300 flex flex-col h-full cursor-pointer"
+	      onClick={() => setIsExpanded(!isExpanded)}
+	    >
       {/* Image Section */}
       <div className="relative h-80 w-full overflow-hidden bg-[background-tertiary]">
         {imageUrl && !imageError ? (
@@ -118,29 +133,80 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
 	          <h3 className="text-2xl font-bold text-[text-primary] leading-tight mb-2">
 	            {object.title}
 	          </h3>
-	          {hook && (
+	          {explanation?.tagline && (
 	            <p className="text-coral font-bold text-xs uppercase tracking-wider">
-	              {hook}
+	              {explanation.tagline}
 	            </p>
 	          )}
 	        </div>
 
-        {/* Location */}
-        {(object.location?.city || object.location?.address) && (
-          <div className="flex items-center gap-2 text-[text-secondary]">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm font-medium">
-              {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
-            </span>
-          </div>
-        )}
+	        {/* Location */}
+	        {(object.location?.city || object.location?.address) && (
+	          <div className="flex items-center gap-2 text-[text-secondary]">
+	            <MapPin className="w-4 h-4 flex-shrink-0" />
+	            <span className="text-sm font-medium">
+	              {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
+	            </span>
+	          </div>
+	        )}
+	        
+	        {/* Expanded Detail View */}
+	        {isExpanded && (
+	          <div className="mt-4 space-y-4 pt-4 border-t border-[border-color] animate-in fade-in duration-300">
+	            <h4 className="text-lg font-bold text-[text-primary]">More Details</h4>
+	            
+	            {/* Map Integration */}
+	            {mapUrl && (
+	              <div className="space-y-2">
+	                <p className="text-sm font-medium text-[text-secondary] flex items-center gap-2">
+	                  <MapPin className="w-4 h-4 text-coral" />
+	                  Location on Map
+	                </p>
+	                <a
+	                  href={mapUrl}
+	                  target="_blank"
+	                  rel="noopener noreferrer"
+	                  onClick={(e) => e.stopPropagation()} // Prevent card collapse
+	                  className="flex items-center justify-center w-full py-3 bg-coral text-[background-primary] rounded-xl font-bold hover:bg-coral/90 transition-all shadow-lg shadow-coral/30"
+	                >
+	                  <ExternalLink className="w-4 h-4 mr-2" />
+	                  Get Directions
+	                </a>
+	              </div>
+	            )}
+	            
+	            {/* Additional Factual Data (Example: External Rating) */}
+	            {object.external_rating && (
+	              <div className="flex justify-between items-center text-sm">
+	                <span className="text-[text-secondary]">External Rating:</span>
+	                <span className="font-bold text-[text-primary]">{object.external_rating.toFixed(1)} / 10</span>
+	              </div>
+	            )}
+	            {object.review_count && (
+	              <div className="flex justify-between items-center text-sm">
+	                <span className="text-[text-secondary]">Review Count:</span>
+	                <span className="font-bold text-[text-primary]">{object.review_count.toLocaleString()}</span>
+	              </div>
+	            )}
+	            
+	            {/* Add more details here based on category if needed */}
+	            
+	          </div>
+	        )}
 
-        {/* Description */}
-        {explanation?.why_youll_like && (
-          <p className="text-[text-primary] text-sm leading-relaxed">
-            {explanation.why_youll_like}
-          </p>
-        )}
+	        {/* Description */}
+	        {explanation?.why_youll_like && (
+	          <div className="space-y-2">
+	            {hook && (
+	              <p className="text-coral font-bold text-xs uppercase tracking-wider">
+	                {hook}
+	              </p>
+	            )}
+	            <p className="text-[text-primary] text-sm leading-relaxed">
+	              {explanation.why_youll_like}
+	            </p>
+	          </div>
+	        )}
 
         {/* Metrics */}
         {Object.keys(metrics).length > 0 && (
@@ -165,40 +231,45 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4 border-t border-[border-color] mt-auto">
-          <button
-            onClick={() => {
-              haptics.impact();
-              setIsSaved(!isSaved);
-            }}
-            className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
-              isSaved
-                ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
-                : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color]'
-            }`}
-          >
-            <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
-            Save
-          </button>
-          {object.source_links?.[0]?.url && (
-            <a
-              href={object.source_links[0].url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-3 bg-[background-tertiary] text-[text-primary] rounded-full font-bold hover:bg-[background-secondary] transition-all flex items-center justify-center gap-2 border border-[border-color] hover:border-coral/50 hover:text-coral"
-            >
-              <ExternalLink className="w-4 h-4" />
-              View
-            </a>
-          )}
-          <button
-            onClick={() => haptics.impact()}
-            className="py-3 px-4 bg-[background-tertiary] text-[text-primary] rounded-full hover:bg-[background-secondary] transition-all border border-[border-color] hover:border-coral/50 hover:text-coral"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
-        </div>
+	        {/* Action Buttons */}
+	        <div className="flex gap-3 pt-4 border-t border-[border-color] mt-auto">
+	          <button
+	            onClick={(e) => {
+	              e.stopPropagation(); // Prevent card collapse
+	              haptics.impact();
+	              setIsSaved(!isSaved);
+	            }}
+	            className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+	              isSaved
+	                ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
+	                : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color]'
+	            }`}
+	          >
+	            <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
+	            Save
+	          </button>
+	          {object.source_links?.[0]?.url && (
+	            <a
+	              href={object.source_links[0].url}
+	              target="_blank"
+	              rel="noopener noreferrer"
+	              onClick={(e) => e.stopPropagation()} // Prevent card collapse
+	              className="flex-1 py-3 bg-[background-tertiary] text-[text-primary] rounded-full font-bold hover:bg-[background-secondary] transition-all flex items-center justify-center gap-2 border border-[border-color] hover:border-coral/50 hover:text-coral"
+	            >
+	              <ExternalLink className="w-4 h-4" />
+	              View
+	            </a>
+	          )}
+	          <button
+	            onClick={(e) => {
+	              e.stopPropagation(); // Prevent card collapse
+	              haptics.impact();
+	            }}
+	            className="py-3 px-4 bg-[background-tertiary] text-[text-primary] rounded-full hover:bg-[background-secondary] transition-all border border-[border-color] hover:border-coral/50 hover:text-coral"
+	          >
+	            <Share2 className="w-4 h-4" />
+	          </button>
+	        </div>
       </div>
     </div>
   );

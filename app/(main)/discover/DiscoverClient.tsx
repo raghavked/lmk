@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Loader2, AlertCircle, ArrowDown, MapPin, Navigation as NavIcon, Search, RefreshCw, Sliders, Zap } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Loader2, AlertCircle, ArrowDown, MapPin, Navigation as NavIcon, Search, RefreshCw, Sliders, Zap, ChevronDown } from 'lucide-react';
 import ObjectCard from '@/components/ObjectCard';
 import Navigation from '@/components/Navigation';
 import Walkthrough from '@/components/Walkthrough';
@@ -25,12 +25,13 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const [category, setCategory] = useState<string>('restaurants');
   const [query, setQuery] = useState('');
   const [currentMode, setCurrentMode] = useState<string>('discover');
+  const [sortBy, setSortBy] = useState<string>('personalized_score');
   const [offset, setOffset] = useState(0);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   
   // Location & Distance State
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  const [radius, setRadius] = useState<number>(10);
+  const [distanceFilter, setDistanceFilter] = useState<number>(10); // Default to 10 miles
   const [isLocating, setIsLocating] = useState(false);
 
   // Pull to refresh state
@@ -104,11 +105,14 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       params.append('category', category);
       params.append('mode', currentMode);
       if (query) params.append('query', query);
-      if (userLocation && currentMode === 'map') {
+        // Always append location if available for personalization and distance sorting
+      if (userLocation) {
         params.append('lat', userLocation.lat.toString());
         params.append('lng', userLocation.lng.toString());
-        params.append('radius', (radius * 1609).toString());
+        // Use distanceFilter for radius in meters
+        params.append('radius', (distanceFilter * 1609).toString());
       }
+      params.append('sort_by', sortBy);
       params.append('limit', '10');
       params.append('offset', newOffset.toString());
       if (profile?.taste_profile) {
@@ -149,7 +153,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       setIsRefreshing(false);
       setPullDistance(0);
     }
-  }, [category, currentMode, query, userLocation, radius]);
+  }, [category, currentMode, query, userLocation, distanceFilter, sortBy]);
 
   useEffect(() => {
     const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
@@ -169,7 +173,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     if (!showWalkthrough && !showPreferenceTest) {
       loadRecommendations();
     }
-  }, [category, currentMode, showWalkthrough, showPreferenceTest, userLocation, radius, loadRecommendations]);
+  }, [category, currentMode, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, sortBy, loadRecommendations]);
 
   // Touch Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -244,9 +248,17 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           <div className="flex justify-center pt-4 pb-2">
             <div className="text-[text-secondary] text-sm">
               {pullDistance >= 70 ? '↓ Release to refresh' : '↓ Pull to refresh'}
-            </div>
-          </div>
-        )}
+	          </div>
+	
+		          {/* Location Status */}
+		          {userLocation && (
+		            <div className="text-xs text-[text-secondary] mt-2 pt-2 border-t border-[border-color] flex justify-between items-center">
+		              <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
+		              <span className="text-coral font-medium">Radius: {distanceFilter} miles</span>
+		            </div>
+		          )}
+		        </div>
+	        )}
 
         {/* Category Filters */}
         <div className="sticky top-0 bg-[background-primary] border-b border-[border-color] px-4 py-4 z-10">
@@ -266,28 +278,64 @@ export default function DiscoverClient({ profile }: { profile: any }) {
             ))}
           </div>
 
-          {/* Search Bar */}
-          <div className="mt-4 flex gap-2">
-            <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary]" />
-              <input
-                type="text"
-                placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] placeholder:text-[text-secondary] focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
-              />
-            </div>
-            {currentMode === 'map' && (
-              <button
-                onClick={detectLocation}
-                disabled={isLocating}
-                className="px-4 py-2 bg-coral text-[background-primary] rounded-full font-medium hover:bg-coral/90 transition disabled:opacity-50"
-              >
-                {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <NavIcon className="w-4 h-4" />}
-              </button>
-            )}
-          </div>
+	          {/* Filtering and Sorting Bar */}
+	          <div className="mt-4 flex gap-2 items-center">
+	            <div className="flex-1 relative">
+	              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary]" />
+	              <input
+	                type="text"
+	                placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
+	                value={query}
+	                onChange={(e) => setQuery(e.target.value)}
+	                className="w-full pl-10 pr-4 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] placeholder:text-[text-secondary] focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+	              />
+	            </div>
+	            
+	            {/* Location Button */}
+	            <button
+	              onClick={detectLocation}
+	              disabled={isLocating}
+	              className="p-3 bg-[background-tertiary] border border-[border-color] rounded-full font-medium hover:bg-[background-secondary] transition disabled:opacity-50 text-[text-secondary] hover:text-coral"
+	              aria-label="Detect Location"
+	            >
+	              {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+	            </button>
+	          </div>
+	
+	          {/* Sort and Filter Dropdowns */}
+	          <div className="mt-3 flex gap-3">
+	            {/* Sort By Dropdown */}
+	            <div className="relative flex-1">
+	              <select
+	                value={sortBy}
+	                onChange={(e) => setSortBy(e.target.value)}
+	                className="appearance-none w-full pl-4 pr-8 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer"
+	              >
+	                <option value="personalized_score">Best Match (AI Score)</option>
+	                <option value="distance">Closest Distance</option>
+	                <option value="rating">Highest External Rating</option>
+	                <option value="reviews">Most Reviews</option>
+	              </select>
+	              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary] pointer-events-none" />
+	            </div>
+	
+	            {/* Distance Filter Dropdown */}
+	            <div className="relative flex-1">
+	              <select
+	                value={distanceFilter}
+	                onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
+	                disabled={!userLocation}
+	                className="appearance-none w-full pl-4 pr-8 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
+	              >
+	                <option value={5}>5 miles</option>
+	                <option value={10}>10 miles</option>
+	                <option value={25}>25 miles</option>
+	                <option value={50}>50 miles</option>
+	                <option value={100}>100 miles</option>
+	              </select>
+	              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary] pointer-events-none" />
+	            </div>
+	          </div>
         </div>
 
         {/* Content */}

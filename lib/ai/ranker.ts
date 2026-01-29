@@ -40,30 +40,19 @@ export class AIRanker {
     const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     const openAIApiKey = process.env.OPENAI_API_KEY;
     
-    console.log('--- AI API Key Check ---');
-    console.log('CLAUDE_API_KEY present:', !!claudeApiKey);
-    console.log('OPENAI_API_KEY present:', !!openAIApiKey);
-    
     if (!claudeApiKey && !openAIApiKey) {
-      console.warn('No AI API key found (Claude or OpenAI), using fallback ranking');
       return this.getFallbackRankings(objects, context);
     }
 
     const prompt = this.buildPrompt(objects, user, context);
     const systemPrompt = this.getSystemPrompt(context.category, !!context.location);
     
-    console.log('--- FINAL PROMPT SENT TO LLM (START) ---');
-    console.log(prompt);
-    console.log('--- FINAL PROMPT SENT TO LLM (END) ---');
-    
     try {
       let content: string | null = null;
       
       if (claudeApiKey) {
-        console.log('--- Using Claude API ---');
         content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
       } else if (openAIApiKey) {
-        console.log('--- Using OpenAI API ---');
         content = await this.callOpenAIAPI(systemPrompt, prompt, openAIApiKey);
       }
 
@@ -71,17 +60,11 @@ export class AIRanker {
         throw new Error('Empty response from AI service');
       }
       
-      console.log('--- RAW LLM RESPONSE CONTENT (START) ---');
-      console.log(content);
-      console.log('--- RAW LLM RESPONSE CONTENT (END) ---');
-      
-      // Robust JSON parsing for Claude/OpenAI
       let jsonString = content;
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         jsonString = jsonMatch[1];
       } else {
-        // Fallback: try to find the first { and last }
         const firstBrace = content.indexOf('{');
         const lastBrace = content.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
@@ -98,9 +81,7 @@ export class AIRanker {
         const obj = objects[ranking.object_index - 1];
         if (!obj) return null;
         
-        // Use AI-generated description directly without any factual anchor injection
         let finalWhyYoullLike = ranking.why_youll_like || ranking.why_youll_like_it || obj.description || `A personalized recommendation based on your taste profile.`;
-
 
         return {
           rank: ranking.rank || 1,
@@ -111,7 +92,7 @@ export class AIRanker {
             why_youll_like: finalWhyYoullLike,
             friend_callout: ranking.friend_callout,
             caveats: ranking.caveats,
-            detailed_ratings: ranking.detailed_ratings || ranking.detailed_ratings || {},
+            detailed_ratings: ranking.detailed_ratings || {},
             tags: ranking.tags || [],
             tagline: ranking.tagline,
           },
@@ -156,8 +137,7 @@ export class AIRanker {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20240620',
@@ -189,20 +169,21 @@ Your goal is to provide recommendations that feel deeply researched and expertly
 
 CRITICAL INSTRUCTIONS FOR RATINGS:
 1. **FACTUAL ANCHORS**: You MUST use the provided 'Factual Data Points' to generate your metrics and descriptions. Do not invent facts.
-2. **METRICS**: You MUST invent 3 unique, highly specific, and **category-appropriate** metrics for each item. These metrics MUST be directly derived from the Factual Data Points and the item's title/description. Examples: 'Patty Juiciness' for a burger, 'World-Building' for a sci-fi movie.
+2. **METRICS**: You MUST invent 3 unique, highly specific, and **category-appropriate** metrics for each item. These metrics MUST be directly derived from the Factual Data Points and the item's title/description. Examples: 'Dumpling Craftsmanship', 'Halal Authenticity', 'Cultural Fusion'.
    - **ZERO-TOLERANCE**: Metrics MUST NOT be generic (e.g., 'Quality', 'Value', 'Taste').
-   - **SCORING**: The score for each metric (0-10) MUST reflect the Factual Data Points. (e.g., a high Yelp Review Count should result in a high score for a metric like 'Public Consensus').
+   - **SCORING**: The score for each metric (0-10) MUST reflect the Factual Data Points.
 3. **PERSONALIZED SCORE**: The personalized_score (0-10) MUST be the final, most accurate reflection of the item's fit for the user, adjusting the external rating based on the user's taste profile.
 
 CRITICAL INSTRUCTIONS FOR CONTENT:
 1. TAGLINE: Create a punchy, high-end tagline (max 8 words).
-2. WHY YOU'LL LIKE IT: Write 2-3 sentences that connect the item's specific strengths (from the Factual Data Points) to the user's taste profile. **CRITICAL**: The description MUST reference at least one specific Factual Data Point to prove you used the data. Use the key "why_youll_like" for this field. **ZERO-TOLERANCE**: The description MUST NOT be a generic placeholder like "Based on your interest in X, this is a great match."
+2. WHY YOU'LL LIKE IT: Write 2-3 sentences that connect the item's specific strengths (from the Factual Data Points) to the user's taste profile. The description MUST reference at least one specific Factual Data Point. Use the key "why_youll_like" for this field. The description MUST be written in a sophisticated, high-end editorial tone.
 3. TAGS: Use 2-3 specific subject tags (e.g., #Cyberpunk, #FarmToTable).
 
 ${locationInstruction}
 
-Respond ONLY with a JSON object containing a "rankings" array. **CRITICAL**: The JSON MUST be wrapped in \`\`\`json ... \`\`\` for Claude. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics).
-**FINAL INSTRUCTION**: Since the user is reporting a lack of personalization, you MUST be extremely aggressive in using the 'Taste Profile' data in the 'why_youll_like' field. For example, if the user likes 'Spicy Food' and the restaurant has 'High Yelp Review Count', the 'why_youll_like' must say something like: "Given your preference for Spicy Food, this restaurant's high Yelp Review Count of 395 suggests a reliable source for the authentic heat you crave."`;
+Respond ONLY with a JSON object containing a "rankings" array. The JSON MUST be wrapped in \`\`\`json ... \`\`\`. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics).
+
+**FINAL INSTRUCTION**: Since the user is reporting a lack of personalization, you MUST be extremely aggressive in using the 'Taste Profile' data in the 'why_youll_like' field. The description MUST be written in a sophisticated, high-end editorial tone, matching the style of the provided image examples. For example, if the user likes 'Spicy Food' and the restaurant has 'High Yelp Review Count', the 'why_youll_like' must say something like: "Given your preference for Spicy Food, this restaurant's high Yelp Review Count of 395 suggests a reliable source for the authentic heat you crave."`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {
@@ -247,7 +228,6 @@ Location: ${user.location?.city || 'Unknown'}
       if (obj.tags) objStr += `Data Tags: ${obj.tags.join(', ')}\n`;
       if (obj.description) objStr += `Detailed Info: ${obj.description}\n`;
       
-      // --- Factual Data Points (CRITICAL for Metrics/Description) ---
       objStr += `\n--- Factual Data Points ---\n`;
       if (obj.category === 'restaurant' || obj.category === 'restaurants') {
         objStr += `Yelp Price Level: ${obj.price || 'N/A'}\n`;
