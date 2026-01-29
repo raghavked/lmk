@@ -31,8 +31,20 @@ export function useAuth() {
           .eq('id', session.user.id)
           .single();
 
-        if (profileError) throw profileError;
-        setProfile(profileData);
+        let finalProfile = profileData;
+
+        if (profileError && profileError.code === 'PGRST116') { // PGRST116 is the code for "Row not found" in PostgREST
+          console.warn('Profile not found, creating new profile...');
+          const { data: newProfileData, error: newProfileError } = await supabase
+            .from('profiles')
+            .insert({ id: session.user.id, full_name: session.user.user_metadata.full_name || '' })
+            .select('*')
+            .single();
+          if (newProfileError) throw newProfileError;
+          finalProfile = newProfileData;
+        } else if (profileError) throw profileError;
+
+        setProfile(finalProfile);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Auth error';
         setError(message);

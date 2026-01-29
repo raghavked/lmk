@@ -40,7 +40,20 @@ export async function GET(request: Request) {
       .eq('id', session.user.id)
       .single();
 
-    if (profileError) {
+    let finalProfile = profile;
+    if (profileError && profileError.code === 'PGRST116') {
+      console.warn('Profile not found in API, creating new profile...');
+      const { data: newProfile, error: newProfileError } = await supabase
+        .from('profiles')
+        .insert({ id: session.user.id, full_name: session.user.user_metadata.full_name || '' })
+        .select('*')
+        .single();
+      if (newProfileError) {
+        console.error('Error creating profile in API:', newProfileError);
+        return NextResponse.json({ error: 'Error creating user profile' }, { status: 500 });
+      }
+      finalProfile = newProfile;
+    } else if (profileError) {
       console.error('Error fetching profile:', profileError);
       return NextResponse.json({ error: 'Error fetching user profile' }, { status: 500 });
     }
@@ -57,14 +70,14 @@ export async function GET(request: Request) {
       limit,
       offset,
       seenIds,
-      profile: profile as any, // Use any to bypass the strict type check for now
+      profile: finalProfile as any,
     });
 
     // 3. Rank Recommendations
     const ranker = new AIRanker();
     const rankedResults = await ranker.rank(
       rawRecommendations,
-      profile as any,
+      finalProfile as any,
       {
         category,
         mode: 'feed',
