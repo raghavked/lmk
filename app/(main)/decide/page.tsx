@@ -1,11 +1,11 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import DiscoverClient from './DiscoverClient';
+import DecideClient from '@/components/DecideClient';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function DiscoverPage() {
+export default async function DecidePage() {
   const supabase = createServerComponentClient({ cookies });
 
   const {
@@ -22,5 +22,5 @@ export default async function DiscoverPage() {
     .eq('id', session.user.id)
     .single();
 
-  return <DiscoverClient profile={profile} />;
+  return <DecideClient profile={profile} />;
 }

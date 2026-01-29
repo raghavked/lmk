@@ -1,122 +1,79 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import { AIRanker } from '@/lib/ai/ranker';
 import { YelpAPI } from '@/lib/api/yelp';
 import { TMDBAPI } from '@/lib/api/tmdb';
 import { YouTubeAPI } from '@/lib/api/youtube';
 import { OpenLibraryAPI } from '@/lib/api/openLibrary';
-import { AIRanker } from '@/lib/ranker';
-import { Database } from '@/lib/types';
+const API_MAP: Record<string, any> = {
+  restaurants: YelpAPI,
+  movies: TMDBAPI,
+  tv_shows: TMDBAPI,
+  youtube_videos: YouTubeAPI,
+  reading: OpenLibraryAPI,
+};
 
-const yelpAPI = new YelpAPI();
-const tmdbAPI = new TMDBAPI();
-const youtubeAPI = new YouTubeAPI();
-const openLibraryAPI = new OpenLibraryAPI();
-const aiRanker = new AIRanker();
+export async function GET(request: Request) {
+  const requestUrl = new URL(request.url);
+  const category = requestUrl.searchParams.get('category') || 'restaurants';
+  const limit = parseInt(requestUrl.searchParams.get('limit') || '10', 10);
+  const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
+  const seenIds = requestUrl.searchParams.get('seen_ids')?.split(',') || [];
 
-export async function GET(request: NextRequest) {
+  const cookieStore = cookies();
+  const supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') || 'restaurants';
-    const query = searchParams.get('query') || '';
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const mode = searchParams.get('mode') || 'feed';
-
-    // Location Parameters
-    const lat = searchParams.get('lat');
-    const lng = searchParams.get('lng');
-    const radius = searchParams.get('radius'); // in meters
-
-    const supabase = createRouteHandlerClient<Database>({ cookies });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get user profile
-    const { data: profileData } = await supabase
+    // 1. Fetch User Profile
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .single();
 
-    const profile = profileData as any;
-
-    if (!profile) {
-      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      return NextResponse.json({ error: 'Error fetching user profile' }, { status: 500 });
     }
 
-    let recommendations: any[] = [];
-
-    // 1. Fetch raw data from APIs based on category
-    switch (category) {
-      case 'restaurants':
-        recommendations = await yelpAPI.search({
-          term: query || 'restaurants',
-          latitude: lat ? parseFloat(lat) : (profile.location?.coordinates?.[0] || 37.7749),
-          longitude: lng ? parseFloat(lng) : (profile.location?.coordinates?.[1] || -122.4194),
-          radius: radius ? parseInt(radius) : 8000,
-          limit,
-          offset,
-        });
-        break;
-      case 'movies':
-        recommendations = await tmdbAPI.searchMovies({
-          query: query || 'popular',
-          page: Math.floor(offset / limit) + 1,
-        });
-        break;
-      case 'tv_shows':
-        recommendations = await tmdbAPI.searchTVShows({
-          query: query || 'popular',
-          page: Math.floor(offset / limit) + 1,
-        });
-        break;
-      case 'youtube_videos':
-        recommendations = await youtubeAPI.search({
-          query: query || 'trending',
-          maxResults: limit,
-        });
-        break;
-      case 'reading':
-        recommendations = await openLibraryAPI.getRecommendedBooks(
-          profile.taste_profile || ['fiction'],
-          limit
-        );
-        break;
-      case 'activities':
-        recommendations = await yelpAPI.search({
-          term: query || 'activities',
-          latitude: lat ? parseFloat(lat) : (profile.location?.coordinates?.[0] || 37.7749),
-          longitude: lng ? parseFloat(lng) : (profile.location?.coordinates?.[1] || -122.4194),
-          radius: radius ? parseInt(radius) : 8000,
-          limit,
-          offset,
-          categories: 'active,arts,entertainment',
-        });
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+    // 2. Get Raw Recommendations
+    const ApiClass = API_MAP[category];
+    if (!ApiClass) {
+      return NextResponse.json({ error: `Unsupported category: ${category}` }, { status: 400 });
     }
 
-    // 2. Rank and score recommendations using AI
-    const rankedRecommendations = await aiRanker.rank(
-      recommendations,
-      profile,
+    const apiInstance = new ApiClass();
+    const rawRecommendations = await apiInstance.getRecommendations({
+      category,
+      limit,
+      offset,
+      seenIds,
+      profile: profile as any, // Use any to bypass the strict type check for now
+    });
+
+    // 3. Rank Recommendations
+    const ranker = new AIRanker();
+    const rankedResults = await ranker.rank(
+      rawRecommendations,
+      profile as any,
       {
         category,
-        query,
-        location: lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : undefined,
-        mode: mode as any,
+        mode: 'feed',
       }
     );
 
-    return NextResponse.json({ results: rankedRecommendations });
-
+    return NextResponse.json({ results: rankedResults });
   } catch (error) {
     console.error('Recommendation API Error:', error);
-    return NextResponse.json({ error: 'Error loading recommendations' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

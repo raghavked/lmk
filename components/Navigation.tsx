@@ -1,3 +1,4 @@
+'use client';
 
 import { useState } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -47,28 +48,31 @@ export default function Navigation({ profile }: NavigationProps) {
         </div>
 
         <button
-          className="md:hidden p-2 text-gray-400"
+          className="md:hidden p-2 text-gray-400 hover:text-gray-50"
           onClick={() => setIsOpen(!isOpen)}
         >
-          {isOpen ? <X /> : <Menu />}
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
+      {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-background-primary border-t border-gray-800 p-4 space-y-4">
-          {profile?.full_name && (
-            <div className="px-2">
-              <p className="font-black text-gray-50">{profile.full_name}</p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest">User</p>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 p-3 hover:bg-background-secondary rounded-2xl transition text-gray-400"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
+        <div className="md:hidden border-t border-gray-800 bg-background-primary p-4 animate-in slide-in-from-top duration-200">
+          <div className="flex flex-col gap-4">
+            {profile?.full_name && (
+              <div className="px-2">
+                <p className="font-black text-gray-50">{profile.full_name}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest">User</p>
+              </div>
+            )}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-2 py-3 text-gray-400 hover:text-coral transition"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-bold">Logout</span>
+            </button>
+          </div>
         </div>
       )}
     </nav>

@@ -151,11 +151,11 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   useEffect(() => {
     const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
     const preferencesCompleted = profile?.preferences_completed;
-    const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
     
     if (!walkthroughCompleted) {
       setShowWalkthrough(true);
-    } else if (!preferencesCompleted && !hasTasteProfile) {
+    } else if (preferencesCompleted === false) {
+      // Only show if the profile explicitly says preferences are NOT completed
       setShowPreferenceTest(true);
     } else {
       detectLocation();
@@ -202,12 +202,17 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 
   const handleWalkthroughComplete = () => {
     setShowWalkthrough(false);
-    setShowPreferenceTest(true);
+    // After walkthrough, check if preferences are already completed (e.g., if user logged in before)
+    if (profile?.preferences_completed === false) {
+      setShowPreferenceTest(true);
+    } else {
+      detectLocation();
+    }
   };
 
   const handlePreferenceTestComplete = () => {
     setShowPreferenceTest(false);
-    localStorage.setItem('lmk_preferences_completed', 'true');
+    // The profile update handles the persistence, no need for local storage flag
     detectLocation();
   };
 
