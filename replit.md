@@ -50,6 +50,7 @@ Preferred communication style: Simple, everyday language.
 - **Longer Descriptions**: AI explanation and object description displayed in separate paragraphs for richer content
 - **Decide Tab**: Reshuffle button, decision history modal, localStorage persistence for seen items
 - **Friends System**: Real user search, friend request management, view friend's ratings/recommendations modal
+- **Item Rating**: ObjectCard includes Rate button with 5-star modal and optional review, saved to Supabase ratings table
 - **Groups**: Server-side friend loading for invites, proper name/avatar display
 - **Navigation**: ModeNavigation component for consistent tab switching across Discover/Decide/Groups/Profile
 - **API Formatting**: Enhanced descriptions with cuisine types, ratings, and price info for restaurants; genre/year info for movies/TV
