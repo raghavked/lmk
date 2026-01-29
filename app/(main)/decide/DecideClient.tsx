@@ -23,6 +23,35 @@ export default function DecideClient({ profile }: { profile: any }) {
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>([]);
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (err) => {
+          console.error('Location error:', err);
+          if (profile?.location?.coordinates) {
+            setUserLocation({
+              lat: profile.location.coordinates[0],
+              lng: profile.location.coordinates[1]
+            });
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    } else if (profile?.location?.coordinates) {
+      setUserLocation({
+        lat: profile.location.coordinates[0],
+        lng: profile.location.coordinates[1]
+      });
+    }
+  }, [profile]);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem(`lmk_decide_history_${selectedCategory}`);
@@ -68,6 +97,11 @@ export default function DecideClient({ profile }: { profile: any }) {
       
       if (profile?.taste_profile) {
         params.append('taste_profile', JSON.stringify(profile.taste_profile));
+      }
+      
+      if (userLocation) {
+        params.append('lat', userLocation.lat.toString());
+        params.append('lng', userLocation.lng.toString());
       }
 
       const response = await fetch(`/api/recommend?${params.toString()}`, {
@@ -308,6 +342,7 @@ export default function DecideClient({ profile }: { profile: any }) {
               rank={currentItem.rank}
               score={currentItem.personalized_score || currentItem.score}
               explanation={currentItem.explanation}
+              distance={currentItem.distance}
             />
           </div>
         )}
