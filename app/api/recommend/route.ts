@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
   const seenIds = requestUrl.searchParams.get('seen_ids')?.split(',') || [];
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
 
   const {
