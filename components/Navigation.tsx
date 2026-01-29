@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -48,31 +47,3 @@ export default function Navigation({ profile }: NavigationProps) {
         </div>
 
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden p-3 hover:bg-background-secondary rounded-2xl transition text-gray-400"
-          aria-label="Toggle menu"
-        >
-          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {isOpen && (
-        <div className="md:hidden border-t border-gray-800 bg-background-primary p-4 space-y-4">
-          {profile?.full_name && (
-            <div className="text-sm pb-4 border-b border-gray-800">
-              <p className="font-black text-gray-50">{profile.full_name}</p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest">User</p>
-            </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 p-3 hover:bg-background-secondary rounded-2xl transition font-black text-gray-400 hover:text-coral"
-          >
-            <LogOut className="w-5 h-5" />
-            Logout
-          </button>
-        </div>
-      )}
-    </nav>
-  );
-}
