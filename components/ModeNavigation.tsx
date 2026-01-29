@@ -10,6 +10,7 @@ export default function ModeNavigation({ currentMode, onModeChange }: { currentM
   const modes = [
     { id: 'discover', label: 'Discover', icon: Sparkles, href: '/discover' },
     { id: 'decide', label: 'Decide', icon: Zap, href: '/decide' },
+    { id: 'friends', label: 'Friends', icon: MessageSquare, href: '/friends' },
     { id: 'groups', label: 'Groups', icon: Users, href: '/groups' },
     { id: 'profile', label: 'Profile', icon: User, href: '/profile' },
   ];

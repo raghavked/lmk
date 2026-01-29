@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, ExternalLink, Bookmark, Share2 } from 'lucide-react';
+import { Star, MapPin, ExternalLink, Bookmark, Share2, X, Loader2 } from 'lucide-react';
 import haptics from '@/lib/haptics';
 
 interface ObjectCardProps {
@@ -26,6 +26,41 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
   const [imageError, setImageError] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [userReview, setUserReview] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+
+  const handleSubmitRating = async () => {
+    if (userRating < 1 || userRating > 5) return;
+    
+    setIsSubmittingRating(true);
+    try {
+      const response = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: object.id || object.external_ids?.yelp_id || object.external_ids?.tmdb_id || object.title,
+          item_title: object.title,
+          category: object.category,
+          rating: userRating,
+          review: userReview || null,
+          is_favorite: false,
+        }),
+      });
+
+      if (response.ok) {
+        setHasRated(true);
+        setShowRatingModal(false);
+        haptics.notification('success');
+      }
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
 
   const handleImageError = useCallback(() => {
     setImageError(true);
@@ -392,42 +427,126 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
                 <div className="flex gap-3 pt-4 border-t border-border-color mt-auto">
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent card collapse
+                      e.stopPropagation();
+                      haptics.impact();
+                      setShowRatingModal(true);
+                    }}
+                    className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+                      hasRated
+                        ? 'bg-yellow-500 text-background-primary shadow-lg shadow-yellow-500/30'
+                        : 'bg-coral text-background-primary shadow-lg shadow-coral/30 hover:bg-coral/90'
+                    }`}
+                  >
+                    <Star className="w-4 h-4" fill={hasRated ? 'currentColor' : 'none'} />
+                    {hasRated ? 'Rated' : 'Rate'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       haptics.impact();
                       setIsSaved(!isSaved);
                     }}
-                    className={`flex-1 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
+                    className={`py-3 px-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 ${
                       isSaved
                         ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
                         : 'bg-background-tertiary text-text-primary hover:bg-background-secondary border border-border-color'
                     }`}
                   >
                     <Bookmark className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} />
-                    Save
                   </button>
                   {object.source_links?.[0]?.url && (
                     <a
                       href={object.source_links[0].url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()} // Prevent card collapse
-                      className="flex-1 py-3 bg-background-tertiary text-text-primary rounded-full font-bold hover:bg-background-secondary transition-all flex items-center justify-center gap-2 border border-border-color hover:border-coral/50 hover:text-coral"
+                      onClick={(e) => e.stopPropagation()}
+                      className="py-3 px-4 bg-background-tertiary text-text-primary rounded-full font-bold hover:bg-background-secondary transition-all flex items-center justify-center gap-2 border border-border-color hover:border-coral/50 hover:text-coral"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      View
                     </a>
                   )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent card collapse
-                      haptics.impact();
-                    }}
-                    className="py-3 px-4 bg-background-tertiary text-text-primary rounded-full hover:bg-background-secondary transition-all border border-border-color hover:border-coral/50 hover:text-coral"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
                 </div>
       </div>
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowRatingModal(false);
+          }}
+        >
+          <div 
+            className="bg-background-tertiary rounded-2xl shadow-xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-extrabold text-text-primary">Rate This</h3>
+              <button
+                onClick={() => setShowRatingModal(false)}
+                className="p-1 hover:bg-background-secondary rounded-full transition"
+              >
+                <X className="w-5 h-5 text-text-secondary" />
+              </button>
+            </div>
+
+            <p className="text-text-secondary mb-4">{object.title}</p>
+
+            {/* Star Rating */}
+            <div className="flex justify-center gap-2 mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setUserRating(star)}
+                  className="p-1 transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`w-10 h-10 transition-colors ${
+                      star <= userRating
+                        ? 'fill-yellow-500 text-yellow-500'
+                        : 'text-gray-500 hover:text-yellow-400'
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* Review Text */}
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-text-primary mb-2">
+                Add a review (optional)
+              </label>
+              <textarea
+                value={userReview}
+                onChange={(e) => setUserReview(e.target.value)}
+                placeholder="Share your thoughts..."
+                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none resize-none"
+                rows={3}
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              onClick={handleSubmitRating}
+              disabled={userRating < 1 || isSubmittingRating}
+              className="w-full py-3 bg-coral text-background-primary rounded-xl font-bold hover:bg-coral/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmittingRating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Star className="w-4 h-4" />
+                  Submit Rating
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
