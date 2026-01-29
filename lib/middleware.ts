@@ -21,13 +21,12 @@ export async function middleware(request: NextRequest) {
       data: { session },
     } = await supabase.auth.getSession();
 
-    // Temporarily disabled auth redirect to allow direct access to /discover
-    // TODO: Re-enable after implementing proper authentication flow
-    // if (!session && pathname.startsWith('/discover')) {
-    //   const url = request.nextUrl.clone();
-    //   url.pathname = '/auth/login';
-    //   return NextResponse.redirect(url);
-    // }
+    // Protect routes that require authentication
+    if (!session && !publicRoutes.some((route) => pathname.startsWith(route))) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/login';
+      return NextResponse.redirect(url);
+    }
 
     // Redirect to discover if logged in and trying to access auth routes
     if (session && publicRoutes.some((route) => pathname.startsWith(route))) {
