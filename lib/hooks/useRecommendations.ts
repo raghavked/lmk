@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { TIMEOUTS, API_LIMITS, STORAGE_KEYS } from '../constants';
-import type { RankedResult, RecommendationParams } from '../types';
-
 export function useRecommendations(category: string, profile: any) {
-  const [results, setResults] = useState<RankedResult[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
@@ -34,7 +32,7 @@ export function useRecommendations(category: string, profile: any) {
         setLoading(true);
         setError(null);
 
-        const params: RecommendationParams = {
+        const params: any = {
           category,
           limit: API_LIMITS.INITIAL_LOAD,
           offset: isLoadMore ? offset : 0,
@@ -77,7 +75,7 @@ export function useRecommendations(category: string, profile: any) {
 
         // Update seen IDs
         const newSeenIds = new Set(seenIds);
-        newResults.forEach((result: RankedResult) => {
+        newResults.forEach((result: any) => {
           newSeenIds.add(result.object.id);
         });
         setSeenIds(newSeenIds);

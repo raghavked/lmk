@@ -363,7 +363,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
           {activeTab === 'stats' && renderStats()}
           {activeTab === 'preferences' && (
             <div className="animate-in fade-in slide-in-from-bottom duration-500">
-              <PreferenceTest profile={profile} onComplete={handlePreferenceComplete} />
+              <PreferenceTest onComplete={handlePreferenceComplete} />
             </div>
           )}
         </div>

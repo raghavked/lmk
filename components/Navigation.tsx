@@ -47,3 +47,30 @@ export default function Navigation({ profile }: NavigationProps) {
         </div>
 
         <button
+          className="md:hidden p-2 text-gray-400"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {isOpen ? <X /> : <Menu />}
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="md:hidden bg-background-primary border-t border-gray-800 p-4 space-y-4">
+          {profile?.full_name && (
+            <div className="px-2">
+              <p className="font-black text-gray-50">{profile.full_name}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest">User</p>
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 p-3 hover:bg-background-secondary rounded-2xl transition text-gray-400"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      )}
+    </nav>
+  );
+}
