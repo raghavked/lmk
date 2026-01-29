@@ -37,10 +37,10 @@ export default function DiscoverPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-background-primary">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4">⏳</div>
-          <p className="text-black/60 font-bold">Loading your recommendations...</p>
+          <p className="text-gray-400 font-bold">Loading your recommendations...</p>
         </div>
       </div>
     );
