@@ -23,6 +23,10 @@ const config: Config = {
         'coral': '#FF6B6B',
         'background-primary': '#0D1117',
         'background-secondary': '#161B22',
+        'background-tertiary': '#21262D',
+        'text-primary': '#E6EDF3',
+        'text-secondary': '#8B949E',
+        'border-color': '#30363D',
       },
       animation: {
         'in': 'fadeIn 0.5s ease-in-out',
