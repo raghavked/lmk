@@ -281,18 +281,36 @@ Provide the rankings in the requested JSON format.`;
   }
 
   private getFallbackRankings(objects: any[], context: AIRankingContext): RankedResult[] {
-    return objects.map((obj, idx) => ({
-      rank: idx + 1,
-      object: obj,
-      personalized_score: 8.0,
-      explanation: {
-        hook: "Recommended for you",
-        why_youll_like: `Based on your interest in ${context.category}, this is a great match.`,
-        tagline: obj.title,
-        tags: obj.tags || [],
-        detailed_ratings: this.getFallbackRatings(context.category, obj)
+    return objects.map((obj, idx) => {
+      try {
+        return {
+          rank: idx + 1,
+          object: obj,
+          personalized_score: 8.0,
+          explanation: {
+            hook: "Recommended for you",
+            why_youll_like: `Based on your interest in ${context.category}, this is a great match.`,
+            tagline: obj?.title || 'Recommendation',
+            tags: obj?.tags || [],
+            detailed_ratings: this.getFallbackRatings(context.category, obj)
+          }
+        };
+      } catch (err) {
+        console.error('Error in fallback ranking for object:', obj, err);
+        return {
+          rank: idx + 1,
+          object: obj || {},
+          personalized_score: 8.0,
+          explanation: {
+            hook: "Recommended for you",
+            why_youll_like: `A great match based on your interests.`,
+            tagline: 'Recommendation',
+            tags: [],
+            detailed_ratings: { 'Quality': 8.0 }
+          }
+        };
       }
-    }));
+    });
   }
 
   private getFallbackRatings(category: string, obj: any): Record<string, number> {
