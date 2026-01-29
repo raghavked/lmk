@@ -336,7 +336,15 @@ export class TMDBAPI {
     };
   }
   
-  async getRecommendations({ category, limit, offset }: { category: string, limit: number, offset: number, profile: any }) {
+  async getRecommendations({ category, limit, offset, query }: { category: string, limit: number, offset: number, profile: any, query?: string }) {
+    if (query && query.length >= 2) {
+      if (category === 'movies') {
+        return this.searchMovies({ query, page: Math.floor(offset / limit) + 1 });
+      } else if (category === 'tv_shows') {
+        return this.searchTVShows({ query, page: Math.floor(offset / limit) + 1 });
+      }
+    }
+
     if (category === 'movies') {
       const allSections = await this.getAllMovieCategories();
       const combined = [...allSections.trending, ...allSections.nowPlaying, ...allSections.popular, ...allSections.topRated];
@@ -353,7 +361,6 @@ export class TMDBAPI {
       return unique.slice(offset, offset + limit);
     }
     
-    // Fallback search
     return this.searchMovies({ query: category, page: Math.floor(offset / limit) + 1 });
   }
 

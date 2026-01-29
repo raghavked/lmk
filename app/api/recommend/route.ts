@@ -34,6 +34,7 @@ export async function GET(request: Request) {
   const category = requestUrl.searchParams.get('category') || 'restaurants';
   const limit = parseInt(requestUrl.searchParams.get('limit') || '10', 10);
   const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
+  const query = requestUrl.searchParams.get('query') || '';
   const tasteProfileParam = requestUrl.searchParams.get('taste_profile');
   let tasteProfile = [];
   
@@ -110,6 +111,7 @@ export async function GET(request: Request) {
         limit,
         offset,
         seenIds,
+        query,
         profile: profileWithTaste as any,
         lat: lat ? parseFloat(lat) : undefined,
         lng: lng ? parseFloat(lng) : undefined,
@@ -117,7 +119,6 @@ export async function GET(request: Request) {
       });
     } catch (apiError) {
       console.error(`Error fetching from ${category} API:`, apiError);
-      // Return empty results instead of crashing
       rawRecommendations = [];
     }
 
