@@ -82,10 +82,8 @@ export default function SignUpPage() {
         setPassword('');
         setAgreeToTerms(false);
         
-        // Redirect after 2 seconds
-        setTimeout(() => {
-          router.push('/auth/verify-email?email=' + encodeURIComponent(email));
-        }, 2000);
+        // Redirect immediately after successful sign-up
+        router.push('/auth/verify-email?email=' + encodeURIComponent(email));
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);

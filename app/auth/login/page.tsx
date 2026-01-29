@@ -58,7 +58,9 @@ export default function SignInPage() {
         setEmail('');
         setPassword('');
         // Redirect to discover
-        router.push('/discover');
+        // Supabase sign-in does not automatically redirect, so we force a refresh
+        // to trigger the server-side auth check and redirect from / to /discover
+        router.refresh();
       }
     } catch (err: any) {
       console.error('Unexpected error:', err);
