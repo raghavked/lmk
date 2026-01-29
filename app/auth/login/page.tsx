@@ -21,64 +21,59 @@ export default function SignInPage() {
     setLoading(true);
     setError(null);
 
+    // Validation
+    if (!email.trim()) {
+      setError('Email is required');
+      setLoading(false);
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      console.log('Attempting to sign in with:', email);
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
         password,
       });
 
-      if (error) {
-        setError(error.message);
-      } else {
+      console.log('Sign in response:', { data, signInError });
+
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        setError(signInError.message || 'Failed to sign in');
+        setLoading(false);
+        return;
+      }
+
+      if (data?.user) {
+        // Clear form
+        setEmail('');
+        setPassword('');
+        // Redirect to discover
         router.push('/discover');
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      console.error('Unexpected error:', err);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) setError(error.message);
-    } catch (err) {
-      setError('Failed to sign in with Google');
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) setError(error.message);
-    } catch (err) {
-      setError('Failed to sign in with Apple');
     }
   };
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left Section: Visual Impact */}
-      <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-zinc-900 overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuBVkcWgswKaSl-l6B2yZcVxVulRtQ6k1UKhzsAZo408-wb-CyCr1NC7GNqGURLRDihUUOEdHMbWFdkMk6a7Tht1qwnxEzrL0_usUdAT5Oeo68Bem8hpeSfYG1bGFoj36-kIiotQJsBlgSf8oTOpc74LgigAC50ZLvG9bOSS9yyod8qVnm1Dp-TZoCrxiLRlXxKnmG6H0wx7nhEDgQj4e5FIlIzjMuwEiv9fKuzpb-BQdpOuBqIYO3F2XZb1QOCQX-YqRCUA3ckNSJE")`,
-          }}
-        />
-        {/* Dark Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-900/20 to-zinc-900"></div>
+      <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#181011] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-coral/5 via-transparent to-transparent"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-coral/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-coral/5 rounded-full blur-[120px]"></div>
+        
         <div className="relative z-10 flex flex-col justify-between p-16 w-full h-full">
           <div className="flex items-center gap-3">
             <Logo className="text-[#8b3a3a]" size={32} />
@@ -86,137 +81,117 @@ export default function SignInPage() {
           </div>
           <div className="max-w-md">
             <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">Discover what's happening around you.</h2>
-            <p className="text-lg text-slate-300 font-medium">Join a community of tech-savvy explorers getting personalized lifestyle recommendations.</p>
+            <p className="text-lg text-gray-400 font-medium">Join a community of tech-savvy explorers getting personalized lifestyle recommendations.</p>
           </div>
         </div>
       </div>
 
       {/* Right Section: Sign In Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-white dark:bg-[#121212]">
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-[#230f10]">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <Logo className="text-[#8b3a3a]" size={24} />
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">LMK</span>
+            <span className="text-xl font-bold tracking-tight text-gray-50">LMK</span>
           </div>
 
-          <div className="text-center lg:text-left mb-10">
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">Welcome back</h1>
-            <p className="mt-3 text-base text-slate-600 dark:text-slate-400">Sign in to LMK for your personalized recommendations.</p>
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold text-gray-50 mb-2">Welcome back</h1>
+            <p className="text-gray-400">Sign in to your account to continue</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-xl text-red-400 text-sm">
               {error}
             </div>
           )}
 
-          <div className="mt-10">
-            <form onSubmit={handleSignIn} className="space-y-6">
-              {/* Email Field */}
-              <div>
-                <label className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200 ml-1" htmlFor="email">
-                  Email address
-                </label>
-                <div className="mt-2">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="name@example.com"
-                    className="block w-full rounded-xl border-0 py-4 px-5 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
-                  />
-                </div>
+          <form onSubmit={handleSignIn} className="space-y-5">
+            {/* Email */}
+            <div className="flex flex-col gap-2">
+              <label className="text-gray-50 text-sm font-medium ml-1">Email</label>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="name@example.com"
+                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-coral/50 focus:border-coral/50 transition-all outline-none"
+                />
               </div>
+            </div>
 
-              {/* Password Field */}
-              <div>
-                <div className="flex items-center justify-between ml-1">
-                  <label className="block text-sm font-semibold leading-6 text-slate-900 dark:text-slate-200" htmlFor="password">
-                    Password
-                  </label>
-                </div>
-                <div className="mt-2 relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="block w-full rounded-xl border-0 py-4 px-5 pr-12 text-slate-900 dark:text-white ring-1 ring-inset ring-slate-300 dark:ring-slate-800 bg-white dark:bg-zinc-900/50 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-[#fea4a7] sm:text-sm sm:leading-6"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-4.753 4.753m4.753-4.753L3.596 3.596m16.807 16.807L3.596 3.596m0 0A10.05 10.05 0 1120.404 20.404m0 0L3.596 3.596" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end">
-                <Link className="text-sm font-semibold text-[#fea4a7] hover:text-[#fea4a7]/80 underline underline-offset-4 decoration-[#fea4a7]/30" href="/auth/forgot-password">
-                  Forgot password?
-                </Link>
-              </div>
-
-              {/* Login Button */}
-              <div>
+            {/* Password */}
+            <div className="flex flex-col gap-2">
+              <label className="text-gray-50 text-sm font-medium ml-1">Password</label>
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Enter your password"
+                  className="w-full h-14 pl-12 pr-12 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-coral/50 focus:border-coral/50 transition-all outline-none"
+                />
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center rounded-full bg-[#fea4a7] px-3 py-4 text-sm font-bold leading-6 text-black shadow-sm hover:bg-[#fea4a7]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fea4a7] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-400 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Signing in...
-                    </>
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
                   ) : (
-                    'Sign In'
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-4.753 4.753m4.753-4.753L3.596 3.596m16.807 16.807L3.596 3.596m0 0A10.05 10.05 0 1120.404 20.404m0 0L3.596 3.596" />
+                    </svg>
                   )}
                 </button>
               </div>
-            </form>
+            </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex justify-end">
+              <Link href="#" className="text-sm text-coral hover:underline font-medium">
+                Forgot password?
+              </Link>
+            </div>
 
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-14 mt-6 bg-coral text-[#0D1117] font-bold text-lg rounded-full hover:bg-coral/90 active:scale-[0.98] transition-all shadow-lg shadow-coral/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-400 text-base">
+              Don't have an account?{' '}
+              <Link className="text-coral font-bold hover:underline ml-1" href="/auth/signup">
+                Sign up
+              </Link>
+            </p>
           </div>
-
-          <p className="mt-10 text-center text-sm text-slate-500">
-            Don't have an account?{' '}
-            <Link className="font-bold leading-6 text-[#fea4a7] hover:text-[#fea4a7]/80 transition-colors" href="/auth/signup">
-              Sign up for free
-            </Link>
-          </p>
-        </div>
-
-        {/* Simple Footer Info */}
-        <div className="mt-auto pt-10 text-center lg:text-left">
-          <p className="text-xs text-slate-500">
-            © 2024 LMK Technologies Inc. All rights reserved.
-            <span className="mx-1">·</span>
-            <Link className="hover:underline" href="#">
-              Privacy Policy
-            </Link>
-          </p>
         </div>
       </div>
     </div>
