@@ -15,34 +15,68 @@ export default function MainLayout({
   const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    const timeout = setTimeout(() => {
+      if (isMounted && isLoading) {
+        console.warn('Auth check timeout - redirecting to login');
+        setIsLoading(false);
+        router.push('/auth/login');
+      }
+    }, 10000);
+
     const checkAuth = async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
+        if (!isMounted) return;
+
         if (!session) {
-          // Redirect to login if no session
+          console.log('No session found - redirecting to login');
           router.push('/auth/login');
           return;
         }
 
-        const { data: profileData } = await supabase
+        console.log('Session found, fetching profile...');
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
-        setProfile(profileData);
-        setIsLoading(false);
+        if (!isMounted) return;
+
+        if (profileError) {
+          console.warn('Profile fetch error:', profileError);
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .insert({ id: session.user.id, full_name: session.user.user_metadata?.full_name || '' })
+            .select('*')
+            .single();
+          setProfile(newProfile);
+        } else {
+          setProfile(profileData);
+        }
+        
+        if (isMounted) {
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Auth check error:', error);
-        // Redirect to login on error
-        router.push('/auth/login');
+        if (isMounted) {
+          setIsLoading(false);
+          router.push('/auth/login');
+        }
       }
     };
 
     checkAuth();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
   }, [supabase, router]);
 
   if (isLoading) {

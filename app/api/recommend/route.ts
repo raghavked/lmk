@@ -6,12 +6,14 @@ import { YelpAPI } from '@/lib/api/yelp';
 import { TMDBAPI } from '@/lib/api/tmdb';
 import { YouTubeAPI } from '@/lib/api/youtube';
 import { OpenLibraryAPI } from '@/lib/api/openLibrary';
+import { ActivitiesAPI } from '@/lib/api/activities';
 const API_MAP: Record<string, any> = {
   restaurants: YelpAPI,
   movies: TMDBAPI,
   tv_shows: TMDBAPI,
   youtube_videos: YouTubeAPI,
   reading: OpenLibraryAPI,
+  activities: ActivitiesAPI,
 };
 
 export async function GET(request: Request) {
