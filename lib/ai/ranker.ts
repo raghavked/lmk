@@ -156,10 +156,11 @@ export class AIRanker {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20240620',
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt }
@@ -200,7 +201,8 @@ CRITICAL INSTRUCTIONS FOR CONTENT:
 
 ${locationInstruction}
 
-Respond ONLY with a JSON object containing a "rankings" array. **CRITICAL**: The JSON MUST be wrapped in \`\`\`json ... \`\`\` for Claude. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics).`;
+Respond ONLY with a JSON object containing a "rankings" array. **CRITICAL**: The JSON MUST be wrapped in \`\`\`json ... \`\`\` for Claude. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics).
+**FINAL INSTRUCTION**: Since the user is reporting a lack of personalization, you MUST be extremely aggressive in using the 'Taste Profile' data in the 'why_youll_like' field. For example, if the user likes 'Spicy Food' and the restaurant has 'High Yelp Review Count', the 'why_youll_like' must say something like: "Given your preference for Spicy Food, this restaurant's high Yelp Review Count of 395 suggests a reliable source for the authentic heat you crave."`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {

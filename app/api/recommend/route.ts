@@ -84,7 +84,7 @@ export async function GET(request: Request) {
       profileWithTaste as any,
       {
         category,
-        mode: 'feed',
+        mode: (requestUrl.searchParams.get('mode') as any) || 'feed',
       }
     );
 

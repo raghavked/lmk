@@ -175,7 +175,7 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
 	        const params = new URLSearchParams();
 	        params.append('category', pollCategory);
 	        params.append('limit', '5'); // Get 5 options for the poll
-	        params.append('mode', 'decide'); // Use decide mode for quick options
+	        params.append('mode', 'groups'); // Use groups mode for poll options
 	        if (profile?.taste_profile) {
 	          params.append('taste_profile', JSON.stringify(profile.taste_profile));
 	        }
