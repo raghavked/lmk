@@ -1,7 +1,4 @@
 /** @type {import('next').NextConfig} */
-const replitDevDomain = process.env.REPLIT_DEV_DOMAIN || '';
-const replitDomains = process.env.REPLIT_DOMAINS || '';
-
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -9,14 +6,8 @@ const nextConfig = {
     ],
   },
   reactStrictMode: true,
-  allowedDevOrigins: [
-    'localhost:3000',
-    'localhost:5000',
-    'localhost:5173',
-    '127.0.0.1:5000',
-    replitDevDomain,
-    ...replitDomains.split(',').filter(Boolean),
-  ].filter(Boolean),
+  // Allow all origins in development
+  allowedDevOrigins: ['*'],
   async headers() {
     return [
       {
@@ -31,6 +22,7 @@ const nextConfig = {
           { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
         ],
       },
     ];
