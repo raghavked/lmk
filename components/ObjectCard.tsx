@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, ExternalLink } from 'lucide-react';
+import { Star, MapPin, ExternalLink, Zap } from 'lucide-react';
 import RatingModal from './RatingModal';
+import RecommendationDetailModal from './RecommendationDetailModal';
 import haptics from '@/lib/haptics';
 
 interface ObjectCardProps {
@@ -22,9 +23,8 @@ interface ObjectCardProps {
 }
 
 export default function ObjectCard({ object, rank, score, explanation }: ObjectCardProps) {
-
-
   const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const handleImageError = useCallback(() => {
@@ -48,23 +48,23 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
     return (
       <div key={label} className="space-y-2">
         <div className="flex justify-between items-end">
-          <span className="text-[10px] font-black text-black/30 uppercase tracking-[0.2em]">{label}</span>
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-[0.2em]">{label}</span>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-black text-black">{numValue.toFixed(1)}</span>
-	            <div className="flex gap-0.5">
-	              {[1, 2, 3, 4, 5].map((star) => (
-	                <Star 
-	                  key={star} 
-	                  // Scale 0-10 to 0-5 stars
-	                  className={`w-2.5 h-2.5 ${star <= Math.ceil(numValue / 2) ? 'fill-black text-black' : 'fill-gray-100 text-gray-100'}`} 
-	                />
-	              ))}
-	            </div>
+            <span className="text-xs font-bold text-coral">{numValue.toFixed(1)}</span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star} 
+                  // Scale 0-10 to 0-5 stars
+                  className={`w-2.5 h-2.5 ${star <= Math.ceil(numValue / 2) ? 'fill-coral text-coral' : 'fill-gray-700 text-gray-700'}`} 
+                />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+        <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
           <div 
-            className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-1000 ease-out"
+            className="h-full bg-gradient-to-r from-coral/70 to-coral rounded-full transition-all duration-1000 ease-out"
             style={{ width: `${numValue * 10}%` }}
           />
         </div>
@@ -72,19 +72,25 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
     );
   };
 
-	  const displayTags = explanation?.tags || object.tags || [];
-	  const imageUrl = object.primary_image?.url || object.image_url;
-	  
-	  // Find the best external rating to display
-	  const externalRating = object.external_ratings?.find((r: any) => r.source === 'yelp' || r.source === 'tmdb' || r.source === 'imdb');
-	  const displayScore = externalRating ? externalRating.score : null;
-	  const displaySource = externalRating ? externalRating.source.toUpperCase() : null;
-	
-	  return (
-	    <>
+  const displayTags = explanation?.tags || object.tags || [];
+  const imageUrl = object.primary_image?.url || object.image_url;
+  
+  // Find the best external rating to display
+  const externalRating = object.external_ratings?.find((r: any) => r.source === 'yelp' || r.source === 'tmdb' || r.source === 'imdb');
+  const displayScore = externalRating ? externalRating.score : null;
+  const displaySource = externalRating ? externalRating.source.toUpperCase() : null;
+
+  // Calculate AI Match Score percentage (0-100)
+  const aiMatchScore = score ? Math.min(Math.max(Math.round(score * 10), 0), 100) : 85;
+
+  return (
+    <>
       <div 
-        className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden active:scale-[0.98] transition-all duration-500 group flex flex-col h-full"
-        onClick={() => haptics.impact()}
+        className="bg-background-secondary rounded-[32px] shadow-lg border border-gray-700 overflow-hidden active:scale-[0.98] transition-all duration-500 group flex flex-col h-full hover:border-coral/30 hover:shadow-coral/20 cursor-pointer"
+        onClick={() => {
+          haptics.impact();
+          setDetailModalOpen(true);
+        }}
       >
         {/* Image Section */}
         <div className="relative h-64 w-full overflow-hidden">
@@ -99,52 +105,57 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
               unoptimized={true}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center text-5xl">
+            <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-5xl">
               {getCategoryIcon(object.category)}
             </div>
           )}
           
-	          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-	          
-	          {/* Category Badge and External Rating */}
-	          <div className="absolute top-4 left-4">
-	            <span className="bg-white/90 backdrop-blur-md text-black px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-	              {object.category?.replace('_', ' ') || 'Recommendation'}
-	            </span>
-	          </div>
-	          
-          {/* External rating badge removed per user request */}
+          {/* Gradient overlay for text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background-secondary via-transparent to-transparent" />
+          
+          {/* AI Match Score Badge - Prominent Coral Accent */}
+          <div className="absolute top-4 right-4">
+            <div className="bg-coral/90 backdrop-blur-md text-background-primary px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] shadow-lg shadow-coral/30 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              {aiMatchScore}% Match
+            </div>
+          </div>
 
-
+          {/* Category Badge */}
+          <div className="absolute bottom-4 left-4">
+            <span className="bg-background-secondary/90 backdrop-blur-md text-gray-50 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.2em] shadow-sm border border-gray-600">
+              {object.category?.replace('_', ' ') || 'Recommendation'}
+            </span>
+          </div>
         </div>
         
         {/* Content Section */}
         <div className="p-8 flex flex-col flex-1">
           <div className="mb-6">
-            <h3 className="text-2xl font-black text-black leading-tight mb-2 group-hover:text-brand-600 transition-colors">
+            <h3 className="text-2xl font-bold text-gray-50 leading-tight mb-2 group-hover:text-coral transition-colors">
               {object.title}
             </h3>
             
             {/* Tagline / Quick Look Info */}
             {explanation?.tagline && (
-              <p className="text-brand-600 font-black text-[11px] uppercase tracking-[0.15em] leading-relaxed">
+              <p className="text-coral font-semibold text-[11px] uppercase tracking-[0.15em] leading-relaxed">
                 {explanation.tagline}
               </p>
             )}
 
             {object.location?.city && (
-              <div className="flex items-center gap-2 text-black/40 mt-3">
+              <div className="flex items-center gap-2 text-gray-400 mt-3">
                 <MapPin className="w-4 h-4" />
-                <span className="text-xs font-bold truncate">
+                <span className="text-xs font-medium truncate">
                   {object.location.city}, {object.location.state || object.location.country}
                 </span>
               </div>
             )}
           </div>
           
-		          <p className="text-black/60 text-sm font-medium leading-relaxed mb-8">
-		            {explanation?.why_youll_like || object.description || "The AI is generating a personalized description..."}
-	          </p>
+          <p className="text-gray-300 text-sm font-medium leading-relaxed mb-8">
+            {explanation?.why_youll_like || object.description || "The AI is generating a personalized description..."}
+          </p>
           
           {/* Detailed Ratings - Dynamic Metrics */}
           {explanation?.detailed_ratings && Object.keys(explanation.detailed_ratings).length > 0 && (
@@ -156,39 +167,39 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
           )}
           
           {/* Tags & Footer */}
-          <div className="mt-auto flex items-center justify-between pt-4">
+          <div className="mt-auto flex items-center justify-between pt-4 border-t border-gray-700">
             <div className="flex flex-wrap gap-2 max-w-[70%]">
               {displayTags.slice(0, 2).map((tag: string) => (
-                <span key={tag} className="bg-gray-50 text-black/40 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-gray-100">
+                <span key={tag} className="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-xl text-[10px] font-semibold uppercase tracking-widest border border-gray-700 hover:border-coral/50 hover:text-coral transition-colors">
                   #{tag.replace(/\s+/g, '').replace('#', '')}
                 </span>
               ))}
             </div>
-	            <div className="flex items-center gap-3">
-	              <button 
-	                onClick={(e) => {
-	                  e.stopPropagation();
-	                  haptics.notification('success');
-	                  setRatingModalOpen(true);
-	                }}
-	                className="w-14 h-14 bg-black text-white rounded-[20px] flex items-center justify-center shadow-xl active:scale-90 transition-all"
-	                aria-label="Rate this item"
-	              >
-	                <Star className="w-6 h-6 fill-current" />
-	              </button>
-	              {object.source_links?.[0]?.url && (
-	                <a 
-	                  href={object.source_links[0].url}
-	                  target="_blank"
-	                  rel="noopener noreferrer"
-	                  onClick={(e) => e.stopPropagation()}
-	                  className="w-14 h-14 bg-gray-50 text-black/40 rounded-[20px] flex items-center justify-center active:scale-90 transition-all border border-gray-100"
-	                  aria-label="View source"
-	                >
-	                  <ExternalLink className="w-6 h-6" />
-	                </a>
-	              )}
-	            </div>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  haptics.notification('success');
+                  setRatingModalOpen(true);
+                }}
+                className="w-12 h-12 bg-coral text-background-primary rounded-[16px] flex items-center justify-center shadow-lg shadow-coral/30 active:scale-90 transition-all hover:bg-coral/90"
+                aria-label="Rate this item"
+              >
+                <Star className="w-5 h-5 fill-current" />
+              </button>
+              {object.source_links?.[0]?.url && (
+                <a 
+                  href={object.source_links[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-12 h-12 bg-gray-800 text-gray-400 rounded-[16px] flex items-center justify-center active:scale-90 transition-all border border-gray-700 hover:border-coral/50 hover:text-coral"
+                  aria-label="View source"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -197,6 +208,15 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
         <RatingModal
           object={object}
           onClose={() => setRatingModalOpen(false)}
+        />
+      )}
+      
+      {detailModalOpen && (
+        <RecommendationDetailModal
+          object={object}
+          score={score}
+          explanation={explanation}
+          onClose={() => setDetailModalOpen(false)}
         />
       )}
     </>

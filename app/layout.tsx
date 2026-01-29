@@ -26,7 +26,7 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#000000" />
       </head>
-      <body className="bg-gray-50" suppressHydrationWarning>
+      <body className="bg-background-primary text-gray-50" suppressHydrationWarning>
         {children}
       </body>
     </html>

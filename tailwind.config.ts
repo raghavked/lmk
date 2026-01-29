@@ -20,6 +20,9 @@ const config: Config = {
           800: '#075985',
           900: '#0c3d66',
         },
+        'coral': '#FF6B6B',
+        'background-primary': '#0D1117',
+        'background-secondary': '#161B22',
       },
       animation: {
         'in': 'fadeIn 0.5s ease-in-out',
