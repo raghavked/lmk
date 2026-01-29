@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const seenIds = requestUrl.searchParams.get('seen_ids')?.split(',') || [];
 
   const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient<any>({ cookies: () => cookieStore });
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
 
   const {
     data: { session },
