@@ -135,7 +135,7 @@ export async function GET(request: Request) {
     const sortBy = requestUrl.searchParams.get('sort_by') || 'personalized_score';
     const userLat = lat ? parseFloat(lat) : null;
     const userLng = lng ? parseFloat(lng) : null;
-    const location = userLat && userLng ? { lat: userLat, lng: userLng } : undefined;
+    const location = (userLat !== null && userLng !== null) ? { lat: userLat, lng: userLng } : undefined;
     
     let rankedResults = [];
     try {

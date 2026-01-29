@@ -99,9 +99,12 @@ export default function DecideClient({ profile }: { profile: any }) {
         params.append('taste_profile', JSON.stringify(profile.taste_profile));
       }
       
-      if (userLocation) {
-        params.append('lat', userLocation.lat.toString());
-        params.append('lng', userLocation.lng.toString());
+      // Use userLocation or fallback to profile location
+      const lat = userLocation?.lat ?? profile?.location?.coordinates?.[0];
+      const lng = userLocation?.lng ?? profile?.location?.coordinates?.[1];
+      if (lat !== undefined && lng !== undefined) {
+        params.append('lat', lat.toString());
+        params.append('lng', lng.toString());
       }
 
       const response = await fetch(`/api/recommend?${params.toString()}`, {

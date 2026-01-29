@@ -105,9 +105,13 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       params.append('category', category);
       params.append('mode', 'discover');
       if (query) params.append('query', query);
-      if (userLocation) {
-        params.append('lat', userLocation.lat.toString());
-        params.append('lng', userLocation.lng.toString());
+      
+      // Use userLocation or fallback to profile location
+      const lat = userLocation?.lat ?? profile?.location?.coordinates?.[0];
+      const lng = userLocation?.lng ?? profile?.location?.coordinates?.[1];
+      if (lat !== undefined && lng !== undefined) {
+        params.append('lat', lat.toString());
+        params.append('lng', lng.toString());
         params.append('radius', (distanceFilter * 1609).toString());
       }
       params.append('sort_by', sortBy);
