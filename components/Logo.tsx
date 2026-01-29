@@ -7,7 +7,7 @@ interface LogoProps {
 
 const Logo: React.FC<LogoProps> = ({ className = '', size = 32 }) => {
   return (
-    <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
+    <div className={`relative flex items-center justify-center text-coral ${className}`} style={{ width: size, height: size }}>
       <svg
         viewBox="0 0 100 100"
         fill="none"
@@ -23,13 +23,13 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 32 }) => {
           rx="10"
           stroke="currentColor"
           strokeWidth="6"
-          className="text-current"
+          
         />
         {/* Phone Notch */}
         <path
           d="M40 10H60V14C60 16.2091 58.2091 18 56 18H44C41.7909 18 40 16.2091 40 14V10Z"
           fill="currentColor"
-          className="text-current"
+          
         />
         {/* Map Pin */}
         <path
@@ -37,7 +37,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 32 }) => {
           stroke="currentColor"
           strokeWidth="4"
           fill="none"
-          className="text-current"
+          
         />
         {/* Target Circle in Pin */}
         <circle
@@ -46,7 +46,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 32 }) => {
           r="8"
           stroke="currentColor"
           strokeWidth="3"
-          className="text-current"
+          
         />
         {/* Target Crosshair */}
         <line x1="50" y1="33" x2="50" y2="43" stroke="currentColor" strokeWidth="2" />
@@ -59,7 +59,7 @@ const Logo: React.FC<LogoProps> = ({ className = '', size = 32 }) => {
           ry="4"
           stroke="currentColor"
           strokeWidth="3"
-          className="text-current"
+          
         />
       </svg>
     </div>

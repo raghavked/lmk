@@ -89,23 +89,23 @@ export default function MapClient({ profile }: { profile: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[background-primary]">
       <Navigation profile={profile} />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-extrabold text-black mb-2">
+          <h1 className="text-4xl font-extrabold text-[text-primary] mb-2">
             Location Discovery
           </h1>
-          <p className="text-black font-bold opacity-70 text-lg">
+          <p className="text-[text-secondary] text-lg">
             Find recommendations near you
           </p>
         </div>
 
         {/* Category Selector */}
         <div className="mb-8">
-          <label className="block text-sm font-bold text-black mb-3">
+          <label className="block text-sm font-bold text-[text-primary] mb-3">
             Choose a category:
           </label>
           <div className="flex gap-2">
@@ -115,8 +115,8 @@ export default function MapClient({ profile }: { profile: any }) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-lg font-bold transition ${
                   selectedCategory === cat
-                    ? 'bg-brand-600 text-white shadow-lg'
-                    : 'bg-white text-black border border-gray-200 hover:border-brand-300'
+                    ? 'bg-coral text-[background-primary] shadow-lg'
+                    : 'bg-[background-tertiary] text-[text-primary] border border-[border-color] hover:border-coral'
                 }`}
               >
                 {categoryLabels[cat]}
@@ -129,19 +129,19 @@ export default function MapClient({ profile }: { profile: any }) {
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto mb-4" />
-              <p className="text-black font-bold opacity-70">Loading locations...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
+              <p className="text-[text-secondary]">Loading locations...</p>
             </div>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
+          <div className="bg-red-900/20 border border-red-700 rounded-lg p-6 text-center mb-8">
             <p className="text-red-700 font-bold mb-4">{error}</p>
             <button
               onClick={loadLocationItems}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
+              className="px-4 py-2 bg-red-500 text-[background-primary] rounded-lg hover:bg-red-600 transition font-bold"
             >
               Try Again
             </button>
@@ -153,10 +153,10 @@ export default function MapClient({ profile }: { profile: any }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* List */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="font-bold text-black">Nearby {categoryLabels[selectedCategory]}</h3>
-                  <p className="text-sm text-black opacity-70">{items.length} locations</p>
+              <div className="bg-[background-tertiary] rounded-lg shadow-md overflow-hidden">
+                <div className="p-4 border-b border-[border-color]">
+                  <h3 className="font-bold text-[text-primary]">Nearby {categoryLabels[selectedCategory]}</h3>
+                  <p className="text-sm text-[text-secondary]">{items.length} locations</p>
                 </div>
                 <div className="overflow-y-auto max-h-96">
                   {items.map((result, idx) => {
@@ -173,14 +173,14 @@ export default function MapClient({ profile }: { profile: any }) {
                       <button
                         key={idx}
                         onClick={() => setSelectedItem(result)}
-                        className={`w-full text-left p-4 border-b border-gray-100 hover:bg-gray-50 transition ${
-                          selectedItem?.object.id === result.object.id ? 'bg-brand-50' : ''
+                        className={`w-full text-left p-4 border-b border-[border-color] hover:bg-[background-secondary] transition ${
+                          selectedItem?.object.id === result.object.id ? 'bg-coral/10' : ''
                         }`}
                       >
-                        <div className="font-bold text-black line-clamp-1">
+                        <div className="font-bold text-[text-primary] line-clamp-1">
                           {result.object.title}
                         </div>
-                        <div className="text-sm text-black opacity-70 flex items-center gap-1 mt-1">
+                        <div className="text-sm text-[text-secondary] flex items-center gap-1 mt-1">
                           {distance && (
                             <>
                               <MapPin className="w-3 h-3" />
@@ -190,8 +190,8 @@ export default function MapClient({ profile }: { profile: any }) {
                         </div>
                         {result.personalized_score && (
                           <div className="flex items-center gap-1 mt-2">
-                            <Star className="w-3 h-3 fill-brand-600 text-brand-600" />
-                            <span className="text-xs font-bold text-black">
+                            <Star className="w-3 h-3 fill-coral text-coral" />
+                            <span className="text-xs font-bold text-[text-primary]">
                               {result.personalized_score.toFixed(1)}
                             </span>
                           </div>
@@ -206,8 +206,8 @@ export default function MapClient({ profile }: { profile: any }) {
             {/* Details */}
             <div className="lg:col-span-2">
               {selectedItem ? (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-2xl font-extrabold text-black mb-4">
+                <div className="bg-[background-tertiary] rounded-lg shadow-md p-6">
+                  <h2 className="text-2xl font-extrabold text-[text-primary] mb-4">
                     {selectedItem.object.title}
                   </h2>
 
@@ -222,18 +222,18 @@ export default function MapClient({ profile }: { profile: any }) {
                   <div className="space-y-4">
                     {selectedItem.object.description && (
                       <div>
-                        <h3 className="font-bold text-black mb-2">About</h3>
-                        <p className="text-black opacity-70">{selectedItem.object.description}</p>
+                        <h3 className="font-bold text-[text-primary] mb-2">About</h3>
+                        <p className="text-[text-secondary]">{selectedItem.object.description}</p>
                       </div>
                     )}
 
                     {selectedItem.object.location?.address && (
                       <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-brand-600 flex-shrink-0 mt-1" />
+                        <MapPin className="w-5 h-5 text-coral flex-shrink-0 mt-1" />
                         <div>
-                          <div className="font-bold text-black">{selectedItem.object.location.address}</div>
+                          <div className="font-bold text-[text-primary]">{selectedItem.object.location.address}</div>
                           {selectedItem.object.location.coordinates && userLocation && (
-                            <div className="text-sm text-black opacity-70 mt-1">
+                            <div className="text-sm text-[text-secondary] mt-1">
                               {calculateDistance(
                                 userLocation.lat,
                                 userLocation.lng,
@@ -248,8 +248,8 @@ export default function MapClient({ profile }: { profile: any }) {
 
                     {selectedItem.object.phone && (
                       <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-brand-600" />
-                        <a href={`tel:${selectedItem.object.phone}`} className="text-brand-600 font-bold hover:underline">
+                        <Phone className="w-5 h-5 text-coral" />
+                        <a href={`tel:${selectedItem.object.phone}`} className="text-coral font-bold hover:underline">
                           {selectedItem.object.phone}
                         </a>
                       </div>
@@ -257,25 +257,25 @@ export default function MapClient({ profile }: { profile: any }) {
 
                     {selectedItem.object.source_links && selectedItem.object.source_links[0] && (
                       <div className="flex items-center gap-3">
-                        <Globe className="w-5 h-5 text-brand-600" />
-                        <a href={selectedItem.object.source_links[0].url} target="_blank" rel="noopener noreferrer" className="text-brand-600 font-bold hover:underline">
+                        <Globe className="w-5 h-5 text-coral" />
+                        <a href={selectedItem.object.source_links[0].url} target="_blank" rel="noopener noreferrer" className="text-coral font-bold hover:underline">
                           Visit Website
                         </a>
                       </div>
                     )}
 
                     {selectedItem.explanation && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h3 className="font-bold text-blue-900 mb-2">Why recommended</h3>
-                        <p className="text-blue-800 text-sm">{selectedItem.explanation}</p>
+                      <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+                        <h3 className="font-bold text-blue-300 mb-2">Why recommended</h3>
+                        <p className="text-blue-400 text-sm">{selectedItem.explanation}</p>
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                <div className="bg-[background-tertiary] rounded-lg shadow-md p-12 text-center">
                   <div className="text-5xl mb-4">📍</div>
-                  <p className="text-black font-bold opacity-70">
+                  <p className="text-[text-secondary]">
                     Select a location to view details
                   </p>
                 </div>
@@ -286,10 +286,10 @@ export default function MapClient({ profile }: { profile: any }) {
 
         {/* Empty State */}
         {!loading && items.length === 0 && !error && (
-          <div className="bg-white rounded-lg p-12 text-center border border-gray-200">
+          <div className="bg-[background-tertiary] rounded-lg p-12 text-center border border-[border-color]">
             <div className="text-5xl mb-4">🗺️</div>
-            <h3 className="text-xl font-bold text-black mb-2">No locations found</h3>
-            <p className="text-black font-bold opacity-70">
+            <h3 className="text-xl font-bold text-[text-primary] mb-2">No locations found</h3>
+            <p className="text-[text-secondary]">
               Try a different category or check back later
             </p>
           </div>

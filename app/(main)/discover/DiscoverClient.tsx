@@ -231,7 +231,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#230f10]">
+    <div className="flex flex-col h-screen w-full bg-[background-primary]">
       <Navigation profile={profile} />
       <ModeNavigation currentMode={currentMode} onModeChange={handleModeChange} />
       
@@ -239,14 +239,14 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {/* Pull to Refresh Indicator */}
         {pullDistance > 0 && (
           <div className="flex justify-center pt-4 pb-2">
-            <div className="text-gray-400 text-sm">
+            <div className="text-[text-secondary] text-sm">
               {pullDistance >= 70 ? '↓ Release to refresh' : '↓ Pull to refresh'}
             </div>
           </div>
         )}
 
         {/* Category Filters */}
-        <div className="sticky top-0 bg-[#230f10] border-b border-gray-700 px-4 py-4 z-10">
+        <div className="sticky top-0 bg-[background-primary] border-b border-[border-color] px-4 py-4 z-10">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
@@ -254,8 +254,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                 onClick={() => setCategory(cat.id)}
                 className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                   category === cat.id
-                    ? 'bg-[#fea4a7] text-[#230f10] shadow-lg shadow-[#fea4a7]/30'
-                    : 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700'
+                    ? 'bg-coral text-[background-primary] shadow-lg shadow-coral/30'
+                    : 'bg-[background-tertiary] text-[text-primary] hover:bg-[background-secondary] border border-[border-color]'
                 }`}
               >
                 {cat.icon} {cat.label}
@@ -266,20 +266,20 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           {/* Search Bar */}
           <div className="mt-4 flex gap-2">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[text-secondary]" />
               <input
                 type="text"
                 placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 outline-none"
+                className="w-full pl-10 pr-4 py-2 bg-[background-tertiary] border border-[border-color] rounded-full text-[text-primary] placeholder:text-[text-secondary] focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
               />
             </div>
             {currentMode === 'map' && (
               <button
                 onClick={detectLocation}
                 disabled={isLocating}
-                className="px-4 py-2 bg-[#fea4a7] text-[#230f10] rounded-full font-medium hover:bg-[#fea4a7]/90 transition disabled:opacity-50"
+                className="px-4 py-2 bg-coral text-[background-primary] rounded-full font-medium hover:bg-coral/90 transition disabled:opacity-50"
               >
                 {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <NavIcon className="w-4 h-4" />}
               </button>
@@ -301,15 +301,15 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {loading && recommendations.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-[#fea4a7] mx-auto mb-4" />
-              <p className="text-gray-400">Loading recommendations...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
+              <p className="text-[text-secondary]">Loading recommendations...</p>
             </div>
           </div>
         ) : recommendations.length === 0 && !error ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <p className="text-gray-400 text-lg">No recommendations found</p>
-              <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or preferences</p>
+              <p className="text-[text-secondary] text-lg">No recommendations found</p>
+              <p className="text-[text-secondary] text-sm mt-2">Try adjusting your filters or preferences</p>
             </div>
           </div>
         ) : (
@@ -331,7 +331,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           <div className="flex justify-center py-8">
             <button
               onClick={() => loadRecommendations(false, offset)}
-              className="px-6 py-3 bg-[#fea4a7] text-[#230f10] rounded-full font-bold hover:bg-[#fea4a7]/90 transition flex items-center gap-2 shadow-lg shadow-[#fea4a7]/30"
+              className="px-6 py-3 bg-coral text-[background-primary] rounded-full font-bold hover:bg-coral/90 transition flex items-center gap-2 shadow-lg shadow-coral/30"
             >
               <ArrowDown className="w-4 h-4" />
               Show More

@@ -80,23 +80,23 @@ export default function DecideClient({ profile }: { profile: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[background-primary]">
       <Navigation profile={profile} />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-extrabold text-black mb-2">
+          <h1 className="text-4xl font-extrabold text-[text-primary] mb-2">
             Quick Decide
           </h1>
-          <p className="text-black font-bold opacity-70 text-lg">
+          <p className="text-[text-secondary] text-lg">
             Can't decide? Let us help you pick!
           </p>
         </div>
 
         {/* Category Selector */}
         <div className="mb-8">
-          <label className="block text-sm font-bold text-black mb-3">
+          <label className="block text-sm font-bold text-[text-primary] mb-3">
             Choose a category:
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -106,8 +106,8 @@ export default function DecideClient({ profile }: { profile: any }) {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-lg font-bold transition ${
                   selectedCategory === cat
-                    ? 'bg-brand-600 text-white shadow-lg'
-                    : 'bg-white text-black border border-gray-200 hover:border-brand-300'
+                    ? 'bg-coral text-[background-primary] shadow-lg'
+                    : 'bg-[background-secondary] text-[text-primary] border border-[border-color] hover:border-coral'
                 }`}
               >
                 {categoryLabels[cat]}
@@ -118,13 +118,13 @@ export default function DecideClient({ profile }: { profile: any }) {
 
         {/* Decision Stats */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="text-3xl font-extrabold text-green-600">{decisions.yes}</div>
-            <div className="text-sm font-bold text-green-700">Yes Decisions</div>
+          <div className="bg-coral/20 rounded-lg p-4 border border-coral/50">
+            <div className="text-3xl font-extrabold text-coral">{decisions.yes}</div>
+            <div className="text-sm font-bold text-coral-dark">Yes Decisions</div>
           </div>
-          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-            <div className="text-3xl font-extrabold text-red-600">{decisions.no}</div>
-            <div className="text-sm font-bold text-red-700">No Decisions</div>
+          <div className="bg-red-900/20 rounded-lg p-4 border border-red-700">
+            <div className="text-3xl font-extrabold text-red-500">{decisions.no}</div>
+            <div className="text-sm font-bold text-red-400">No Decisions</div>
           </div>
         </div>
 
@@ -132,19 +132,19 @@ export default function DecideClient({ profile }: { profile: any }) {
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto mb-4" />
-              <p className="text-black font-bold opacity-70">Loading next item...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
+              <p className="text-[text-secondary]">Loading next item...</p>
             </div>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
+          <div className="bg-red-900/20 border border-red-700 rounded-lg p-6 text-center mb-8">
             <p className="text-red-700 font-bold mb-4">{error}</p>
             <button
               onClick={loadNextItem}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold"
+              className="px-4 py-2 bg-red-500 text-[background-primary] rounded-lg hover:bg-red-600 transition font-bold"
             >
               Try Again
             </button>
@@ -168,14 +168,14 @@ export default function DecideClient({ profile }: { profile: any }) {
           <div className="flex gap-4 mb-8">
             <button
               onClick={() => handleDecision('no')}
-              className="flex-1 py-4 px-6 bg-red-50 border-2 border-red-300 text-red-700 rounded-xl hover:bg-red-100 transition font-bold text-lg flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-6 bg-red-900/20 border-2 border-red-700 text-red-400 rounded-xl hover:bg-red-900/30 transition font-bold text-lg flex items-center justify-center gap-2"
             >
               <ThumbsDown className="w-6 h-6" />
               Not for me
             </button>
             <button
               onClick={() => handleDecision('yes')}
-              className="flex-1 py-4 px-6 bg-green-50 border-2 border-green-300 text-green-700 rounded-xl hover:bg-green-100 transition font-bold text-lg flex items-center justify-center gap-2"
+              className="flex-1 py-4 px-6 bg-coral/20 border-2 border-coral/50 text-coral rounded-xl hover:bg-coral/30 transition font-bold text-lg flex items-center justify-center gap-2"
             >
               <ThumbsUp className="w-6 h-6" />
               I like it!
@@ -191,7 +191,7 @@ export default function DecideClient({ profile }: { profile: any }) {
                 setDecisions({ yes: 0, no: 0 });
                 loadNextItem();
               }}
-              className="px-6 py-3 bg-white border border-gray-200 text-black rounded-lg hover:bg-gray-50 transition font-bold flex items-center justify-center gap-2 mx-auto"
+              className="px-6 py-3 bg-[background-secondary] border border-[border-color] text-[text-primary] rounded-lg hover:bg-[background-tertiary] transition font-bold flex items-center justify-center gap-2 mx-auto"
             >
               <RotateCcw className="w-4 h-4" />
               Start Over
@@ -201,10 +201,10 @@ export default function DecideClient({ profile }: { profile: any }) {
 
         {/* Empty State */}
         {!loading && !currentItem && !error && (
-          <div className="bg-white rounded-lg p-12 text-center border border-gray-200">
+          <div className="bg-[background-tertiary] rounded-lg p-12 text-center border border-[border-color]">
             <div className="text-5xl mb-4">🤔</div>
-            <h3 className="text-xl font-bold text-black mb-2">No items to decide on</h3>
-            <p className="text-black font-bold opacity-70">
+            <h3 className="text-xl font-bold text-[text-primary] mb-2">No items to decide on</h3>
+            <p className="text-[text-secondary]">
               Try a different category or check back later
             </p>
           </div>

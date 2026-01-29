@@ -8,31 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          DEFAULT: '#fea3a6',
-          50: '#fff7f7',
-          100: '#ffeff0',
-          200: '#ffd6d8',
-          300: '#ffbdc0',
-          400: '#fea3a6',
-          500: '#fd898d',
-          600: '#e47b7f',
-          700: '#be676a',
-          800: '#985255',
-          900: '#7c4346',
-        },
-        primary: {
-          DEFAULT: '#fea3a6',
-          50: '#fff7f7',
-          100: '#ffeff0',
-          200: '#ffd6d8',
-          300: '#ffbdc0',
-          400: '#fea3a6',
-          500: '#fd898d',
-          600: '#e47b7f',
-          700: '#be676a',
-          800: '#985255',
-          900: '#7c4346',
+        // Custom Dark Theme Palette
+        'background-primary': '#121212',
+        'background-secondary': '#1E1E1E',
+        'background-tertiary': '#282828',
+        'border-color': '#333333',
+        'text-primary': '#E0E0E0',
+        'text-secondary': '#A0A0A0',
+        // Coral Accent
+        coral: {
+          DEFAULT: '#fea4a7', // The main accent color
+          light: '#ffc1c3',
+          dark: '#e47b7f',
         },
       },
       animation: {
