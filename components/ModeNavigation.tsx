@@ -15,8 +15,8 @@ export default function ModeNavigation({ currentMode, onModeChange }: { currentM
   ];
 
   return (
-    <div className="w-full bg-background-primary border-b border-border-color px-4 py-4 overflow-x-auto sticky top-0 z-20 shadow-lg">
-      <div className="flex gap-2 min-w-max">
+    <div className="w-full bg-background-secondary border-b border-border-color px-4 py-3 overflow-x-auto">
+      <div className="flex gap-2 justify-center">
         {modes.map((mode) => {
           const Icon = mode.icon;
           const isActive = pathname === mode.href;
