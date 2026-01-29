@@ -41,10 +41,15 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (January 2026)
+- **Dark/Coral Theme**: Consistent dark mode (#0D1117 background) with coral accent (#FF6B6B) across all pages
+- **Location-Based Recommendations**: Real-time geolocation with distance calculation and sorting (closest first)
+- **Sorting Options**: AI Score, Distance, Rating, and Review Count sorting for all recommendations
+- **Distance Display**: Distance shown in miles/feet on cards for location-aware categories
 - **Decide Tab**: Reshuffle button, decision history modal, localStorage persistence for seen items
 - **Friends System**: Real user search, friend request management, view friend's ratings/recommendations modal
 - **Groups**: Server-side friend loading for invites, proper name/avatar display
 - **Navigation**: ModeNavigation component for consistent tab switching across Discover/Decide/Groups/Profile
+- **API Formatting**: Enhanced descriptions with cuisine types, ratings, and price info for restaurants; genre/year info for movies/TV
 
 ### Key Design Patterns
 - **Normalized Data**: Each API wrapper normalizes external data to a common object format

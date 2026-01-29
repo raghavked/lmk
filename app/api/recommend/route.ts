@@ -17,6 +17,18 @@ const API_MAP: Record<string, any> = {
   activities: ActivitiesAPI,
 };
 
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const category = requestUrl.searchParams.get('category') || 'restaurants';
@@ -87,6 +99,10 @@ export async function GET(request: Request) {
       taste_profile: finalProfile?.taste_profile || tasteProfile 
     };
 
+    const lat = requestUrl.searchParams.get('lat');
+    const lng = requestUrl.searchParams.get('lng');
+    const radius = requestUrl.searchParams.get('radius');
+
     let rawRecommendations = [];
     try {
       rawRecommendations = await apiInstance.getRecommendations({
@@ -95,6 +111,9 @@ export async function GET(request: Request) {
         offset,
         seenIds,
         profile: profileWithTaste as any,
+        lat: lat ? parseFloat(lat) : undefined,
+        lng: lng ? parseFloat(lng) : undefined,
+        radius: radius ? parseInt(radius) : undefined,
       });
     } catch (apiError) {
       console.error(`Error fetching from ${category} API:`, apiError);
@@ -113,9 +132,10 @@ export async function GET(request: Request) {
     // 3. Rank Recommendations
     console.log(`[Recommend API] Starting AI ranking...`);
     const ranker = new AIRanker();
-    const lat = requestUrl.searchParams.get('lat');
-    const lng = requestUrl.searchParams.get('lng');
-    const location = lat && lng ? { lat: parseFloat(lat), lng: parseFloat(lng) } : undefined;
+    const sortBy = requestUrl.searchParams.get('sort_by') || 'personalized_score';
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
+    const location = userLat && userLng ? { lat: userLat, lng: userLng } : undefined;
     
     let rankedResults = [];
     try {
@@ -130,7 +150,6 @@ export async function GET(request: Request) {
       );
     } catch (rankError) {
       console.error('Error during AI ranking:', rankError);
-      // Fallback to unranked results
       rankedResults = rawRecommendations.map((obj: any, idx: number) => ({
         rank: idx + 1,
         object: obj,
@@ -143,6 +162,60 @@ export async function GET(request: Request) {
         },
       }));
     }
+
+    // Add distance to each result if user location is available
+    if (userLat !== null && userLng !== null) {
+      rankedResults = rankedResults.map((result: any) => {
+        const obj = result.object || result;
+        const coords = obj.location?.coordinates;
+        const objLat = obj.location?.lat;
+        const objLng = obj.location?.lng;
+        let distance = null;
+        
+        if (coords && coords[0] !== undefined && coords[1] !== undefined) {
+          distance = calculateDistance(userLat, userLng, coords[0], coords[1]);
+        } else if (objLat !== undefined && objLng !== undefined) {
+          distance = calculateDistance(userLat, userLng, objLat, objLng);
+        }
+        
+        return {
+          ...result,
+          distance,
+        };
+      });
+    }
+
+    // Apply sorting based on sort_by parameter
+    if (sortBy === 'distance' && userLat !== null && userLng !== null) {
+      rankedResults.sort((a: any, b: any) => {
+        const distA = a.distance ?? Infinity;
+        const distB = b.distance ?? Infinity;
+        return distA - distB;
+      });
+    } else if (sortBy === 'rating') {
+      rankedResults.sort((a: any, b: any) => {
+        const obj_a = a.object || a;
+        const obj_b = b.object || b;
+        const ratingA = obj_a.rating || obj_a.vote_average || obj_a.external_ratings?.[0]?.score || 0;
+        const ratingB = obj_b.rating || obj_b.vote_average || obj_b.external_ratings?.[0]?.score || 0;
+        return ratingB - ratingA;
+      });
+    } else if (sortBy === 'reviews') {
+      rankedResults.sort((a: any, b: any) => {
+        const obj_a = a.object || a;
+        const obj_b = b.object || b;
+        const countA = obj_a.review_count || obj_a.vote_count || obj_a.external_ratings?.[0]?.count || 0;
+        const countB = obj_b.review_count || obj_b.vote_count || obj_b.external_ratings?.[0]?.count || 0;
+        return countB - countA;
+      });
+    }
+    // Default: personalized_score (already sorted by AI ranker)
+
+    // Re-assign ranks after sorting
+    rankedResults = rankedResults.map((result: any, idx: number) => ({
+      ...result,
+      rank: idx + 1,
+    }));
 
     console.log(`[Recommend API] Returning ${rankedResults.length} ranked results`);
     return NextResponse.json({ results: rankedResults });

@@ -106,10 +106,10 @@ export class YelpAPI {
     };
   }
   
-  async getRecommendations({ category, limit, offset, profile }: { category: string, limit: number, offset: number, profile: any }) {
-    const lat = profile.location?.coordinates[0] || 34.0522; // Default to LA
-    const lng = profile.location?.coordinates[1] || -118.2437;
-    const radius = 16000; // 10 miles
+  async getRecommendations({ category, limit, offset, profile, lat: userLat, lng: userLng, radius: userRadius }: { category: string, limit: number, offset: number, profile: any, lat?: number, lng?: number, radius?: number }) {
+    const lat = userLat || profile.location?.coordinates?.[0] || 34.0522;
+    const lng = userLng || profile.location?.coordinates?.[1] || -118.2437;
+    const radius = userRadius || 16000;
 
     if (category === 'restaurants') {
       const allSections = await this.getAllRestaurantSections(lat, lng, radius);
@@ -140,11 +140,15 @@ export class YelpAPI {
   }
 
   private normalize(biz: any) {
+    const cuisineTypes = biz.categories?.map((c: any) => c.title).join(', ') || '';
+    const priceDesc = biz.price ? `${biz.price} price range` : 'Moderate pricing';
+    const ratingDesc = biz.rating ? `${biz.rating}/5 stars with ${biz.review_count || 0} reviews` : '';
+    
     return {
-      id: biz.id, // Explicit ID for de-duplication
-      category: 'restaurant',
+      id: biz.id,
+      category: 'restaurants',
       title: biz.name,
-      description: biz.categories?.map((c: any) => c.title).join(', '),
+      description: `${cuisineTypes}. ${priceDesc}. ${ratingDesc}`.trim(),
       primary_image: biz.image_url ? {
         url: biz.image_url,
         width: 1000,
@@ -159,6 +163,7 @@ export class YelpAPI {
         count: biz.review_count,
         url: biz.url,
       }],
+      external_rating: biz.rating ? (biz.rating / 5) * 10 : null,
       tags: biz.categories?.map((c: any) => c.alias) || [],
       location: {
         address: biz.location?.address1,
@@ -167,6 +172,8 @@ export class YelpAPI {
         zip: biz.location?.zip_code,
         country: biz.location?.country,
         coordinates: [biz.coordinates?.latitude, biz.coordinates?.longitude],
+        lat: biz.coordinates?.latitude,
+        lng: biz.coordinates?.longitude,
       },
       price_level: biz.price?.length || 2,
       price: biz.price || '$$',

@@ -9,6 +9,7 @@ interface ObjectCardProps {
   object: any;
   rank?: number;
   score?: number;
+  distance?: number;
   explanation?: {
     hook?: string;
     why_youll_like?: string;
@@ -21,7 +22,7 @@ interface ObjectCardProps {
   };
 }
 
-export default function ObjectCard({ object, rank, score, explanation }: ObjectCardProps) {
+export default function ObjectCard({ object, rank, score, distance, explanation }: ObjectCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -140,13 +141,18 @@ export default function ObjectCard({ object, rank, score, explanation }: ObjectC
                   )}
                 </div>
 
-                {/* Location */}
-                {(object.location?.city || object.location?.address) && (
+                {/* Location & Distance */}
+                {(object.location?.city || object.location?.address || distance) && (
                   <div className="flex items-center gap-2 text-text-secondary">
-                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <MapPin className="w-4 h-4 flex-shrink-0 text-coral" />
                     <span className="text-sm font-medium">
-                      {object.location.city ? `${object.location.city}, ${object.location.state || object.location.country}` : object.location.address}
+                      {object.location?.city ? `${object.location.city}, ${object.location?.state || object.location?.country}` : object.location?.address}
                     </span>
+                    {distance !== undefined && distance > 0 && (
+                      <span className="text-xs bg-coral/20 text-coral px-2 py-0.5 rounded-full font-bold">
+                        {distance < 1 ? `${(distance * 5280).toFixed(0)} ft` : `${distance.toFixed(1)} mi`}
+                      </span>
+                    )}
                   </div>
                 )}
                 

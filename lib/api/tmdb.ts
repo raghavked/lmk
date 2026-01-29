@@ -230,12 +230,16 @@ export class TMDBAPI {
   private normalizeMovie(movie: any, detailed = false) {
     const genres = movie.genres || [];
     const tags = genres.map((g: any) => g.name?.toLowerCase());
+    const genreNames = genres.map((g: any) => g.name).join(', ');
+    const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
+    const ratingInfo = movie.vote_average ? `${movie.vote_average.toFixed(1)}/10` : '';
     
     return {
-      id: `tmdb_movie_${movie.id}`, // Explicit ID for de-duplication
-      category: 'movie',
+      id: `tmdb_movie_${movie.id}`,
+      category: 'movies',
       title: movie.title,
-      description: movie.overview,
+      description: movie.overview || `${genreNames} film${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      external_rating: movie.vote_average,
       primary_image: movie.poster_path ? {
         url: `${this.imageBaseUrl}/w500${movie.poster_path}`,
         width: 500,
@@ -281,12 +285,16 @@ export class TMDBAPI {
   private normalizeTVShow(tv: any, detailed = false) {
     const genres = tv.genres || [];
     const tags = genres.map((g: any) => g.name?.toLowerCase());
+    const genreNames = genres.map((g: any) => g.name).join(', ');
+    const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
+    const ratingInfo = tv.vote_average ? `${tv.vote_average.toFixed(1)}/10` : '';
     
     return {
-      id: `tmdb_tv_${tv.id}`, // Explicit ID for de-duplication
-      category: 'tv_show',
+      id: `tmdb_tv_${tv.id}`,
+      category: 'tv_shows',
       title: tv.name,
-      description: tv.overview,
+      description: tv.overview || `${genreNames} series${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      external_rating: tv.vote_average,
       primary_image: tv.poster_path ? {
         url: `${this.imageBaseUrl}/w500${tv.poster_path}`,
         width: 500,

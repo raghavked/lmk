@@ -55,7 +55,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const detectLocation = useCallback(() => {
     haptics.impact();
     if (!navigator.geolocation) {
-      // Fallback to profile location if geolocation is not available
       if (profile?.location?.coordinates) {
         setUserLocation({
           lat: profile.location.coordinates[0],
@@ -78,7 +77,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       (err) => {
         console.error('Location error:', err);
         setIsLocating(false);
-        // Fallback to profile location on error
         if (profile?.location?.coordinates) {
           setUserLocation({
             lat: profile.location.coordinates[0],
@@ -107,11 +105,9 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       params.append('category', category);
       params.append('mode', 'discover');
       if (query) params.append('query', query);
-        // Always append location if available for personalization and distance sorting
       if (userLocation) {
         params.append('lat', userLocation.lat.toString());
         params.append('lng', userLocation.lng.toString());
-        // Use distanceFilter for radius in meters
         params.append('radius', (distanceFilter * 1609).toString());
       }
       params.append('sort_by', sortBy);
@@ -139,8 +135,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         setRecommendations(prev => {
           const updatedRecs = newOffset === 0 ? newResults : [...prev, ...newResults];
           const newSeenIds = new Set<string>(updatedRecs.map((item: any) => (item.object?.id || item.id) as string));
-          console.log('Seen IDs updated:', Array.from(newSeenIds));
-          console.log('Total visible items:', updatedRecs.length);
           setSeenIds(newSeenIds);
           return updatedRecs;
         });
@@ -164,7 +158,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     if (!walkthroughCompleted) {
       setShowWalkthrough(true);
     } else if (preferencesCompleted === false) {
-      // Only show if the profile explicitly says preferences are NOT completed
       setShowPreferenceTest(true);
     } else {
       detectLocation();
@@ -177,7 +170,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     }
   }, [category, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, sortBy, loadRecommendations]);
 
-  // Touch Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     startY.current = e.touches[0].pageY;
     touchStartX.current = e.touches[0].screenX;
@@ -211,7 +203,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 
   const handleWalkthroughComplete = () => {
     setShowWalkthrough(false);
-    // After walkthrough, check if preferences are already completed (e.g., if user logged in before)
     if (profile?.preferences_completed === false) {
       setShowPreferenceTest(true);
     } else {
@@ -221,11 +212,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 
   const handlePreferenceTestComplete = () => {
     setShowPreferenceTest(false);
-    // The profile update handles the persistence, no need for local storage flag
     detectLocation();
   };
-
-
 
   if (showWalkthrough) {
     return <Walkthrough onComplete={handleWalkthroughComplete} />;
@@ -243,23 +231,21 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       <div className="flex-1 overflow-y-auto" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
         {/* Pull to Refresh Indicator */}
         {pullDistance > 0 && (
-          <div className="flex justify-center pt-4 pb-2">
-            <div className="text-gray-600 dark:text-gray-400 text-sm">
+          <div className="flex flex-col justify-center items-center pt-4 pb-2">
+            <div className="text-text-secondary text-sm">
               {pullDistance >= 70 ? '↓ Release to refresh' : '↓ Pull to refresh'}
-                  </div>
-        
-                          {/* Location Status */}
-                          {userLocation && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2 pt-2 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center">
-                              <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
-                              <span className="text-orange-500 font-medium">Radius: {distanceFilter} miles</span>
-                            </div>
-                          )}
-                        </div>
-                )}
+            </div>
+            {userLocation && (
+              <div className="text-xs text-text-secondary mt-2 pt-2 border-t border-border-color flex justify-between items-center gap-4">
+                <span>Location: Detected ({userLocation.lat.toFixed(2)}, {userLocation.lng.toFixed(2)})</span>
+                <span className="text-coral font-medium">Radius: {distanceFilter} miles</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Category Filters */}
-                        <div className="sticky top-0 bg-white dark:bg-slate-950 border-b border-gray-300 dark:border-gray-700 px-4 py-4 z-10 shadow-xl">
+        <div className="sticky top-0 bg-background-secondary border-b border-border-color px-4 py-4 z-10 shadow-xl">
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((cat) => (
               <button
@@ -267,8 +253,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                 onClick={() => setCategory(cat.id)}
                 className={`px-4 py-2 rounded-full font-medium transition-all whitespace-nowrap ${
                   category === cat.id
-                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700'
+                    ? 'bg-coral text-background-primary shadow-lg shadow-coral/30'
+                    : 'bg-background-tertiary text-text-primary hover:bg-background-primary border border-border-color hover:border-coral/50'
                 }`}
               >
                 {cat.icon} {cat.label}
@@ -276,64 +262,75 @@ export default function DiscoverClient({ profile }: { profile: any }) {
             ))}
           </div>
 
-                  {/* Filtering and Sorting Bar */}
-                  <div className="mt-4 flex gap-2 items-center">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none"
-                      />
-                    </div>
-                    
-                    {/* Location Button */}
-                    <button
-                      onClick={detectLocation}
-                      disabled={isLocating}
-                      className="p-3 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition disabled:opacity-50 text-gray-500 dark:text-gray-400 hover:text-orange-500"
-                      aria-label="Detect Location"
-                    >
-                      {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                    </button>
-                  </div>
-        
-                  {/* Sort and Filter Dropdowns */}
-                  <div className="mt-3 flex gap-3">
-                    {/* Sort By Dropdown */}
-                    <div className="relative flex-1">
-                      <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        className="appearance-none w-full pl-4 pr-8 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 text-sm font-medium focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none cursor-pointer"
-                      >
-                        <option value="personalized_score">Best Match (AI Score)</option>
-                        <option value="distance">Closest Distance</option>
-                        <option value="rating">Highest External Rating</option>
-                        <option value="reviews">Most Reviews</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
-                    </div>
-        
-                    {/* Distance Filter Dropdown */}
-                    <div className="relative flex-1">
-                      <select
-                        value={distanceFilter}
-                        onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
-                        disabled={!userLocation}
-                        className="appearance-none w-full pl-4 pr-8 py-2 bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-900 dark:text-gray-100 text-sm font-medium focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none cursor-pointer disabled:opacity-50"
-                      >
-                        <option value={5}>5 miles</option>
-                        <option value={10}>10 miles</option>
-                        <option value={25}>25 miles</option>
-                        <option value={50}>50 miles</option>
-                        <option value={100}>100 miles</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400 pointer-events-none" />
-                    </div>
-                  </div>
+          {/* Filtering and Sorting Bar */}
+          <div className="mt-4 flex gap-2 items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+              <input
+                type="text"
+                placeholder={`Search ${categories.find(c => c.id === category)?.label || 'recommendations'}...`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+              />
+            </div>
+            
+            {/* Location Button */}
+            <button
+              onClick={detectLocation}
+              disabled={isLocating}
+              className="p-3 bg-background-tertiary border border-border-color rounded-full font-medium hover:bg-background-primary transition disabled:opacity-50 text-text-secondary hover:text-coral hover:border-coral/50"
+              aria-label="Detect Location"
+            >
+              {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Sort and Filter Dropdowns */}
+          <div className="mt-3 flex gap-3">
+            {/* Sort By Dropdown */}
+            <div className="relative flex-1">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer"
+              >
+                <option value="personalized_score">Best Match (AI Score)</option>
+                <option value="distance">Closest Distance</option>
+                <option value="rating">Highest External Rating</option>
+                <option value="reviews">Most Reviews</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+            </div>
+
+            {/* Distance Filter Dropdown */}
+            <div className="relative flex-1">
+              <select
+                value={distanceFilter}
+                onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
+                disabled={!userLocation}
+                className="appearance-none w-full pl-4 pr-8 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
+              >
+                <option value={5}>5 miles</option>
+                <option value={10}>10 miles</option>
+                <option value={25}>25 miles</option>
+                <option value={50}>50 miles</option>
+                <option value={100}>100 miles</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Location Status Bar */}
+          {userLocation && (
+            <div className="mt-3 flex items-center justify-between text-xs text-text-secondary bg-background-primary/50 rounded-lg px-3 py-2 border border-border-color">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-3 h-3 text-coral" />
+                <span>Location detected</span>
+              </div>
+              <span className="text-coral font-medium">Within {distanceFilter} mi</span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -350,15 +347,15 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         {loading && recommendations.length === 0 ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-orange-500 mx-auto mb-4" />
-              <p className="text-gray-600 dark:text-gray-400">Loading recommendations...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-coral mx-auto mb-4" />
+              <p className="text-text-secondary">Loading recommendations...</p>
             </div>
           </div>
         ) : recommendations.length === 0 && !error ? (
           <div className="flex items-center justify-center h-96">
             <div className="text-center">
-              <p className="text-gray-600 dark:text-gray-400 text-lg">No recommendations found</p>
-              <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">Try adjusting your filters or preferences</p>
+              <p className="text-text-secondary text-lg">No recommendations found</p>
+              <p className="text-text-secondary text-sm mt-2">Try adjusting your filters or preferences</p>
             </div>
           </div>
         ) : (
@@ -370,6 +367,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
                 rank={index + 1}
                 score={rec.score}
                 explanation={rec.explanation}
+                distance={rec.distance}
               />
             ))}
           </div>
