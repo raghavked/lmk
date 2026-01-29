@@ -1,6 +1,6 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import DecideClient from '@/components/DecideClient';
+import DecideClient from './DecideClient';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
