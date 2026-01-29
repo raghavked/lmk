@@ -40,6 +40,12 @@ Preferred communication style: Simple, everyday language.
 - **Tables**: profiles (user data, taste profiles), ratings (user feedback)
 - **Types**: Defined in `lib/supabase/types.ts`
 
+### Recent Enhancements (January 2026)
+- **Decide Tab**: Reshuffle button, decision history modal, localStorage persistence for seen items
+- **Friends System**: Real user search, friend request management, view friend's ratings/recommendations modal
+- **Groups**: Server-side friend loading for invites, proper name/avatar display
+- **Navigation**: ModeNavigation component for consistent tab switching across Discover/Decide/Groups/Profile
+
 ### Key Design Patterns
 - **Normalized Data**: Each API wrapper normalizes external data to a common object format
 - **Fallback Ranking**: If AI API keys are missing, uses deterministic fallback scoring
