@@ -146,15 +146,34 @@ export async function GET(request: Request) {
     if (seenIds.length > 0) {
       rawRecommendations = rawRecommendations.filter((r: any) => !seenIds.includes(r.id));
     }
+    
+    const seenSet = new Set(seenIds);
+    const uniqueResults: any[] = [];
+    const resultIds = new Set<string>();
+    
+    for (const item of rawRecommendations) {
+      const itemId = String(item.id);
+      if (!seenSet.has(itemId) && !resultIds.has(itemId)) {
+        uniqueResults.push(item);
+        resultIds.add(itemId);
+      }
+    }
+    rawRecommendations = uniqueResults;
 
     console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering (excluded ${seenIds.length} seen)`);
     
-    if (rawRecommendations.length < limit && cached) {
-      console.log(`[Recommend API] Not enough items, fetching more...`);
+    if (rawRecommendations.length < limit) {
+      console.log(`[Recommend API] Not enough items (${rawRecommendations.length}/${limit}), fetching more...`);
       try {
         const moreItems = await fetchFromAPI(50);
-        const filtered = moreItems.filter((r: any) => !seenIds.includes(r.id));
-        rawRecommendations = [...rawRecommendations, ...filtered];
+        for (const item of moreItems) {
+          const itemId = String(item.id);
+          if (!seenSet.has(itemId) && !resultIds.has(itemId)) {
+            rawRecommendations.push(item);
+            resultIds.add(itemId);
+            if (rawRecommendations.length >= limit) break;
+          }
+        }
         recommendationCache.set(cacheKey, { data: moreItems, timestamp: now });
       } catch (e) {
         console.error('Error fetching more items:', e);
