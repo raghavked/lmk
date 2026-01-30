@@ -78,56 +78,44 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
     }
   };
 
-  // Get real metrics from API data (3 metrics max)
+  // Get real metrics from API data (3 metrics max, no duplicates)
   const getRealMetrics = (): Array<{ label: string; value: number; displayValue: string }> => {
     const metrics: Array<{ label: string; value: number; displayValue: string }> = [];
+    const usedLabels = new Set<string>();
     const category = object.category?.toLowerCase();
+    
+    const addMetric = (label: string, value: number, displayValue: string) => {
+      if (!usedLabels.has(label) && metrics.length < 3) {
+        usedLabels.add(label);
+        metrics.push({ label, value, displayValue });
+      }
+    };
     
     // Rating (from Yelp or TMDB)
     if (object.rating) {
       if (category === 'restaurants' || category === 'activities') {
-        metrics.push({ 
-          label: 'Rating', 
-          value: (object.rating / 5) * 10,
-          displayValue: `${object.rating.toFixed(1)}/5`
-        });
+        addMetric('Rating', (object.rating / 5) * 10, `${object.rating.toFixed(1)}/5`);
       }
     } else if (object.external_rating) {
-      metrics.push({ 
-        label: 'Rating', 
-        value: object.external_rating,
-        displayValue: `${(object.external_rating).toFixed(1)}/10`
-      });
+      addMetric('Rating', object.external_rating, `${(object.external_rating).toFixed(1)}/10`);
     }
     
     // Review/Vote Count
     if (object.review_count) {
       const count = object.review_count;
       const normalizedScore = Math.min(10, (count / 500) * 10);
-      metrics.push({ 
-        label: 'Popularity', 
-        value: normalizedScore,
-        displayValue: count >= 1000 ? `${(count/1000).toFixed(1)}K reviews` : `${count} reviews`
-      });
+      addMetric('Reviews', normalizedScore, count >= 1000 ? `${(count/1000).toFixed(1)}K reviews` : `${count} reviews`);
     } else if (object.external_ratings?.[0]?.count) {
       const count = object.external_ratings[0].count;
       const normalizedScore = Math.min(10, (count / 1000) * 10);
-      metrics.push({ 
-        label: 'Popularity', 
-        value: normalizedScore,
-        displayValue: count >= 1000 ? `${(count/1000).toFixed(1)}K votes` : `${count} votes`
-      });
+      addMetric('Votes', normalizedScore, count >= 1000 ? `${(count/1000).toFixed(1)}K votes` : `${count} votes`);
     }
     
     // Price Level for restaurants
     if (object.price && (category === 'restaurants' || category === 'activities')) {
       const priceLength = object.price.length;
       const priceScore = ((5 - priceLength) / 4) * 10;
-      metrics.push({ 
-        label: 'Value', 
-        value: Math.max(2, priceScore),
-        displayValue: object.price
-      });
+      addMetric('Value', Math.max(2, priceScore), object.price);
     }
     
     // For movies/TV, add vote count and year as additional metrics
@@ -135,31 +123,19 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
       if (object.vote_count) {
         const count = object.vote_count;
         const normalizedScore = Math.min(10, (count / 5000) * 10);
-        metrics.push({ 
-          label: 'Popularity', 
-          value: normalizedScore,
-          displayValue: count >= 1000 ? `${(count/1000).toFixed(1)}K votes` : `${count} votes`
-        });
+        addMetric('Votes', normalizedScore, count >= 1000 ? `${(count/1000).toFixed(1)}K votes` : `${count} votes`);
       }
       if (object.release_date || object.first_air_date) {
         const date = object.release_date || object.first_air_date;
         const year = new Date(date).getFullYear();
         if (!isNaN(year)) {
-          metrics.push({ 
-            label: 'Released', 
-            value: 8,
-            displayValue: year.toString()
-          });
+          addMetric('Released', 8, year.toString());
         }
       }
       if (object.runtime) {
         const hours = Math.floor(object.runtime / 60);
         const mins = object.runtime % 60;
-        metrics.push({ 
-          label: 'Runtime', 
-          value: Math.min(10, (object.runtime / 180) * 10),
-          displayValue: hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
-        });
+        addMetric('Runtime', Math.min(10, (object.runtime / 180) * 10), hours > 0 ? `${hours}h ${mins}m` : `${mins}m`);
       }
     }
     
@@ -167,79 +143,43 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
     if (object.view_count) {
       const views = object.view_count;
       const normalizedScore = Math.min(10, (views / 1000000) * 10);
-      metrics.push({ 
-        label: 'Views', 
-        value: normalizedScore,
-        displayValue: views >= 1000000 ? `${(views/1000000).toFixed(1)}M` : views >= 1000 ? `${(views/1000).toFixed(1)}K` : `${views}`
-      });
+      addMetric('Views', normalizedScore, views >= 1000000 ? `${(views/1000000).toFixed(1)}M` : views >= 1000 ? `${(views/1000).toFixed(1)}K` : `${views}`);
     }
     if (object.like_count) {
       const likes = object.like_count;
       const normalizedScore = Math.min(10, (likes / 100000) * 10);
-      metrics.push({ 
-        label: 'Likes', 
-        value: normalizedScore,
-        displayValue: likes >= 1000000 ? `${(likes/1000000).toFixed(1)}M` : likes >= 1000 ? `${(likes/1000).toFixed(1)}K` : `${likes}`
-      });
+      addMetric('Likes', normalizedScore, likes >= 1000000 ? `${(likes/1000000).toFixed(1)}M` : likes >= 1000 ? `${(likes/1000).toFixed(1)}K` : `${likes}`);
     }
     if (object.channel_title) {
-      metrics.push({ 
-        label: 'Channel', 
-        value: 8,
-        displayValue: object.channel_title.substring(0, 20)
-      });
+      addMetric('Channel', 8, object.channel_title.substring(0, 20));
     }
     
     // For books
     if (object.page_count) {
-      metrics.push({ 
-        label: 'Length', 
-        value: Math.min(10, (object.page_count / 500) * 10),
-        displayValue: `${object.page_count} pages`
-      });
+      addMetric('Length', Math.min(10, (object.page_count / 500) * 10), `${object.page_count} pages`);
     }
     if (object.publish_year) {
-      metrics.push({ 
-        label: 'Published', 
-        value: 8,
-        displayValue: object.publish_year.toString()
-      });
+      addMetric('Published', 8, object.publish_year.toString());
     }
     if (object.author) {
-      metrics.push({ 
-        label: 'Author', 
-        value: 8,
-        displayValue: typeof object.author === 'string' ? object.author.substring(0, 20) : 'Unknown'
-      });
+      addMetric('Author', 8, typeof object.author === 'string' ? object.author.substring(0, 20) : 'Unknown');
     }
     
-    // Fallback metrics to ensure at least 3 if available data exists
-    if (metrics.length < 3 && object.categories && object.categories.length > 0) {
+    // Fallback metrics to fill up to 3 if data exists
+    if (object.categories && object.categories.length > 0) {
       const categoryName = object.categories[0]?.title || object.categories[0];
       if (typeof categoryName === 'string') {
-        metrics.push({ 
-          label: 'Category', 
-          value: 7,
-          displayValue: categoryName.substring(0, 20)
-        });
+        addMetric('Category', 7, categoryName.substring(0, 20));
       }
     }
-    if (metrics.length < 3 && object.genres && object.genres.length > 0) {
-      metrics.push({ 
-        label: 'Genre', 
-        value: 7,
-        displayValue: object.genres[0].substring(0, 20)
-      });
+    if (object.genres && object.genres.length > 0) {
+      addMetric('Genre', 7, object.genres[0].substring(0, 20));
     }
-    if (metrics.length < 3 && object.tags && object.tags.length > 0) {
-      metrics.push({ 
-        label: 'Type', 
-        value: 6,
-        displayValue: object.tags[0].substring(0, 20)
-      });
+    if (object.tags && object.tags.length > 0) {
+      addMetric('Type', 6, object.tags[0].substring(0, 20));
     }
     
-    return metrics.slice(0, 3);
+    return metrics;
   };
 
   const renderRealMetric = (metric: { label: string; value: number; displayValue: string }, index: number) => {
