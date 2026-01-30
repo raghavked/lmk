@@ -45,11 +45,34 @@ export class OpenLibraryAPI {
   }
 
   private normalizeBook(book: any) {
+    const author = book.author_name?.[0] || 'Unknown Author';
+    const year = book.first_publish_year;
+    const subjects = book.subject?.slice(0, 5) || [];
+    const pageCount = book.number_of_pages_median;
+    const editionCount = book.edition_count || 0;
+    const ratingsCount = book.ratings_count || 0;
+    const ratingsAvg = book.ratings_average || 0;
+    
+    let description = `${book.title} by ${author}`;
+    if (year) description += `, first published in ${year}`;
+    if (pageCount) description += `. ${pageCount} pages`;
+    if (editionCount > 1) description += `, available in ${editionCount} editions`;
+    if (ratingsCount > 0) description += `. Rated ${ratingsAvg.toFixed(1)}/5 by ${ratingsCount} readers`;
+    if (subjects.length > 0) description += `. Genres: ${subjects.slice(0, 3).join(', ')}`;
+    description += '.';
+    
     return {
       id: `book_${book.key?.replace(/[^a-zA-Z0-9]/g, '')}`,
       category: 'reading',
       title: book.title,
-      description: `By ${book.author_name?.[0] || 'Unknown Author'}. First published in ${book.first_publish_year || 'Unknown'}. ${book.subject?.slice(0, 3).join(', ') || ''}`,
+      description,
+      author,
+      publish_year: year,
+      page_count: pageCount,
+      edition_count: editionCount,
+      genres: subjects.slice(0, 5),
+      rating: ratingsAvg,
+      review_count: ratingsCount,
       primary_image: book.cover_i
         ? {
             url: `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`,
@@ -60,10 +83,11 @@ export class OpenLibraryAPI {
       external_ratings: [
         {
           source: 'openlibrary',
-          score: (book.ratings_average || 7.5) as number,
-          count: book.ratings_count || 0,
+          score: ratingsAvg ? ratingsAvg * 2 : 7.5,
+          count: ratingsCount,
         },
       ],
+      external_rating: ratingsAvg ? ratingsAvg * 2 : 7.5,
       source_links: [
         {
           type: 'website',
@@ -71,7 +95,7 @@ export class OpenLibraryAPI {
           label: 'View on Open Library',
         },
       ],
-      tags: book.subject?.slice(0, 3) || ['Book'],
+      tags: subjects.slice(0, 3).length > 0 ? subjects.slice(0, 3) : ['Book'],
       last_fetched: new Date().toISOString(),
       data_stale: false,
     };
