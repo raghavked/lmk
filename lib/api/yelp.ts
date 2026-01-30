@@ -110,6 +110,8 @@ export class YelpAPI {
     const lat = userLat || profile.location?.coordinates?.[0] || 34.0522;
     const lng = userLng || profile.location?.coordinates?.[1] || -118.2437;
     const radius = userRadius || 16000;
+    
+    console.log(`[Yelp API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}, userLat=${userLat}, userLng=${userLng}`);
 
     if (query && query.length >= 2) {
       return this.search({

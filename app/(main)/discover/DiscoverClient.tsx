@@ -33,6 +33,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [distanceFilter, setDistanceFilter] = useState<number>(10); // Default to 10 miles
   const [isLocating, setIsLocating] = useState(false);
+  const [locationReady, setLocationReady] = useState(false);
 
   // Pull to refresh state
   const [pullDistance, setPullDistance] = useState(0);
@@ -61,6 +62,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           lng: profile.location.coordinates[1]
         });
       }
+      setLocationReady(true);
       return;
     }
     
@@ -72,6 +74,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           lng: position.coords.longitude
         });
         setIsLocating(false);
+        setLocationReady(true);
         haptics.notification('success');
       },
       (err) => {
@@ -83,6 +86,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
             lng: profile.location.coordinates[1]
           });
         }
+        setLocationReady(true);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
@@ -169,19 +173,20 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [profile, detectLocation]);
 
   useEffect(() => {
-    if (!showWalkthrough && !showPreferenceTest) {
+    // Only load recommendations after location detection is complete (or confirmed unavailable)
+    if (!showWalkthrough && !showPreferenceTest && locationReady) {
       loadRecommendations();
     }
-  }, [category, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, loadRecommendations]);
+  }, [category, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, loadRecommendations, locationReady]);
 
   useEffect(() => {
-    if (!showWalkthrough && !showPreferenceTest && query.length >= 2) {
+    if (!showWalkthrough && !showPreferenceTest && locationReady && query.length >= 2) {
       const searchTimeout = setTimeout(() => {
         loadRecommendations(false, 0);
       }, 300);
       return () => clearTimeout(searchTimeout);
     }
-  }, [query]);
+  }, [query, locationReady]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     startY.current = e.touches[0].pageY;

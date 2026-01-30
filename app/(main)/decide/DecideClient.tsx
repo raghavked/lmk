@@ -24,6 +24,7 @@ export default function DecideClient({ profile }: { profile: any }) {
   const [showHistory, setShowHistory] = useState(false);
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [locationReady, setLocationReady] = useState(false);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -33,6 +34,7 @@ export default function DecideClient({ profile }: { profile: any }) {
             lat: position.coords.latitude,
             lng: position.coords.longitude
           });
+          setLocationReady(true);
         },
         (err) => {
           console.error('Location error:', err);
@@ -42,6 +44,7 @@ export default function DecideClient({ profile }: { profile: any }) {
               lng: profile.location.coordinates[1]
             });
           }
+          setLocationReady(true);
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
       );
@@ -50,6 +53,9 @@ export default function DecideClient({ profile }: { profile: any }) {
         lat: profile.location.coordinates[0],
         lng: profile.location.coordinates[1]
       });
+      setLocationReady(true);
+    } else {
+      setLocationReady(true);
     }
   }, [profile]);
 
@@ -77,8 +83,10 @@ export default function DecideClient({ profile }: { profile: any }) {
   }, [selectedCategory]);
 
   useEffect(() => {
-    loadNextItem();
-  }, [selectedCategory]);
+    if (locationReady) {
+      loadNextItem();
+    }
+  }, [selectedCategory, locationReady]);
 
   const loadNextItem = async (excludeIds?: string[]) => {
     setLoading(true);
