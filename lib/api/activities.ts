@@ -22,16 +22,25 @@ export class ActivitiesAPI {
     seenIds = [],
     profile,
     query,
+    lat: userLat,
+    lng: userLng,
+    radius: userRadius,
   }: {
     limit?: number;
     offset?: number;
     seenIds?: string[];
     profile?: any;
     query?: string;
+    lat?: number;
+    lng?: number;
+    radius?: number;
   }) {
     try {
-      const lat = profile?.location?.coordinates?.[0] || 40.7128;
-      const lng = profile?.location?.coordinates?.[1] || -74.0060;
+      const lat = userLat || profile?.location?.coordinates?.[0] || 40.7128;
+      const lng = userLng || profile?.location?.coordinates?.[1] || -74.0060;
+      const radius = userRadius || 16000;
+      
+      console.log(`[Activities API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}`);
       
       if (query && query.length >= 2) {
         const response = await axios.get(`${this.baseUrl}/businesses/search`, {
@@ -41,7 +50,7 @@ export class ActivitiesAPI {
           params: {
             latitude: lat,
             longitude: lng,
-            radius: 16000,
+            radius: Math.min(radius, 40000),
             term: query,
             limit: Math.max(limit, 20),
             sort_by: 'best_match',
@@ -63,7 +72,7 @@ export class ActivitiesAPI {
             params: {
               latitude: lat,
               longitude: lng,
-              radius: 16000,
+              radius: Math.min(radius, 40000),
               categories: category,
               limit: 10,
               sort_by: 'rating',
