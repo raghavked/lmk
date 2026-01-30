@@ -40,11 +40,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { full_name, display_name } = body;
+    const { full_name } = body;
 
     const updates: any = {};
     if (full_name !== undefined) updates.full_name = full_name;
-    if (display_name !== undefined) updates.display_name = display_name;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

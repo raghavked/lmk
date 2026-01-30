@@ -211,7 +211,7 @@ ${locationInstruction}
     const tasteProfile = user.taste_profile || [];
     const socialSignals = context.socialSignals;
     
-    let userContext = `User: ${user.full_name || user.display_name || 'User'}
+    let userContext = `User: ${user.full_name || 'User'}
 Location: ${user.location?.city || 'Unknown'}
 `;
 
