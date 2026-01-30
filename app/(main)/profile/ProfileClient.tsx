@@ -1,19 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Heart, TrendingUp, Settings, Grid, Award } from 'lucide-react';
+import { Star, Heart, TrendingUp, Settings, Grid, Award, Loader2, AlertCircle, Check, Trash2, User, Lock } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 import Image from 'next/image';
 import PreferenceTest from '@/components/PreferenceTest';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function ProfileClient({ profile: initialProfile }: { profile: any }) {
+  const supabase = createClientComponentClient();
   const [profile, setProfile] = useState(initialProfile);
   const [ratings, setRatings] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'ratings' | 'favorites' | 'stats' | 'preferences'>('ratings');
+  const [activeTab, setActiveTab] = useState<'ratings' | 'favorites' | 'stats' | 'preferences' | 'settings'>('ratings');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [settingsName, setSettingsName] = useState(initialProfile?.full_name || '');
+  const [settingsDisplayName, setSettingsDisplayName] = useState(initialProfile?.display_name || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   
   useEffect(() => {
     loadRatings();
@@ -51,7 +62,6 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   };
 
   const handlePreferenceComplete = async () => {
-    // Refresh profile data
     try {
       const response = await fetch('/api/profile');
       if (response.ok) {
@@ -63,6 +73,226 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     }
     setActiveTab('ratings');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveProfile = async () => {
+    setSettingsSaving(true);
+    setSettingsMessage(null);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          full_name: settingsName, 
+          display_name: settingsDisplayName 
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setProfile(data.profile);
+      setSettingsMessage({ type: 'success', text: 'Profile updated successfully!' });
+    } catch (err: any) {
+      setSettingsMessage({ type: 'error', text: err.message || 'Failed to update profile' });
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      setSettingsMessage({ type: 'error', text: 'Passwords do not match' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setSettingsMessage({ type: 'error', text: 'Password must be at least 6 characters' });
+      return;
+    }
+    setSettingsSaving(true);
+    setSettingsMessage(null);
+    try {
+      const response = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      setNewPassword('');
+      setConfirmPassword('');
+      setSettingsMessage({ type: 'success', text: 'Password updated successfully!' });
+    } catch (err: any) {
+      setSettingsMessage({ type: 'error', text: err.message || 'Failed to update password' });
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      setSettingsMessage({ type: 'error', text: 'Please type DELETE to confirm' });
+      return;
+    }
+    setSettingsSaving(true);
+    setSettingsMessage(null);
+    try {
+      const response = await fetch('/api/profile', { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      await supabase.auth.signOut();
+      window.location.href = '/auth/login';
+    } catch (err: any) {
+      setSettingsMessage({ type: 'error', text: err.message || 'Failed to delete account' });
+      setSettingsSaving(false);
+    }
+  };
+
+  const renderSettings = () => {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        {settingsMessage && (
+          <div className={`p-4 rounded-2xl flex items-center gap-3 ${
+            settingsMessage.type === 'success' 
+              ? 'bg-green-900/20 border border-green-700 text-green-300'
+              : 'bg-red-900/20 border border-red-700 text-red-300'
+          }`}>
+            {settingsMessage.type === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+            <span className="font-medium">{settingsMessage.text}</span>
+          </div>
+        )}
+
+        <div className="bg-background-tertiary rounded-3xl border border-border-color p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <User className="w-6 h-6 text-coral" />
+            <h3 className="text-xl font-extrabold text-text-primary">Profile Information</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-text-secondary mb-2">Full Name</label>
+              <input
+                type="text"
+                value={settingsName}
+                onChange={(e) => setSettingsName(e.target.value)}
+                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                placeholder="Your full name"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-text-secondary mb-2">Display Name</label>
+              <input
+                type="text"
+                value={settingsDisplayName}
+                onChange={(e) => setSettingsDisplayName(e.target.value)}
+                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                placeholder="@username"
+              />
+            </div>
+            
+            <button
+              onClick={handleSaveProfile}
+              disabled={settingsSaving}
+              className="w-full py-3 bg-coral text-background-primary rounded-xl font-bold hover:bg-coral/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {settingsSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              Save Changes
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-background-tertiary rounded-3xl border border-border-color p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <Lock className="w-6 h-6 text-coral" />
+            <h3 className="text-xl font-extrabold text-text-primary">Change Password</h3>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-text-secondary mb-2">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                placeholder="Enter new password"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-text-secondary mb-2">Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
+                placeholder="Confirm new password"
+              />
+            </div>
+            
+            <button
+              onClick={handleChangePassword}
+              disabled={settingsSaving || !newPassword || !confirmPassword}
+              className="w-full py-3 bg-coral text-background-primary rounded-xl font-bold hover:bg-coral/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {settingsSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
+              Update Password
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-background-tertiary rounded-3xl border border-red-700/50 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-4">
+            <Trash2 className="w-6 h-6 text-red-500" />
+            <h3 className="text-xl font-extrabold text-red-400">Delete Account</h3>
+          </div>
+          
+          <p className="text-text-secondary mb-4">
+            This action is permanent and cannot be undone. All your data, ratings, and preferences will be deleted.
+          </p>
+          
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full py-3 bg-red-900/30 border border-red-700 text-red-400 rounded-xl font-bold hover:bg-red-900/50 transition"
+            >
+              Delete My Account
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-red-400 mb-2">Type DELETE to confirm</label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="w-full px-4 py-3 bg-background-secondary border border-red-700 rounded-xl text-text-primary focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 outline-none"
+                  placeholder="DELETE"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteConfirmText('');
+                  }}
+                  className="flex-1 py-3 bg-background-secondary border border-border-color text-text-primary rounded-xl font-bold hover:bg-background-tertiary transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={settingsSaving || deleteConfirmText !== 'DELETE'}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {settingsSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
   
   const renderStats = () => {
@@ -327,7 +557,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
               </div>
             </div>
             <button 
-              onClick={() => setActiveTab('preferences')}
+              onClick={() => setActiveTab('settings')}
               className="w-12 h-12 flex items-center justify-center bg-background-secondary rounded-2xl text-text-secondary hover:text-coral transition-colors"
             >
               <Settings className="w-6 h-6" />
@@ -340,7 +570,8 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
               { id: 'ratings', label: 'Ratings', icon: Grid },
               { id: 'favorites', label: 'Favorites', icon: Heart },
               { id: 'stats', label: 'Stats', icon: Award },
-              { id: 'preferences', label: 'Preferences', icon: Settings },
+              { id: 'preferences', label: 'Preferences', icon: TrendingUp },
+              { id: 'settings', label: 'Settings', icon: Settings },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -368,6 +599,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
               <PreferenceTest onComplete={handlePreferenceComplete} />
             </div>
           )}
+          {activeTab === 'settings' && renderSettings()}
         </div>
       </div>
     </div>
