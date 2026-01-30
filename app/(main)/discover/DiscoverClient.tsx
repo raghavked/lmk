@@ -44,6 +44,9 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   // Swipe category state
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+  
+  // Request deduplication
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const categories = [
     { id: 'restaurants', label: 'Restaurants', icon: '🍽️' },
@@ -94,6 +97,11 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [profile]);
 
   const loadRecommendations = useCallback(async (isRefresh = false, newOffset = 0) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    
     if (isRefresh) {
       setIsRefreshing(true);
       setOffset(0);
@@ -131,7 +139,9 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         params.append('seen_ids', Array.from(seenIdsRef.current).join(','));
       }
       
-      const response = await fetch(`/api/recommend?${params.toString()}`);
+      const response = await fetch(`/api/recommend?${params.toString()}`, {
+        signal: abortControllerRef.current?.signal
+      });
       const data = await response.json();
       
       if (!response.ok) throw new Error(data.message || data.error || 'Failed to load recommendations');
@@ -154,6 +164,9 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         setOffset(newOffset + newResults.length);
       }
     } catch (err: any) {
+      if (err.name === 'AbortError') {
+        return;
+      }
       console.error('Error loading recommendations:', err);
       setError(err.message || 'Failed to load recommendations');
     } finally {

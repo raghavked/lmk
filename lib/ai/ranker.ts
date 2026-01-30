@@ -73,9 +73,21 @@ export class AIRanker {
         }
       }
       
-      jsonString = jsonString.trim().replace(/,\s*([\]}])/g, '$1');
+      jsonString = jsonString.trim()
+        .replace(/,\s*([\]}])/g, '$1')
+        .replace(/#(\w)/g, ' $1')
+        .replace(/[\x00-\x1F\x7F]/g, ' ')
+        .replace(/\\'/g, "'");
       
-      const parsed = JSON.parse(jsonString);
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonString);
+      } catch (parseErr) {
+        const fixedJson = jsonString
+          .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+          .replace(/:\s*'([^']*)'/g, ': "$1"');
+        parsed = JSON.parse(fixedJson);
+      }
       const rankings = parsed.rankings || [];
       
       const results = rankings.map((ranking: any) => {
@@ -149,7 +161,7 @@ export class AIRanker {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-haiku-20241022',
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt }
