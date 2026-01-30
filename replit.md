@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **Location Fallback**: Uses profile location when geolocation is unavailable; proper null checks for 0 coordinates
 - **Sorting Options**: AI Score, Distance, Rating, and Review Count sorting for all recommendations
 - **Distance Display**: Distance shown in miles/feet on cards; "Nearby" for very close distances (<0.01 mi)
+- **Distance Filter**: Dropdown on Decide page (5/10/25/50/100 mi) with instant refresh when changed
 - **3 Real API Metrics**: ObjectCard displays category-specific metrics from actual API data (rating/reviews/price for restaurants, rating/votes/year for movies, views/likes/channel for YouTube, length/published/author for books) with fallback to category/genre/type when data is sparse
 - **Longer Descriptions**: AI explanation and object description displayed in separate paragraphs for richer content
 - **Decide Tab**: Reshuffle button, decision history modal, localStorage persistence for seen items
@@ -54,6 +55,8 @@ Preferred communication style: Simple, everyday language.
 - **Groups**: Server-side friend loading for invites, proper name/avatar display
 - **Navigation**: ModeNavigation component for consistent tab switching across Discover/Decide/Groups/Profile
 - **API Formatting**: Enhanced descriptions with cuisine types, ratings, and price info for restaurants; genre/year info for movies/TV
+- **Settings Page**: Full profile settings with name change, password update, and secure account deletion (uses service role key)
+- **AI Preferences**: All quiz preferences (cuisines, dining atmosphere, movie genres, TV preferences, YouTube content, etc.) fully utilized in AI ranking prompts
 
 ### Key Design Patterns
 - **Normalized Data**: Each API wrapper normalizes external data to a common object format
