@@ -17,6 +17,13 @@ const API_MAP: Record<string, any> = {
   activities: ActivitiesAPI,
 };
 
+const recommendationCache = new Map<string, { data: any[], timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function getCacheKey(category: string, lat?: string | null, lng?: string | null, radius?: string | null, query?: string): string {
+  return `${category}:${lat || ''}:${lng || ''}:${radius || ''}:${query || ''}`;
+}
+
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -93,36 +100,51 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `Unsupported category: ${category}` }, { status: 400 });
     }
 
-    console.log(`[Recommend API] Fetching raw recommendations from ${category} API...`);
-    const apiInstance = new ApiClass();
+    const lat = requestUrl.searchParams.get('lat');
+    const lng = requestUrl.searchParams.get('lng');
+    const radius = requestUrl.searchParams.get('radius');
+    const cacheKey = getCacheKey(category, lat, lng, radius, query);
+    const cached = recommendationCache.get(cacheKey);
+    const now = Date.now();
+
     const profileWithTaste = { 
       ...finalProfile, 
       taste_profile: finalProfile?.taste_profile || tasteProfile 
     };
 
-    const lat = requestUrl.searchParams.get('lat');
-    const lng = requestUrl.searchParams.get('lng');
-    const radius = requestUrl.searchParams.get('radius');
-
     let rawRecommendations = [];
-    try {
-      rawRecommendations = await apiInstance.getRecommendations({
-        category,
-        limit,
-        offset,
-        seenIds,
-        query,
-        profile: profileWithTaste as any,
-        lat: lat ? parseFloat(lat) : undefined,
-        lng: lng ? parseFloat(lng) : undefined,
-        radius: radius ? parseInt(radius) : undefined,
-      });
-    } catch (apiError) {
-      console.error(`Error fetching from ${category} API:`, apiError);
-      rawRecommendations = [];
+    
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      console.log(`[Recommend API] Using cached data for ${category}`);
+      rawRecommendations = cached.data;
+    } else {
+      console.log(`[Recommend API] Fetching fresh recommendations from ${category} API...`);
+      const apiInstance = new ApiClass();
+      try {
+        rawRecommendations = await apiInstance.getRecommendations({
+          category,
+          limit: Math.max(limit, 20),
+          offset,
+          seenIds: [],
+          query,
+          profile: profileWithTaste as any,
+          lat: lat ? parseFloat(lat) : undefined,
+          lng: lng ? parseFloat(lng) : undefined,
+          radius: radius ? parseInt(radius) : undefined,
+        });
+        recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
+      } catch (apiError) {
+        console.error(`Error fetching from ${category} API:`, apiError);
+        rawRecommendations = [];
+      }
     }
 
-    console.log(`[Recommend API] Got ${rawRecommendations.length} raw recommendations`);
+    if (seenIds.length > 0) {
+      rawRecommendations = rawRecommendations.filter((r: any) => !seenIds.includes(r.id));
+    }
+
+    console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering`);
+    rawRecommendations = rawRecommendations.slice(0, limit);
 
     // If no raw recommendations, return empty results
     if (!rawRecommendations || rawRecommendations.length === 0) {
