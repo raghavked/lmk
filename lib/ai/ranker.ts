@@ -28,14 +28,30 @@ export interface RankedResult {
   };
 }
 
+const aiCache = new Map<string, { data: RankedResult[], timestamp: number }>();
+const AI_CACHE_TTL = 10 * 60 * 1000;
+
 export class AIRanker {
-  // --- Core Ranking Logic ---
+  private getCacheKey(objects: any[], category: string): string {
+    const ids = objects.map(o => o.id).sort().join(',');
+    return `${category}:${ids}`;
+  }
+
   async rank(
     objects: any[],
     user: any,
     context: AIRankingContext
   ): Promise<RankedResult[]> {
     if (!objects || objects.length === 0) return [];
+    
+    const limitedObjects = objects.slice(0, 8);
+    
+    const cacheKey = this.getCacheKey(limitedObjects, context.category);
+    const cached = aiCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) {
+      console.log('[AIRanker] Using cached AI response');
+      return cached.data;
+    }
     
     const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     const openAIApiKey = process.env.OPENAI_API_KEY;
@@ -44,17 +60,16 @@ export class AIRanker {
       return this.getFallbackRankings(objects, context);
     }
 
-    const prompt = this.buildPrompt(objects, user, context);
+    const prompt = this.buildPrompt(limitedObjects, user, context);
     const systemPrompt = this.getSystemPrompt(context.category, !!context.location);
     
     try {
       let content: string | null = null;
       
-      // Use Claude Opus as primary (higher quality rankings)
       if (claudeApiKey) {
         content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
       } else {
-        return this.getFallbackRankings(objects, context);
+        return this.getFallbackRankings(limitedObjects, context);
       }
 
       if (!content) {
@@ -91,7 +106,7 @@ export class AIRanker {
       const rankings = parsed.rankings || [];
       
       const results = rankings.map((ranking: any) => {
-        const obj = objects[ranking.object_index - 1];
+        const obj = limitedObjects[ranking.object_index - 1];
         if (!obj) return null;
         
         let finalWhyYoullLike = ranking.why_youll_like || ranking.why_youll_like_it || obj.description || `A personalized recommendation based on your taste profile.`;
@@ -112,16 +127,16 @@ export class AIRanker {
         };
       }).filter(Boolean);
       
-      // If AI returned no valid results but we had objects, use fallback
-      if (results.length === 0 && objects.length > 0) {
+      if (results.length === 0 && limitedObjects.length > 0) {
         console.warn('[AIRanker] AI returned 0 results, using fallback');
-        return this.getFallbackRankings(objects, context);
+        return this.getFallbackRankings(limitedObjects, context);
       }
       
+      aiCache.set(cacheKey, { data: results, timestamp: Date.now() });
       return results;
     } catch (error) {
       console.error('AI ranking error:', error);
-      return this.getFallbackRankings(objects, context);
+      return this.getFallbackRankings(limitedObjects, context);
     }
   }
 
@@ -161,13 +176,13 @@ export class AIRanker {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-haiku-20241022',
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 4096,
-        temperature: 0.7,
+        max_tokens: 2048,
+        temperature: 0.5,
       })
     });
 
@@ -182,29 +197,20 @@ export class AIRanker {
   }
   
   private getSystemPrompt(category: string, hasLocation: boolean): string {
-    const locationInstruction = hasLocation ? '- PROXIMITY: If an item is very close, factor that into the score and mention it. The user is reporting a lack of localization, so make sure to mention the distance if it is under 5 miles.' : '';
+    const locationNote = hasLocation ? ' Mention distance if under 5 miles.' : '';
     
-    return `You are the LMK AI, a highly intelligent and context-aware recommendation engine.
+    return `You are LMK AI, a personalized recommendation engine. Respond ONLY with JSON.
 
-Your goal is to provide recommendations that feel deeply researched and expertly curated.
+RULES:
+1. Use PROVIDED data only - never invent facts
+2. Score 0-10 based on user preferences match
+3. Reference SPECIFIC data (ratings, reviews, genres) in descriptions
+4. Connect recommendations to user's taste profile${locationNote}
 
-CRITICAL INSTRUCTIONS FOR RATINGS:
-1. **FACTUAL ANCHORS**: You MUST use the provided 'Factual Data Points' to generate your metrics and descriptions. Do not invent facts.
-2. **METRICS**: You MUST invent 3 unique, highly specific, and **category-appropriate** metrics for each item. These metrics MUST be directly derived from the Factual Data Points and the item's title/description. Examples: 'Dumpling Craftsmanship', 'Halal Authenticity', 'Cultural Fusion'.
-   - **ZERO-TOLERANCE**: Metrics MUST NOT be generic (e.g., 'Quality', 'Value', 'Taste').
-   - **SCORING**: The score for each metric (0-10) MUST reflect the Factual Data Points.
-3. **PERSONALIZED SCORE**: The personalized_score (0-10) MUST be the final, most accurate reflection of the item's fit for the user, adjusting the external rating based on the user's taste profile.
+OUTPUT FORMAT (JSON only, wrapped in \`\`\`json):
+{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"Short catchy line","why_youll_like":"2 sentences connecting item data to user preferences. Reference specific facts like ratings or review counts.","tagline":"Max 8 words","tags":["#Tag1","#Tag2"],"detailed_ratings":{"Metric1":8,"Metric2":9,"Metric3":7}}]}
 
-CRITICAL INSTRUCTIONS FOR CONTENT:
-1. TAGLINE: Create a punchy, high-end tagline (max 8 words).
-2. WHY YOU'LL LIKE IT: Write 2-3 sentences that connect the item's specific strengths (from the Factual Data Points) to the user's taste profile. The description MUST reference at least one specific Factual Data Point. Use the key "why_youll_like" for this field. The description MUST be written in a sophisticated, high-end editorial tone.
-3. TAGS: Use 2-3 specific subject tags (e.g., #Cyberpunk, #FarmToTable).
-
-${locationInstruction}
-
-        Respond ONLY with a JSON object containing a "rankings" array. The JSON MUST be wrapped in \`\`\`json ... \`\`\`. Each ranking MUST include "object_index", "personalized_score", "hook", "why_youll_like", "tagline", "tags", and "detailed_ratings". The "detailed_ratings" field MUST be an object with exactly 3 keys (the 3 unique metrics). DO NOT include any text or markdown outside of the JSON block.
-
-**FINAL INSTRUCTION**: Since the user is reporting a lack of personalization, you MUST be extremely aggressive in using the 'Taste Profile' data in the 'why_youll_like' field. The description MUST be written in a sophisticated, high-end editorial tone, matching the style of the provided image examples. For example, if the user likes 'Spicy Food' and the restaurant has 'High Yelp Review Count', the 'why_youll_like' must say something like: "Given your preference for Spicy Food, this restaurant's high Yelp Review Count of 395 suggests a reliable source for the authentic heat you crave."`;
+IMPORTANT: why_youll_like MUST mention specific data AND user preferences. Example: "With 4.5 stars from 200+ reviews, this matches your love of authentic Italian cuisine."`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {
