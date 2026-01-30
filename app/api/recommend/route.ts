@@ -168,6 +168,8 @@ export async function GET(request: Request) {
     const radiusInMiles = radius ? parseInt(radius) / 1609 : null;
     
     if (userLat !== null && userLng !== null) {
+      console.log(`[Recommend API] User location: ${userLat}, ${userLng}`);
+      
       rankedResults = rankedResults.map((result: any) => {
         const obj = result.object || result;
         const coords = obj.location?.coordinates;
@@ -175,10 +177,11 @@ export async function GET(request: Request) {
         const objLng = obj.location?.lng;
         let distance = null;
         
-        if (coords && coords[0] !== undefined && coords[1] !== undefined) {
-          distance = calculateDistance(userLat, userLng, coords[0], coords[1]);
-        } else if (objLat !== undefined && objLng !== undefined) {
+        // Use lat/lng properties first (more reliable), then fall back to coordinates array
+        if (objLat !== undefined && objLng !== undefined) {
           distance = calculateDistance(userLat, userLng, objLat, objLng);
+        } else if (coords && coords[0] !== undefined && coords[1] !== undefined) {
+          distance = calculateDistance(userLat, userLng, coords[0], coords[1]);
         }
         
         return {
@@ -187,14 +190,22 @@ export async function GET(request: Request) {
         };
       });
       
+      // Log first result's location for debugging
+      if (rankedResults.length > 0) {
+        const firstObj = rankedResults[0].object || rankedResults[0];
+        console.log(`[Recommend API] First result location: lat=${firstObj.location?.lat}, lng=${firstObj.location?.lng}, distance=${rankedResults[0].distance?.toFixed(2)} mi`);
+      }
+      
       // Filter out results that exceed the user's distance filter (only for location-based categories)
+      // Use a slightly larger tolerance (1.1x) to account for Yelp API's distance approximation
       if (radiusInMiles !== null && (category === 'restaurants' || category === 'activities')) {
         const beforeCount = rankedResults.length;
+        const filterRadius = radiusInMiles * 1.2; // Allow 20% tolerance
         rankedResults = rankedResults.filter((result: any) => {
           if (result.distance === null) return true;
-          return result.distance <= radiusInMiles;
+          return result.distance <= filterRadius;
         });
-        console.log(`[Recommend API] Filtered by distance: ${beforeCount} -> ${rankedResults.length} (max ${radiusInMiles} mi)`);
+        console.log(`[Recommend API] Filtered by distance: ${beforeCount} -> ${rankedResults.length} (max ${radiusInMiles} mi, tolerance ${filterRadius.toFixed(1)} mi)`);
       }
     }
 
