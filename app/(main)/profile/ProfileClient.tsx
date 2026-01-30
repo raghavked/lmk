@@ -18,7 +18,6 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   const [error, setError] = useState<string | null>(null);
   
   const [settingsName, setSettingsName] = useState(initialProfile?.full_name || '');
-  const [settingsDisplayName, setSettingsDisplayName] = useState(initialProfile?.display_name || '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -28,7 +27,6 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
 
   useEffect(() => {
     setSettingsName(profile?.full_name || '');
-    setSettingsDisplayName(profile?.display_name || '');
   }, [profile]);
   
   useEffect(() => {
@@ -90,8 +88,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          full_name: settingsName, 
-          display_name: settingsDisplayName 
+          full_name: settingsName 
         }),
       });
       const data = await response.json();
@@ -182,17 +179,6 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
                 onChange={(e) => setSettingsName(e.target.value)}
                 className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
                 placeholder="Your full name"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-bold text-text-secondary mb-2">Display Name</label>
-              <input
-                type="text"
-                value={settingsDisplayName}
-                onChange={(e) => setSettingsDisplayName(e.target.value)}
-                className="w-full px-4 py-3 bg-background-secondary border border-border-color rounded-xl text-text-primary focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none"
-                placeholder="@username"
               />
             </div>
             
@@ -559,7 +545,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
                   {profile.full_name || 'User'}
                 </h1>
                 <p className="text-sm font-bold text-text-secondary">
-                  @{profile.display_name || profile.full_name?.toLowerCase().replace(' ', '_') || 'user'}
+                  @{profile.full_name?.toLowerCase().replace(' ', '_') || 'user'}
                 </p>
               </div>
             </div>
