@@ -52,7 +52,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
       category: 'Movies',
       question: 'What type of movie experience do you prefer?',
       type: 'single-select',
-      options: ['Blockbuster & Entertaining', 'Thought-Provoking', 'Emotional & Moving', 'Artistic & Experimental', 'Light & Fun', 'Intense & Gripping'],
+      options: ['Blockbuster & Entertaining', 'Thought-Provoking', 'Emotional & Moving', 'Artistic & Experimental', 'Light & Fun', 'Intense & Gripping', 'No preference'],
     },
     {
       id: 'movie_era',
