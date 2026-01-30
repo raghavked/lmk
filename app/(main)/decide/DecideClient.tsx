@@ -26,6 +26,8 @@ export default function DecideClient({ profile }: { profile: any }) {
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationReady, setLocationReady] = useState(false);
   const [distanceFilter, setDistanceFilter] = useState<number>(25); // Default to 25 miles for Decide
+  const [showMatchPopup, setShowMatchPopup] = useState(false);
+  const [matchedItem, setMatchedItem] = useState<any>(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -169,10 +171,21 @@ export default function DecideClient({ profile }: { profile: any }) {
         [decision]: prev[decision as keyof typeof prev] + 1,
       }));
 
-      await loadNextItem(updatedSeenIds);
+      if (decision === 'yes') {
+        setMatchedItem(currentItem);
+        setShowMatchPopup(true);
+      } else {
+        await loadNextItem(updatedSeenIds);
+      }
     } catch (err) {
       console.error('Error recording decision:', err);
     }
+  };
+  
+  const handleCloseMatch = async () => {
+    setShowMatchPopup(false);
+    setMatchedItem(null);
+    await loadNextItem(seenIds);
   };
 
   const handleReshuffle = () => {
@@ -438,6 +451,36 @@ export default function DecideClient({ profile }: { profile: any }) {
           </div>
         )}
       </div>
+
+      {/* It's a Match Popup */}
+      {showMatchPopup && matchedItem && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md animate-in fade-in zoom-in duration-300">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">🎉</div>
+              <h2 className="text-3xl font-extrabold text-coral mb-2">It's a Match!</h2>
+              <p className="text-text-secondary">
+                You liked {matchedItem.object?.title || matchedItem.title}
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <ObjectCard
+                object={matchedItem.object || matchedItem}
+                explanation={matchedItem.explanation}
+                profile={profile}
+              />
+            </div>
+            
+            <button
+              onClick={handleCloseMatch}
+              className="w-full py-4 bg-coral text-background-primary rounded-xl font-bold text-lg hover:bg-coral/90 transition-all shadow-lg shadow-coral/30"
+            >
+              Continue Swiping
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
