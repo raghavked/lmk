@@ -86,14 +86,14 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left Section: Visual Impact */}
-      <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#181011] overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#fea4a7]/5 via-transparent to-transparent"></div>
-        <div className="absolute top-0 left-0 w-96 h-96 bg-[#fea4a7]/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#fea4a7]/5 rounded-full blur-[120px]"></div>
+      <div className="relative hidden lg:flex lg:w-1/2 xl:w-7/12 bg-[#0D1117] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B6B]/5 via-transparent to-transparent"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#FF6B6B]/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#FF6B6B]/5 rounded-full blur-[120px]"></div>
         
         <div className="relative z-10 flex flex-col justify-between p-16 w-full h-full">
           <div className="flex items-center gap-3">
-            <Logo className="text-[#8b3a3a]" size={32} />
+            <Logo className="text-[#FF6B6B]" size={32} />
             <span className="text-2xl font-bold tracking-tight text-white">LMK</span>
           </div>
           <div className="max-w-md">
@@ -104,11 +104,11 @@ export default function SignInPage() {
       </div>
 
       {/* Right Section: Sign In Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-[#230f10]">
+      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16 xl:px-24 bg-[#161B22]">
         <div className="mx-auto w-full max-w-sm lg:max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
-            <Logo className="text-[#8b3a3a]" size={24} />
+            <Logo className="text-[#FF6B6B]" size={24} />
             <span className="text-xl font-bold tracking-tight text-gray-50">LMK</span>
           </div>
 
@@ -138,7 +138,7 @@ export default function SignInPage() {
                   required
                   autoComplete="username"
                   placeholder="name@example.com"
-                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-4 bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
                 />
               </div>
             </div>
@@ -157,7 +157,7 @@ export default function SignInPage() {
                   required
                   autoComplete="current-password"
                   placeholder="Enter your password"
-                  className="w-full h-14 pl-12 pr-14 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-14 bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
                 />
                 {isHydrated && (
                   <button
@@ -183,7 +183,7 @@ export default function SignInPage() {
 
             {/* Forgot Password Link */}
             <div className="flex justify-end">
-              <Link href="#" className="text-sm text-[#fea4a7] hover:underline font-medium">
+              <Link href="#" className="text-sm text-[#FF6B6B] hover:underline font-medium">
                 Forgot password?
               </Link>
             </div>
@@ -192,7 +192,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={loading || !isHydrated}
-              className="w-full h-14 mt-6 bg-[#fea4a7] text-[#230f10] font-bold text-lg rounded-full hover:bg-[#fea4a7]/90 active:scale-[0.98] transition-all shadow-lg shadow-[#fea4a7]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full h-14 mt-6 bg-[#FF6B6B] text-[#0D1117] font-bold text-lg rounded-full hover:bg-[#FF6B6B]/90 active:scale-[0.98] transition-all shadow-lg shadow-[#FF6B6B]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                 <>
@@ -208,7 +208,7 @@ export default function SignInPage() {
           <div className="mt-8 text-center">
             <p className="text-gray-400 text-base">
               Don't have an account?{' '}
-              <Link className="text-[#fea4a7] font-bold hover:underline ml-1" href="/auth/signup">
+              <Link className="text-[#FF6B6B] font-bold hover:underline ml-1" href="/auth/signup">
                 Sign up
               </Link>
             </p>

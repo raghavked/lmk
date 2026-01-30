@@ -105,11 +105,11 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#230f10] px-4">
+      <div className="flex min-h-screen items-center justify-center bg-[#0D1117] px-4">
         <div className="text-center">
           <div className="mb-6 flex justify-center">
-            <div className="flex items-center justify-center w-16 h-16 bg-[#fea4a7]/10 rounded-full">
-              <svg className="w-8 h-8 text-[#fea4a7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center justify-center w-16 h-16 bg-[#FF6B6B]/10 rounded-full">
+              <svg className="w-8 h-8 text-[#FF6B6B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -123,14 +123,14 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col md:flex-row bg-[#230f10]">
+    <div className="flex h-screen w-full flex-col md:flex-row bg-[#161B22]">
       {/* Left Panel: Branding & Visuals */}
-      <div className="relative hidden md:flex md:w-1/2 flex-col justify-between p-12 bg-[#181011] overflow-hidden">
+      <div className="relative hidden md:flex md:w-1/2 flex-col justify-between p-12 bg-[#0D1117] overflow-hidden">
         {/* Background Decoration */}
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#fea4a7]/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#fea4a7]/5 rounded-full blur-[100px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#FF6B6B]/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#FF6B6B]/5 rounded-full blur-[100px]"></div>
         <div className="relative z-10 flex items-center gap-3">
-          <Logo className="text-[#8b3a3a]" size={40} />
+          <Logo className="text-[#FF6B6B]" size={40} />
           <h2 className="text-white text-2xl font-bold tracking-tight">LMK</h2>
         </div>
         <div className="relative z-10 max-w-md">
@@ -140,9 +140,9 @@ export default function SignUpPage() {
           </p>
           <div className="mt-12 flex items-center gap-4">
             <div className="flex -space-x-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#181011] bg-[#fea4a7]/30"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-[#181011] bg-[#fea4a7]/20"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-[#181011] bg-[#fea4a7]/10"></div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#FF6B6B]/30"></div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#FF6B6B]/20"></div>
+              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#FF6B6B]/10"></div>
             </div>
             <p className="text-sm text-gray-400">Join <span className="text-white font-semibold">10k+</span> members today</p>
           </div>
@@ -153,10 +153,10 @@ export default function SignUpPage() {
       </div>
 
       {/* Right Panel: Sign Up Form */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-[#230f10] overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-[#161B22] overflow-y-auto">
         {/* Mobile Logo */}
         <div className="md:hidden flex items-center gap-2 mb-8">
-          <Logo className="text-[#8b3a3a]" size={32} />
+          <Logo className="text-[#FF6B6B]" size={32} />
           <h2 className="text-gray-50 text-xl font-bold tracking-tight">LMK</h2>
         </div>
 
@@ -186,7 +186,7 @@ export default function SignUpPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   required
                   placeholder="Enter your full name"
-                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-4 bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
                 />
               </div>
             </div>
@@ -204,7 +204,7 @@ export default function SignUpPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="name@example.com"
-                  className="w-full h-14 pl-12 pr-4 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-4 bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
                 />
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function SignUpPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Create a strong password"
-                  className="w-full h-14 pl-12 pr-12 bg-gray-800 border border-gray-700 rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#fea4a7]/50 focus:border-[#fea4a7]/50 transition-all outline-none"
+                  className="w-full h-14 pl-12 pr-12 bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
                 />
                 {isHydrated && (
                   <button
@@ -254,16 +254,16 @@ export default function SignUpPage() {
                   type="checkbox"
                   checked={agreeToTerms}
                   onChange={(e) => setAgreeToTerms(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-700 bg-gray-800 text-[#fea4a7] focus:ring-[#fea4a7] focus:ring-offset-[#230f10]"
+                  className="w-5 h-5 rounded border-[#30363D] bg-[#21262D] text-[#FF6B6B] focus:ring-[#FF6B6B] focus:ring-offset-[#161B22]"
                 />
               </div>
               <label htmlFor="terms" className="text-sm text-gray-400 cursor-pointer">
                 I agree to the{' '}
-                <Link href="#" className="text-[#fea4a7] hover:underline font-medium">
+                <Link href="#" className="text-[#FF6B6B] hover:underline font-medium">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link href="#" className="text-[#fea4a7] hover:underline font-medium">
+                <Link href="#" className="text-[#FF6B6B] hover:underline font-medium">
                   Privacy Policy
                 </Link>
               </label>
@@ -273,7 +273,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading || !isHydrated}
-              className="w-full h-14 mt-6 bg-[#fea4a7] text-[#230f10] font-bold text-lg rounded-full hover:bg-[#fea4a7]/90 active:scale-[0.98] transition-all shadow-lg shadow-[#fea4a7]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="w-full h-14 mt-6 bg-[#FF6B6B] text-[#0D1117] font-bold text-lg rounded-full hover:bg-[#FF6B6B]/90 active:scale-[0.98] transition-all shadow-lg shadow-[#FF6B6B]/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
               {loading ? (
                 <>
@@ -289,7 +289,7 @@ export default function SignUpPage() {
           <div className="mt-8 text-center">
             <p className="text-gray-400 text-base">
               Already have an account?{' '}
-              <Link className="text-[#fea4a7] font-bold hover:underline ml-1" href="/auth/login">
+              <Link className="text-[#FF6B6B] font-bold hover:underline ml-1" href="/auth/login">
                 Sign in
               </Link>
             </p>
