@@ -50,10 +50,11 @@ export class AIRanker {
     try {
       let content: string | null = null;
       
-      if (claudeApiKey) {
-        content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
-      } else if (openAIApiKey) {
+      // Prefer OpenAI for speed (gpt-4o-mini is much faster than Claude)
+      if (openAIApiKey) {
         content = await this.callOpenAIAPI(systemPrompt, prompt, openAIApiKey);
+      } else if (claudeApiKey) {
+        content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
       }
 
       if (!content) {
