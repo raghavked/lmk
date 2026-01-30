@@ -165,6 +165,8 @@ export async function GET(request: Request) {
     }
 
     // Add distance to each result if user location is available
+    const radiusInMiles = radius ? parseInt(radius) / 1609 : null;
+    
     if (userLat !== null && userLng !== null) {
       rankedResults = rankedResults.map((result: any) => {
         const obj = result.object || result;
@@ -184,6 +186,16 @@ export async function GET(request: Request) {
           distance,
         };
       });
+      
+      // Filter out results that exceed the user's distance filter (only for location-based categories)
+      if (radiusInMiles !== null && (category === 'restaurants' || category === 'activities')) {
+        const beforeCount = rankedResults.length;
+        rankedResults = rankedResults.filter((result: any) => {
+          if (result.distance === null) return true;
+          return result.distance <= radiusInMiles;
+        });
+        console.log(`[Recommend API] Filtered by distance: ${beforeCount} -> ${rankedResults.length} (max ${radiusInMiles} mi)`);
+      }
     }
 
     // Apply sorting based on sort_by parameter
