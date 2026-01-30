@@ -109,7 +109,15 @@ export class AIRanker {
         const obj = limitedObjects[ranking.object_index - 1];
         if (!obj) return null;
         
-        let finalWhyYoullLike = ranking.why_youll_like || ranking.why_youll_like_it || obj.description || `A personalized recommendation based on your taste profile.`;
+        let finalWhyYoullLike = ranking.why_youll_like || ranking.why_youll_like_it;
+        if (!finalWhyYoullLike || finalWhyYoullLike.includes('your interest') || finalWhyYoullLike.includes('your preferences')) {
+          const rating = obj.rating || obj.external_rating || 'highly rated';
+          const reviews = obj.review_count || obj.vote_count;
+          const genre = obj.genres?.[0] || obj.categories?.[0]?.title || obj.category;
+          finalWhyYoullLike = reviews 
+            ? `With ${typeof rating === 'number' ? rating.toFixed(1) : rating} rating from ${reviews} reviews, ${obj.title} offers ${genre ? `exceptional ${genre} quality` : 'an experience worth exploring'}.`
+            : obj.description || `${obj.title} stands out for its quality and attention to detail.`;
+        }
 
         return {
           rank: ranking.rank || 1,
@@ -176,7 +184,7 @@ export class AIRanker {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt }
@@ -199,22 +207,26 @@ export class AIRanker {
   private getSystemPrompt(category: string, hasLocation: boolean): string {
     const locationNote = hasLocation ? ' If distance < 5 miles, mention it.' : '';
     
-    return `You are LMK AI, a sophisticated recommendation curator writing for a high-end lifestyle magazine.
+    return `You are LMK AI, a recommendation curator for a luxury lifestyle magazine.
 
-CRITICAL QUALITY REQUIREMENTS:
-1. NEVER write generic descriptions like "matches your interests" or "based on your preferences"
-2. ALWAYS cite SPECIFIC numbers: ratings (4.5 stars), review counts (200+ reviews), years, vote counts
-3. ALWAYS name the user's SPECIFIC preferences from their taste profile (e.g., "your love of spicy Thai food")
-4. Write in an editorial, magazine-quality tone - sophisticated but accessible${locationNote}
+BANNED PHRASES (will be rejected):
+- "based on your interest in"
+- "matches your preferences" 
+- "great match for you"
+- "aligns with your taste"
+- Any generic description without specific numbers
 
-EXAMPLE GOOD why_youll_like:
-"Boasting a 4.7-star rating across 340 reviews, this spot delivers the bold Korean flavors you crave. The authentic kimchi jjigae and crispy Korean fried chicken align perfectly with your preference for umami-rich Asian cuisine."
+REQUIRED in why_youll_like:
+1. START with a specific number (rating, review count, year, vote count)
+2. MENTION item name and a specific attribute (genre, cuisine type, director)
+3. CONNECT to ONE specific user preference by name${locationNote}
 
-EXAMPLE BAD why_youll_like (NEVER DO THIS):
-"This restaurant matches your dining preferences and has good reviews."
+TEMPLATE: "[NUMBER] + [ITEM DETAIL] + [USER PREFERENCE]"
 
-OUTPUT FORMAT - JSON wrapped in \`\`\`json:
-{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"Punchy 5-7 word hook","why_youll_like":"2-3 sentences citing SPECIFIC data (ratings, counts, years) connected to SPECIFIC user preferences","tagline":"Editorial tagline max 8 words","tags":["#Specific","#Tags"],"detailed_ratings":{"UniqueMetric1":8,"UniqueMetric2":9,"UniqueMetric3":7}}]}`;
+EXAMPLE: "With 4.7 stars from 340 reviews, Spicy Seoul's authentic kimchi jjigae delivers the bold Korean heat you love. Their hand-made dumplings have earned cult status among spice enthusiasts."
+
+OUTPUT - JSON only in \`\`\`json:
+{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"5-word catchy hook","why_youll_like":"2 sentences with NUMBERS and SPECIFICS","tagline":"8 words max","tags":["#Tag1","#Tag2"],"detailed_ratings":{"Metric1":8,"Metric2":9,"Metric3":7}}]}`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {
@@ -341,13 +353,28 @@ Provide the rankings in the requested JSON format.`;
   private getFallbackRankings(objects: any[], context: AIRankingContext): RankedResult[] {
     return objects.map((obj, idx) => {
       try {
+        const rating = obj.rating || obj.external_rating;
+        const reviews = obj.review_count || obj.vote_count;
+        const genre = obj.genres?.[0] || obj.categories?.[0]?.title;
+        
+        let description = '';
+        if (rating && reviews) {
+          description = `Boasting a ${typeof rating === 'number' ? rating.toFixed(1) : rating} rating from ${reviews} reviews, ${obj.title || 'this spot'} delivers ${genre ? `exceptional ${genre} quality` : 'a standout experience'}. The high praise from verified visitors speaks to consistent quality.`;
+        } else if (rating) {
+          description = `With a solid ${typeof rating === 'number' ? rating.toFixed(1) : rating} rating, ${obj.title || 'this option'} has earned recognition for ${genre ? `its ${genre} offerings` : 'quality and atmosphere'}.`;
+        } else if (obj.description) {
+          description = obj.description.length > 150 ? obj.description.substring(0, 150) + '...' : obj.description;
+        } else {
+          description = `${obj.title || 'This recommendation'} stands out for its attention to detail and quality${genre ? ` in the ${genre} category` : ''}.`;
+        }
+        
         return {
           rank: idx + 1,
           object: obj,
           personalized_score: 8.0,
           explanation: {
-            hook: "Recommended for you",
-            why_youll_like: `Based on your interest in ${context.category}, this is a great match.`,
+            hook: genre ? `Top-rated ${genre}` : "Curated pick",
+            why_youll_like: description,
             tagline: obj?.title || 'Recommendation',
             tags: obj?.tags || [],
             detailed_ratings: this.getFallbackRatings(context.category, obj)
@@ -360,8 +387,8 @@ Provide the rankings in the requested JSON format.`;
           object: obj || {},
           personalized_score: 8.0,
           explanation: {
-            hook: "Recommended for you",
-            why_youll_like: `A great match based on your interests.`,
+            hook: "Curated pick",
+            why_youll_like: `${obj?.title || 'This recommendation'} offers quality and value worth exploring.`,
             tagline: 'Recommendation',
             tags: [],
             detailed_ratings: { 'Quality': 8.0 }
