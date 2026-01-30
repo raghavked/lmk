@@ -80,10 +80,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
+    const userId = session.user.id;
+
     const { error: ratingsError } = await supabase
       .from('ratings')
       .delete()
-      .eq('user_id', session.user.id);
+      .eq('user_id', userId);
 
     if (ratingsError) {
       console.error('Error deleting ratings:', ratingsError);
@@ -92,16 +94,27 @@ export async function DELETE(request: NextRequest) {
     const { error: profileError } = await supabase
       .from('profiles')
       .delete()
-      .eq('id', session.user.id);
+      .eq('id', userId);
 
     if (profileError) {
       return NextResponse.json({ error: 'Failed to delete profile' }, { status: 500 });
     }
 
-    const { error: authError } = await supabase.auth.admin.deleteUser(session.user.id);
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     
-    if (authError) {
-      console.warn('Could not delete auth user (may require admin privileges):', authError);
+    if (serviceRoleKey && supabaseUrl) {
+      const { createClient } = await import('@supabase/supabase-js');
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      
+      const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
+      if (authError) {
+        console.warn('Could not delete auth user:', authError.message);
+      }
+    } else {
+      console.warn('Service role key not available - auth user not deleted');
     }
 
     return NextResponse.json({ message: 'Account deleted successfully' });

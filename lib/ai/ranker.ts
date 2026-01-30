@@ -207,9 +207,36 @@ Location: ${user.location?.city || 'Unknown'}
       userContext += `Current GPS: ${context.location.lat}, ${context.location.lng}\n`;
     }
 
-    if (tasteProfile && tasteProfile.length > 0) {
-      const profileStr = tasteProfile.map((p: any) => p.name || p).join(', ');
-      userContext += `Taste Profile: ${profileStr}\n`;
+    if (tasteProfile && (Array.isArray(tasteProfile) ? tasteProfile.length > 0 : Object.keys(tasteProfile).length > 0)) {
+      let profileStr = '';
+      if (Array.isArray(tasteProfile)) {
+        profileStr = tasteProfile.map((p: any) => p.name || p).join(', ');
+      } else {
+        const parts: string[] = [];
+        const formatValue = (val: any): string => {
+          if (Array.isArray(val)) return val.join(', ');
+          return String(val);
+        };
+        if (tasteProfile.cuisine_preference) parts.push(`Cuisines: ${formatValue(tasteProfile.cuisine_preference)}`);
+        if (tasteProfile.dining_atmosphere) parts.push(`Dining Atmosphere: ${formatValue(tasteProfile.dining_atmosphere)}`);
+        if (tasteProfile.dietary_preferences) parts.push(`Dietary: ${formatValue(tasteProfile.dietary_preferences)}`);
+        if (tasteProfile.movie_genres) parts.push(`Movie Genres: ${formatValue(tasteProfile.movie_genres)}`);
+        if (tasteProfile.movie_style) parts.push(`Movie Style: ${formatValue(tasteProfile.movie_style)}`);
+        if (tasteProfile.movie_era) parts.push(`Movie Era: ${formatValue(tasteProfile.movie_era)}`);
+        if (tasteProfile.tv_genres) parts.push(`TV Genres: ${formatValue(tasteProfile.tv_genres)}`);
+        if (tasteProfile.show_commitment) parts.push(`Show Length: ${formatValue(tasteProfile.show_commitment)}`);
+        if (tasteProfile.show_tone) parts.push(`Show Tone: ${formatValue(tasteProfile.show_tone)}`);
+        if (tasteProfile.youtube_content) parts.push(`YouTube Content: ${formatValue(tasteProfile.youtube_content)}`);
+        if (tasteProfile.youtube_length) parts.push(`YouTube Length: ${formatValue(tasteProfile.youtube_length)}`);
+        if (tasteProfile.book_genres) parts.push(`Book Genres: ${formatValue(tasteProfile.book_genres)}`);
+        if (tasteProfile.reading_pace) parts.push(`Reading Pace: ${formatValue(tasteProfile.reading_pace)}`);
+        if (tasteProfile.book_depth) parts.push(`Book Depth: ${formatValue(tasteProfile.book_depth)}`);
+        if (tasteProfile.activity_type) parts.push(`Activities: ${formatValue(tasteProfile.activity_type)}`);
+        if (tasteProfile.activity_energy) parts.push(`Activity Energy: ${formatValue(tasteProfile.activity_energy)}`);
+        if (tasteProfile.activity_group) parts.push(`Activity Group Size: ${formatValue(tasteProfile.activity_group)}`);
+        profileStr = parts.join('\n');
+      }
+      userContext += `\n--- User Taste Profile ---\n${profileStr}\n--------------------------\n`;
     }
     
     if (socialSignals) {
