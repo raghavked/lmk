@@ -114,24 +114,28 @@ export async function GET(request: Request) {
 
     let rawRecommendations = [];
     
+    const fetchFromAPI = async (fetchLimit: number) => {
+      const apiInstance = new ApiClass();
+      return await apiInstance.getRecommendations({
+        category,
+        limit: fetchLimit,
+        offset: 0,
+        seenIds: [],
+        query,
+        profile: profileWithTaste as any,
+        lat: lat ? parseFloat(lat) : undefined,
+        lng: lng ? parseFloat(lng) : undefined,
+        radius: radius ? parseInt(radius) : undefined,
+      });
+    };
+
     if (cached && (now - cached.timestamp) < CACHE_TTL) {
       console.log(`[Recommend API] Using cached data for ${category}`);
-      rawRecommendations = cached.data;
+      rawRecommendations = [...cached.data];
     } else {
       console.log(`[Recommend API] Fetching fresh recommendations from ${category} API...`);
-      const apiInstance = new ApiClass();
       try {
-        rawRecommendations = await apiInstance.getRecommendations({
-          category,
-          limit: Math.max(limit, 20),
-          offset,
-          seenIds: [],
-          query,
-          profile: profileWithTaste as any,
-          lat: lat ? parseFloat(lat) : undefined,
-          lng: lng ? parseFloat(lng) : undefined,
-          radius: radius ? parseInt(radius) : undefined,
-        });
+        rawRecommendations = await fetchFromAPI(50);
         recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
       } catch (apiError) {
         console.error(`Error fetching from ${category} API:`, apiError);
@@ -143,7 +147,20 @@ export async function GET(request: Request) {
       rawRecommendations = rawRecommendations.filter((r: any) => !seenIds.includes(r.id));
     }
 
-    console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering`);
+    console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering (excluded ${seenIds.length} seen)`);
+    
+    if (rawRecommendations.length < limit && cached) {
+      console.log(`[Recommend API] Not enough items, fetching more...`);
+      try {
+        const moreItems = await fetchFromAPI(50);
+        const filtered = moreItems.filter((r: any) => !seenIds.includes(r.id));
+        rawRecommendations = [...rawRecommendations, ...filtered];
+        recommendationCache.set(cacheKey, { data: moreItems, timestamp: now });
+      } catch (e) {
+        console.error('Error fetching more items:', e);
+      }
+    }
+    
     rawRecommendations = rawRecommendations.slice(0, limit);
 
     // If no raw recommendations, return empty results

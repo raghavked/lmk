@@ -28,6 +28,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   const [sortBy, setSortBy] = useState<string>('personalized_score');
   const [offset, setOffset] = useState(0);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const seenIdsRef = useRef<Set<string>>(new Set());
   
   // Location & Distance State
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
@@ -97,10 +98,12 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       setIsRefreshing(true);
       setOffset(0);
       setSeenIds(new Set());
+      seenIdsRef.current = new Set();
       newOffset = 0;
     } else if (newOffset === 0) {
       setLoading(true);
       setSeenIds(new Set());
+      seenIdsRef.current = new Set();
     }
     setError(null);
     
@@ -124,8 +127,8 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       if (profile?.taste_profile) {
         params.append('taste_profile', JSON.stringify(profile.taste_profile));
       }
-      if (seenIds.size > 0) {
-        params.append('seen_ids', Array.from(seenIds).join(','));
+      if (seenIdsRef.current.size > 0) {
+        params.append('seen_ids', Array.from(seenIdsRef.current).join(','));
       }
       
       const response = await fetch(`/api/recommend?${params.toString()}`);
@@ -144,6 +147,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           const updatedRecs = newOffset === 0 ? newResults : [...prev, ...newResults];
           const newSeenIds = new Set<string>(updatedRecs.map((item: any) => (item.object?.id || item.id) as string));
           setSeenIds(newSeenIds);
+          seenIdsRef.current = newSeenIds;
           return updatedRecs;
         });
         setSections(null);
