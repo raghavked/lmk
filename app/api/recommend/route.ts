@@ -196,10 +196,19 @@ export async function GET(request: Request) {
         console.log(`[Recommend API] First result location: lat=${firstObj.location?.lat}, lng=${firstObj.location?.lng}, distance=${rankedResults[0].distance?.toFixed(2)} mi`);
       }
       
-      // NOTE: We no longer filter by distance - Yelp's radius is a hint, not a strict filter
-      // Instead, we sort by distance and let users see all results from Yelp's response
-      // This prevents the issue where Yelp returns results outside the requested radius
-      console.log(`[Recommend API] Distance calculated for ${rankedResults.length} results (no filtering applied)`);
+      // Filter by distance with generous tolerance (2x) since Yelp doesn't respect radius strictly
+      // This ensures users don't see wildly out-of-range results while still showing nearby options
+      if (radiusInMiles !== null && (category === 'restaurants' || category === 'activities')) {
+        const beforeCount = rankedResults.length;
+        const filterRadius = radiusInMiles * 2; // Allow 2x tolerance for Yelp's approximations
+        rankedResults = rankedResults.filter((result: any) => {
+          if (result.distance === null) return true;
+          return result.distance <= filterRadius;
+        });
+        console.log(`[Recommend API] Filtered by distance: ${beforeCount} -> ${rankedResults.length} (requested ${radiusInMiles} mi, tolerance ${filterRadius.toFixed(1)} mi)`);
+      } else {
+        console.log(`[Recommend API] Distance calculated for ${rankedResults.length} results (no filtering applied)`);
+      }
       
     }
 
