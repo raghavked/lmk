@@ -242,10 +242,10 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
     return metrics.slice(0, 3);
   };
 
-  const renderRealMetric = (metric: { label: string; value: number; displayValue: string }) => {
+  const renderRealMetric = (metric: { label: string; value: number; displayValue: string }, index: number) => {
     const stars = Math.round(metric.value / 2);
     return (
-      <div key={metric.label} className="space-y-2">
+      <div key={`${metric.label}-${index}`} className="space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-xs font-bold text-coral uppercase tracking-wider">{metric.label}</span>
           <div className="flex items-center gap-2">
@@ -405,7 +405,7 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
         {/* Real Metrics */}
         {realMetrics.length > 0 && (
           <div className="space-y-4 pt-4 border-t border-border-color">
-            {realMetrics.map((metric) => renderRealMetric(metric))}
+            {realMetrics.map((metric, index) => renderRealMetric(metric, index))}
           </div>
         )}
 
