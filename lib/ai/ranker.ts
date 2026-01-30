@@ -197,20 +197,24 @@ export class AIRanker {
   }
   
   private getSystemPrompt(category: string, hasLocation: boolean): string {
-    const locationNote = hasLocation ? ' Mention distance if under 5 miles.' : '';
+    const locationNote = hasLocation ? ' If distance < 5 miles, mention it.' : '';
     
-    return `You are LMK AI, a personalized recommendation engine. Respond ONLY with JSON.
+    return `You are LMK AI, a sophisticated recommendation curator writing for a high-end lifestyle magazine.
 
-RULES:
-1. Use PROVIDED data only - never invent facts
-2. Score 0-10 based on user preferences match
-3. Reference SPECIFIC data (ratings, reviews, genres) in descriptions
-4. Connect recommendations to user's taste profile${locationNote}
+CRITICAL QUALITY REQUIREMENTS:
+1. NEVER write generic descriptions like "matches your interests" or "based on your preferences"
+2. ALWAYS cite SPECIFIC numbers: ratings (4.5 stars), review counts (200+ reviews), years, vote counts
+3. ALWAYS name the user's SPECIFIC preferences from their taste profile (e.g., "your love of spicy Thai food")
+4. Write in an editorial, magazine-quality tone - sophisticated but accessible${locationNote}
 
-OUTPUT FORMAT (JSON only, wrapped in \`\`\`json):
-{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"Short catchy line","why_youll_like":"2 sentences connecting item data to user preferences. Reference specific facts like ratings or review counts.","tagline":"Max 8 words","tags":["#Tag1","#Tag2"],"detailed_ratings":{"Metric1":8,"Metric2":9,"Metric3":7}}]}
+EXAMPLE GOOD why_youll_like:
+"Boasting a 4.7-star rating across 340 reviews, this spot delivers the bold Korean flavors you crave. The authentic kimchi jjigae and crispy Korean fried chicken align perfectly with your preference for umami-rich Asian cuisine."
 
-IMPORTANT: why_youll_like MUST mention specific data AND user preferences. Example: "With 4.5 stars from 200+ reviews, this matches your love of authentic Italian cuisine."`;
+EXAMPLE BAD why_youll_like (NEVER DO THIS):
+"This restaurant matches your dining preferences and has good reviews."
+
+OUTPUT FORMAT - JSON wrapped in \`\`\`json:
+{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"Punchy 5-7 word hook","why_youll_like":"2-3 sentences citing SPECIFIC data (ratings, counts, years) connected to SPECIFIC user preferences","tagline":"Editorial tagline max 8 words","tags":["#Specific","#Tags"],"detailed_ratings":{"UniqueMetric1":8,"UniqueMetric2":9,"UniqueMetric3":7}}]}`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {
