@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, ThumbsUp, ThumbsDown, RotateCcw, Shuffle, History, X } from 'lucide-react';
+import { Loader2, ThumbsUp, ThumbsDown, RotateCcw, Shuffle, History, X, ChevronDown } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 import ObjectCard from '@/components/ObjectCard';
@@ -25,6 +25,7 @@ export default function DecideClient({ profile }: { profile: any }) {
   const [seenIds, setSeenIds] = useState<string[]>([]);
   const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
   const [locationReady, setLocationReady] = useState(false);
+  const [distanceFilter, setDistanceFilter] = useState<number>(25); // Default to 25 miles for Decide
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -86,7 +87,7 @@ export default function DecideClient({ profile }: { profile: any }) {
     if (locationReady) {
       loadNextItem();
     }
-  }, [selectedCategory, locationReady]);
+  }, [selectedCategory, locationReady, distanceFilter]);
 
   const loadNextItem = async (excludeIds?: string[]) => {
     setLoading(true);
@@ -113,6 +114,7 @@ export default function DecideClient({ profile }: { profile: any }) {
       if (lat !== undefined && lng !== undefined) {
         params.append('lat', lat.toString());
         params.append('lng', lng.toString());
+        params.append('radius', (distanceFilter * 1609).toString());
       }
 
       const response = await fetch(`/api/recommend?${params.toString()}`, {
@@ -299,6 +301,26 @@ export default function DecideClient({ profile }: { profile: any }) {
               </button>
             ))}
           </div>
+          
+          {(selectedCategory === 'restaurants' || selectedCategory === 'activities') && (
+            <div className="mt-4 flex justify-center">
+              <div className="relative">
+                <select
+                  value={distanceFilter}
+                  onChange={(e) => setDistanceFilter(parseInt(e.target.value))}
+                  disabled={!userLocation}
+                  className="appearance-none pl-4 pr-10 py-2 bg-background-tertiary border border-border-color rounded-full text-text-primary text-sm font-medium focus:ring-2 focus:ring-coral/50 focus:border-coral/50 outline-none cursor-pointer disabled:opacity-50"
+                >
+                  <option value={5}>Within 5 mi</option>
+                  <option value={10}>Within 10 mi</option>
+                  <option value={25}>Within 25 mi</option>
+                  <option value={50}>Within 50 mi</option>
+                  <option value={100}>Within 100 mi</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Decision Stats */}
