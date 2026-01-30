@@ -25,13 +25,20 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  useEffect(() => {
+    setSettingsName(profile?.full_name || '');
+    setSettingsDisplayName(profile?.display_name || '');
+  }, [profile]);
   
   useEffect(() => {
     loadRatings();
     loadFavorites();
     
     // If no taste profile, default to preferences tab
-    if (!profile?.taste_profile || profile.taste_profile.length === 0) {
+    const hasPreferences = profile?.taste_profile && 
+      (Array.isArray(profile.taste_profile) ? profile.taste_profile.length > 0 : Object.keys(profile.taste_profile).length > 0);
+    if (!hasPreferences) {
       setActiveTab('preferences');
     }
   }, []);
