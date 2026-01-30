@@ -333,9 +333,11 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
                       )}
                       {object.description && (
                         <p className="text-text-secondary">
-                          {object.description.length > 200 
-                            ? object.description.substring(0, 200) + '...' 
-                            : object.description}
+                          {isExpanded 
+                            ? object.description
+                            : (object.description.length > 200 
+                                ? object.description.substring(0, 200) + '...' 
+                                : object.description)}
                         </p>
                       )}
                     </div>
