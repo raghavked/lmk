@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Heart, TrendingUp, Settings, Grid, Award, Loader2, AlertCircle, Check, Trash2, User, Lock } from 'lucide-react';
+import { Star, Heart, TrendingUp, Settings, Grid, Award, Loader2, AlertCircle, Check, Trash2, User, Lock, RefreshCw } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 import Image from 'next/image';
@@ -24,6 +24,8 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   const [settingsMessage, setSettingsMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isRetakingTest, setIsRetakingTest] = useState(false);
+  const [resettingPreferences, setResettingPreferences] = useState(false);
 
   useEffect(() => {
     setSettingsName(profile?.full_name || '');
@@ -76,9 +78,33 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     } catch (err) {
       console.error('Error refreshing profile:', err);
     }
+    setIsRetakingTest(false);
     setActiveTab('ratings');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleRetakeTest = async () => {
+    setResettingPreferences(true);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taste_profile: {} }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data.profile);
+        setIsRetakingTest(true);
+      }
+    } catch (err) {
+      console.error('Error resetting preferences:', err);
+    } finally {
+      setResettingPreferences(false);
+    }
+  };
+
+  const hasPreferences = profile?.taste_profile && 
+    (Array.isArray(profile.taste_profile) ? profile.taste_profile.length > 0 : Object.keys(profile.taste_profile).length > 0);
 
   const handleSaveProfile = async () => {
     setSettingsSaving(true);
@@ -589,7 +615,78 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
           {activeTab === 'stats' && renderStats()}
           {activeTab === 'preferences' && (
             <div className="animate-in fade-in slide-in-from-bottom duration-500">
-              <PreferenceTest onComplete={handlePreferenceComplete} />
+              {hasPreferences && !isRetakingTest ? (
+                <div className="space-y-6">
+                  <div className="bg-background-secondary rounded-2xl p-6 border border-border-color">
+                    <h3 className="text-lg font-bold text-text-primary mb-4">Your Current Preferences</h3>
+                    <div className="grid gap-4">
+                      {profile.taste_profile?.cuisine_preference && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Cuisines</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.cuisine_preference) ? profile.taste_profile.cuisine_preference.join(', ') : profile.taste_profile.cuisine_preference}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.dining_atmosphere && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Dining Atmosphere</span>
+                          <p className="text-text-primary">{profile.taste_profile.dining_atmosphere}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.movie_genres && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Movie Genres</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.movie_genres) ? profile.taste_profile.movie_genres.join(', ') : profile.taste_profile.movie_genres}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.tv_genres && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">TV Genres</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.tv_genres) ? profile.taste_profile.tv_genres.join(', ') : profile.taste_profile.tv_genres}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.youtube_content && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">YouTube Content</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.youtube_content) ? profile.taste_profile.youtube_content.join(', ') : profile.taste_profile.youtube_content}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.reading_genres && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Reading Genres</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.reading_genres) ? profile.taste_profile.reading_genres.join(', ') : profile.taste_profile.reading_genres}</p>
+                        </div>
+                      )}
+                      {profile.taste_profile?.activity_preferences && (
+                        <div>
+                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Activity Preferences</span>
+                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.activity_preferences) ? profile.taste_profile.activity_preferences.join(', ') : profile.taste_profile.activity_preferences}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-background-secondary rounded-2xl p-6 border border-border-color">
+                    <h3 className="text-lg font-bold text-text-primary mb-2">Want Different Recommendations?</h3>
+                    <p className="text-text-secondary text-sm mb-4">
+                      Retaking the preference test will reset your current preferences and collect new data about your tastes. Your recommendations will be personalized based on your new answers.
+                    </p>
+                    <button
+                      onClick={handleRetakeTest}
+                      disabled={resettingPreferences}
+                      className="w-full py-3 bg-coral text-background-primary rounded-xl font-bold hover:bg-coral/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {resettingPreferences ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-5 h-5" />
+                      )}
+                      Retake Preference Test
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <PreferenceTest onComplete={handlePreferenceComplete} />
+              )}
             </div>
           )}
           {activeTab === 'settings' && renderSettings()}
