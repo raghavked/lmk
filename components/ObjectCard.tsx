@@ -154,15 +154,19 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
       addMetric('Channel', 8, object.channel_title.substring(0, 20));
     }
     
-    // For books
-    if (object.page_count) {
-      addMetric('Length', Math.min(10, (object.page_count / 500) * 10), `${object.page_count} pages`);
-    }
-    if (object.publish_year) {
-      addMetric('Published', 8, object.publish_year.toString());
-    }
-    if (object.author) {
-      addMetric('Author', 8, typeof object.author === 'string' ? object.author.substring(0, 20) : 'Unknown');
+    // For books - show actual ratings
+    if (object.category === 'reading' || object.category === 'books') {
+      if (object.rating && object.rating > 0) {
+        addMetric('Rating', object.rating * 2, `${object.rating.toFixed(1)}/5`);
+      }
+      if (object.review_count && object.review_count > 0) {
+        const reviewScore = Math.min(10, (object.review_count / 1000) * 10);
+        addMetric('Reviews', reviewScore, object.review_count.toLocaleString());
+      }
+      if (object.edition_count && object.edition_count > 1) {
+        const editionScore = Math.min(10, (object.edition_count / 50) * 10);
+        addMetric('Editions', editionScore, object.edition_count.toLocaleString());
+      }
     }
     
     // Fallback metrics to fill up to 3 if data exists
