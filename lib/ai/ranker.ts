@@ -318,6 +318,14 @@ Location: ${user.location?.city || 'Unknown'}
         objStr += `YouTube View Count: ${obj.view_count || 'N/A'}\n`;
         objStr += `YouTube Channel: ${obj.channel_title || 'N/A'}\n`;
         objStr += `YouTube Published Date: ${obj.published_at || 'N/A'}\n`;
+      } else if (obj.category === 'reading' || obj.category === 'books') {
+        objStr += `Author: ${obj.author || 'N/A'}\n`;
+        objStr += `Published Year: ${obj.publish_year || 'N/A'}\n`;
+        objStr += `Page Count: ${obj.page_count || 'N/A'}\n`;
+        objStr += `Edition Count: ${obj.edition_count || 'N/A'}\n`;
+        objStr += `Rating: ${obj.rating ? `${obj.rating.toFixed(1)}/5` : 'N/A'}\n`;
+        objStr += `Ratings Count: ${obj.review_count || 'N/A'}\n`;
+        objStr += `Genres: ${obj.genres?.join(', ') || 'N/A'}\n`;
       }
       objStr += `---------------------------\n`;
       
