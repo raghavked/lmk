@@ -618,51 +618,188 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
               {hasPreferences && !isRetakingTest ? (
                 <div className="space-y-6">
                   <div className="bg-background-secondary rounded-2xl p-6 border border-border-color">
-                    <h3 className="text-lg font-bold text-text-primary mb-4">Your Current Preferences</h3>
-                    <div className="grid gap-4">
-                      {profile.taste_profile?.cuisine_preference && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Cuisines</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.cuisine_preference) ? profile.taste_profile.cuisine_preference.join(', ') : profile.taste_profile.cuisine_preference}</p>
+                    <h3 className="text-lg font-bold text-text-primary mb-2">Your Taste Profile</h3>
+                    <p className="text-text-secondary text-sm mb-6">Based on your preferences, here's what we know about your tastes. Your recommendations are personalized using this information.</p>
+                    
+                    {/* Restaurants Section */}
+                    {(profile.taste_profile?.cuisine_preference || profile.taste_profile?.dining_atmosphere || profile.taste_profile?.dietary_preferences) && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">🍽️</span>
+                          <h4 className="font-bold text-text-primary">Restaurants</h4>
                         </div>
-                      )}
-                      {profile.taste_profile?.dining_atmosphere && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Dining Atmosphere</span>
-                          <p className="text-text-primary">{profile.taste_profile.dining_atmosphere}</p>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.cuisine_preference && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Cuisines</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.cuisine_preference) ? profile.taste_profile.cuisine_preference.join(', ') : profile.taste_profile.cuisine_preference}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.dining_atmosphere && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Preferred Atmosphere</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.dining_atmosphere}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.dietary_preferences && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Dietary Preferences</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.dietary_preferences) ? profile.taste_profile.dietary_preferences.join(', ') : profile.taste_profile.dietary_preferences}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {profile.taste_profile?.movie_genres && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Movie Genres</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.movie_genres) ? profile.taste_profile.movie_genres.join(', ') : profile.taste_profile.movie_genres}</p>
+                      </div>
+                    )}
+
+                    {/* Movies Section */}
+                    {(profile.taste_profile?.movie_genres || profile.taste_profile?.movie_style || profile.taste_profile?.movie_era) && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">🎬</span>
+                          <h4 className="font-bold text-text-primary">Movies</h4>
                         </div>
-                      )}
-                      {profile.taste_profile?.tv_genres && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">TV Genres</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.tv_genres) ? profile.taste_profile.tv_genres.join(', ') : profile.taste_profile.tv_genres}</p>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.movie_genres && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Genres</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.movie_genres) ? profile.taste_profile.movie_genres.join(', ') : profile.taste_profile.movie_genres}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.movie_style && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Preferred Style</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.movie_style}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.movie_era && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Era</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.movie_era}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {profile.taste_profile?.youtube_content && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">YouTube Content</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.youtube_content) ? profile.taste_profile.youtube_content.join(', ') : profile.taste_profile.youtube_content}</p>
+                      </div>
+                    )}
+
+                    {/* TV Shows Section */}
+                    {(profile.taste_profile?.tv_genres || profile.taste_profile?.tv_style || profile.taste_profile?.tv_length) && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">📺</span>
+                          <h4 className="font-bold text-text-primary">TV Shows</h4>
                         </div>
-                      )}
-                      {profile.taste_profile?.reading_genres && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Reading Genres</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.reading_genres) ? profile.taste_profile.reading_genres.join(', ') : profile.taste_profile.reading_genres}</p>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.tv_genres && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Genres</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.tv_genres) ? profile.taste_profile.tv_genres.join(', ') : profile.taste_profile.tv_genres}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.tv_style && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Preferred Style</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.tv_style}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.tv_length && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Series Length</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.tv_length}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {profile.taste_profile?.activity_preferences && (
-                        <div>
-                          <span className="text-xs font-bold text-coral uppercase tracking-wider">Activity Preferences</span>
-                          <p className="text-text-primary">{Array.isArray(profile.taste_profile.activity_preferences) ? profile.taste_profile.activity_preferences.join(', ') : profile.taste_profile.activity_preferences}</p>
+                      </div>
+                    )}
+
+                    {/* YouTube Section */}
+                    {(profile.taste_profile?.youtube_content || profile.taste_profile?.youtube_length || profile.taste_profile?.youtube_purpose) && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">▶️</span>
+                          <h4 className="font-bold text-text-primary">YouTube</h4>
                         </div>
-                      )}
-                    </div>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.youtube_content && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Content Types</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.youtube_content) ? profile.taste_profile.youtube_content.join(', ') : profile.taste_profile.youtube_content}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.youtube_length && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Video Length</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.youtube_length}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.youtube_purpose && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Watching Purpose</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.youtube_purpose}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reading Section */}
+                    {(profile.taste_profile?.reading_genres || profile.taste_profile?.reading_style || profile.taste_profile?.reading_format) && (
+                      <div className="mb-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">📚</span>
+                          <h4 className="font-bold text-text-primary">Reading</h4>
+                        </div>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.reading_genres && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Genres</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.reading_genres) ? profile.taste_profile.reading_genres.join(', ') : profile.taste_profile.reading_genres}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.reading_style && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Reading Style</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.reading_style}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.reading_format && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Preferred Format</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.reading_format}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Activities Section */}
+                    {(profile.taste_profile?.activity_preferences || profile.taste_profile?.activity_energy || profile.taste_profile?.activity_social) && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl">🎯</span>
+                          <h4 className="font-bold text-text-primary">Activities</h4>
+                        </div>
+                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
+                          {profile.taste_profile?.activity_preferences && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Favorite Activities</span>
+                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.activity_preferences) ? profile.taste_profile.activity_preferences.join(', ') : profile.taste_profile.activity_preferences}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.activity_energy && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Energy Level</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.activity_energy}</p>
+                            </div>
+                          )}
+                          {profile.taste_profile?.activity_social && (
+                            <div>
+                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Social Preference</span>
+                              <p className="text-text-primary text-sm">{profile.taste_profile.activity_social}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="bg-background-secondary rounded-2xl p-6 border border-border-color">
