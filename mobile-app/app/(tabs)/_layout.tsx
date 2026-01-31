@@ -1,19 +1,34 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    discover: '🔍',
-    decide: '🎯',
-    friends: '👥',
-    groups: '💬',
-    profile: '👤',
+type IconName = 'discover' | 'decide' | 'friends' | 'groups' | 'profile';
+
+function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
+  const color = focused ? Colors.accent.coral : Colors.text.secondary;
+  const size = 24;
+
+  const renderIcon = () => {
+    switch (name) {
+      case 'discover':
+        return <Ionicons name="compass" size={size} color={color} />;
+      case 'decide':
+        return <MaterialCommunityIcons name="vote" size={size} color={color} />;
+      case 'friends':
+        return <FontAwesome5 name="user-friends" size={size - 2} color={color} />;
+      case 'groups':
+        return <MaterialCommunityIcons name="account-group" size={size} color={color} />;
+      case 'profile':
+        return <Ionicons name="person" size={size} color={color} />;
+      default:
+        return null;
+    }
   };
 
   return (
     <View style={styles.tabIconContainer}>
-      <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>{icons[name]}</Text>
+      {renderIcon()}
     </View>
   );
 }
@@ -92,12 +107,5 @@ const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabIcon: {
-    fontSize: 22,
-    opacity: 0.6,
-  },
-  tabIconFocused: {
-    opacity: 1,
   },
 });

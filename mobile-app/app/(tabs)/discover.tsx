@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Image } from 'react-native';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 import * as Location from 'expo-location';
@@ -17,13 +18,41 @@ interface RecommendationItem {
   category: string;
 }
 
-const CATEGORIES: { id: Category; name: string; emoji: string }[] = [
-  { id: 'restaurants', name: 'Restaurants', emoji: '🍽️' },
-  { id: 'movies', name: 'Movies', emoji: '🎬' },
-  { id: 'tv_shows', name: 'TV Shows', emoji: '📺' },
-  { id: 'youtube_videos', name: 'YouTube', emoji: '▶️' },
-  { id: 'reading', name: 'Reading', emoji: '📚' },
-  { id: 'activities', name: 'Activities', emoji: '🎯' },
+interface CategoryConfig {
+  id: Category;
+  name: string;
+  icon: React.ReactNode;
+}
+
+const getCategoryIcon = (id: Category, isActive: boolean) => {
+  const color = isActive ? Colors.background.primary : Colors.accent.coral;
+  const size = 18;
+  
+  switch (id) {
+    case 'restaurants':
+      return <Ionicons name="restaurant" size={size} color={color} />;
+    case 'movies':
+      return <MaterialCommunityIcons name="movie-open" size={size} color={color} />;
+    case 'tv_shows':
+      return <Ionicons name="tv" size={size} color={color} />;
+    case 'youtube_videos':
+      return <Ionicons name="play-circle" size={size} color={color} />;
+    case 'reading':
+      return <Ionicons name="book" size={size} color={color} />;
+    case 'activities':
+      return <MaterialCommunityIcons name="sparkles" size={size} color={color} />;
+    default:
+      return null;
+  }
+};
+
+const CATEGORIES: { id: Category; name: string }[] = [
+  { id: 'restaurants', name: 'Restaurants' },
+  { id: 'movies', name: 'Movies' },
+  { id: 'tv_shows', name: 'TV Shows' },
+  { id: 'youtube_videos', name: 'YouTube' },
+  { id: 'reading', name: 'Reading' },
+  { id: 'activities', name: 'Activities' },
 ];
 
 export default function DiscoverScreen() {
@@ -115,18 +144,23 @@ export default function DiscoverScreen() {
         style={styles.categoryScroll}
         contentContainerStyle={styles.categoryContainer}
       >
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.categoryButton, selectedCategory === cat.id && styles.categoryButtonActive]}
-            onPress={() => setSelectedCategory(cat.id)}
-          >
-            <Text style={styles.categoryEmoji}>{cat.emoji}</Text>
-            <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
-              {cat.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const isActive = selectedCategory === cat.id;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              style={[styles.categoryButton, isActive && styles.categoryButtonActive]}
+              onPress={() => setSelectedCategory(cat.id)}
+            >
+              <View style={styles.categoryIcon}>
+                {getCategoryIcon(cat.id, isActive)}
+              </View>
+              <Text style={[styles.categoryText, isActive && styles.categoryTextActive]}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       <ScrollView
@@ -204,8 +238,7 @@ const styles = StyleSheet.create({
   categoryButtonActive: {
     backgroundColor: Colors.accent.coral,
   },
-  categoryEmoji: {
-    fontSize: 16,
+  categoryIcon: {
     marginRight: 6,
   },
   categoryText: {
