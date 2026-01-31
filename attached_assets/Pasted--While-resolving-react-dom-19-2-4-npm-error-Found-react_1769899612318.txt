@@ -1,0 +1,55 @@
+ While resolving: react-dom@19.2.4
+npm error Found: react@19.1.0
+npm error node_modules/react
+npm error   react@"19.1.0" from the root project
+npm error   peerOptional react@"*" from @expo/devtools@0.1.8
+npm error   node_modules/@expo/devtools
+npm error     @expo/devtools@"0.1.8" from expo@54.0.32
+npm error     node_modules/expo
+npm error       expo@"~54.0.32" from the root project
+npm error       14 more (expo-constants, expo-haptics, expo-location, ...)
+npm error   57 more (@radix-ui/react-compose-refs, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peer react@"^19.2.4" from react-dom@19.2.4
+npm error node_modules/react-dom
+npm error   peerOptional react-dom@"*" from expo-router@6.0.22
+npm error   node_modules/expo-router
+npm error     expo-router@"~6.0.22" from the root project
+npm error     1 more (@expo/cli)
+npm error   peerOptional react-dom@"*" from @expo/metro-runtime@6.1.2
+npm error   node_modules/expo-router/node_modules/@expo/metro-runtime
+npm error     @expo/metro-runtime@"^6.1.2" from expo-router@6.0.22
+npm error   12 more (@radix-ui/react-collection, ...)
+npm error
+npm error Conflicting peer dependency: react@19.2.4
+npm error node_modules/react
+npm error   peer react@"^19.2.4" from react-dom@19.2.4
+npm error   node_modules/react-dom
+npm error     peerOptional react-dom@"*" from expo-router@6.0.22
+npm error     node_modules/expo-router
+npm error       expo-router@"~6.0.22" from the root project
+npm error       1 more (@expo/cli)
+npm error     peerOptional react-dom@"*" from @expo/metro-runtime@6.1.2
+npm error     node_modules/expo-router/node_modules/@expo/metro-runtime
+npm error       @expo/metro-runtime@"^6.1.2" from expo-router@6.0.22
+npm error     12 more (@radix-ui/react-collection, ...)
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/runner/.npm/_logs/2026-01-31T22_44_56_917Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-01-31T22_44_56_917Z-debug-0.log
+
+> mobile-app@1.0.0 start
+> expo start
+
+Starting project at /home/runner/workspace/mobile-app
+Starting Metro Bundler
+The following packages should be updated for best compatibility with the installed expo version:
+  expo@54.0.32 - expected version: ~54.0.33
+  expo-router@6.0.22 - expected version: ~6.0.23
+Your project may not work correctly until you install the expected versions of the packages.
