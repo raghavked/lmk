@@ -6,6 +6,8 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const icons: Record<string, string> = {
     discover: '🔍',
     decide: '🎯',
+    friends: '👥',
+    groups: '💬',
     profile: '👤',
   };
 
@@ -30,7 +32,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: Colors.accent.coral,
         tabBarInactiveTintColor: Colors.text.secondary,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
         },
         headerStyle: {
@@ -59,6 +61,22 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="friends"
+        options={{
+          title: 'Friends',
+          tabBarIcon: ({ focused }) => <TabIcon name="friends" focused={focused} />,
+          headerTitle: 'Friends',
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: 'Groups',
+          tabBarIcon: ({ focused }) => <TabIcon name="groups" focused={focused} />,
+          headerTitle: 'Groups',
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
@@ -76,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabIcon: {
-    fontSize: 24,
+    fontSize: 22,
     opacity: 0.6,
   },
   tabIconFocused: {
