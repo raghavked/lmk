@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { AIRanker } from '@/lib/ai/ranker';
 import { YelpAPI } from '@/lib/api/yelp';
@@ -54,12 +55,30 @@ export async function GET(request: Request) {
   
   const seenIds = requestUrl.searchParams.get('seen_ids')?.split(',').filter(Boolean) || [];
 
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+  // Support both cookie-based auth (web) and Bearer token auth (mobile)
+  const authHeader = request.headers.get('Authorization');
+  let supabase;
+  let session;
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  if (authHeader?.startsWith('Bearer ')) {
+    // Mobile app authentication with Bearer token
+    const token = authHeader.substring(7);
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    session = { user, access_token: token };
+  } else {
+    // Web app authentication with cookies
+    const cookieStore = await cookies();
+    supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+    const { data } = await supabase.auth.getSession();
+    session = data.session;
+  }
 
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
