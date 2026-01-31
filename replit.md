@@ -85,48 +85,48 @@ Preferred communication style: Simple, everyday language.
 - `axios`: HTTP requests to external APIs
 - `lucide-react`: Icon components
 
-## Mobile App (Capacitor)
+## Mobile App (Expo/React Native)
 
 ### Overview
-The app is configured to build as a native iOS/Android app using Capacitor. Capacitor wraps the web app in a native shell while providing access to device features.
+The mobile app is built with Expo and React Native in the `mobile-app/` directory. This allows building iOS apps without a Mac using Expo's cloud build service.
 
-### Mobile Files
-- `capacitor.config.ts`: Capacitor configuration (app ID, plugins, platform settings)
-- `lib/mobile/config.ts`: Mobile detection utilities and API base URL configuration
-- `lib/mobile/plugins.ts`: Native plugin wrappers (haptics, status bar, geolocation, keyboard)
-- `components/MobileProvider.tsx`: React provider for initializing mobile plugins
-
-### Building for Mobile
-```bash
-# Build for iOS (requires Mac with Xcode)
-npm run mobile:ios
-
-# Build for Android
-npm run mobile:android
-
-# Just sync changes to native projects
-npm run cap:sync
+### Project Structure
+```
+mobile-app/
+├── app/              # Expo Router screens
+│   ├── auth/         # Login and signup screens
+│   ├── (tabs)/       # Main tab screens (Discover, Decide, Profile)
+│   └── _layout.tsx   # Root layout with auth state
+├── components/       # Reusable components
+├── constants/        # Colors and config
+└── lib/              # Supabase client
 ```
 
-### Requirements for iOS App Store
-1. Mac with Xcode installed
-2. Apple Developer account ($99/year)
-3. App icons and splash screens configured
-4. Privacy policy and app metadata
+### Getting Started
+```bash
+cd mobile-app
+npm install
+npm start
+```
+Then scan the QR code with Expo Go app on your phone.
 
-### Capacitor Plugins Installed
-- `@capacitor/core`: Core functionality
-- `@capacitor/ios`: iOS platform
-- `@capacitor/android`: Android platform
-- `@capacitor/app`: App lifecycle events
-- `@capacitor/keyboard`: Keyboard control
-- `@capacitor/splash-screen`: Splash screen control
-- `@capacitor/status-bar`: Status bar styling
-- `@capacitor/haptics`: Haptic feedback
-- `@capacitor/geolocation`: GPS location
+### Publishing to iOS App Store (No Mac Required!)
+1. Create an Expo account at https://expo.dev
+2. Install EAS CLI: `npm install -g eas-cli`
+3. Login: `eas login`
+4. Configure: `eas build:configure`
+5. Build for iOS: `eas build --platform ios`
+6. Submit: `eas submit --platform ios`
 
-### Mobile-Specific CSS
-- Safe area insets for notch/home indicator
-- Touch-friendly styling
-- Disabled pull-to-refresh for app-like feel
-- Optimized viewport settings
+### Requirements for App Store
+1. Apple Developer account ($99/year)
+2. App icons and splash screens (in assets folder)
+3. Privacy policy URL
+4. Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` environment variables
+
+### Key Features
+- Dark theme matching web app (#0D1117 background, #FF6B6B coral accent)
+- Tab navigation (Discover, Decide, Profile)
+- Supabase authentication
+- Location-based recommendations
+- Haptic feedback on interactions
