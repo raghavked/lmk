@@ -90,6 +90,9 @@ export default function DiscoverScreen() {
           category: selectedCategory,
         }));
         setRecommendations(items);
+      } else {
+        const errorData = await response.text();
+        console.error('API Error:', response.status, errorData);
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);

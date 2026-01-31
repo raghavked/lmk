@@ -80,6 +80,12 @@ export default function ProfileScreen() {
             <View>
               <Text style={styles.cardText}>No preferences set</Text>
               <Text style={styles.cardSubtext}>Complete the preference quiz for better recommendations.</Text>
+              <TouchableOpacity 
+                style={styles.quizButton} 
+                onPress={() => router.push('/quiz')}
+              >
+                <Text style={styles.quizButtonText}>Take the Quiz</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -176,6 +182,18 @@ const styles = StyleSheet.create({
   cardSubtext: {
     fontSize: 14,
     color: Colors.text.secondary,
+  },
+  quizButton: {
+    backgroundColor: Colors.accent.coral,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  quizButtonText: {
+    color: Colors.background.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   menuItem: {
     flexDirection: 'row',
