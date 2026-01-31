@@ -78,7 +78,18 @@ export default function DiscoverScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendations(data.recommendations || []);
+        // Map API response to our format
+        const items = (data.results || []).map((r: any) => ({
+          id: r.object?.id || r.id,
+          title: r.object?.title || r.title,
+          description: r.explanation?.why_youll_like || r.object?.description || '',
+          image_url: r.object?.image_url,
+          personalized_score: r.personalized_score,
+          distance: r.object?.distance,
+          rating: r.object?.rating,
+          category: selectedCategory,
+        }));
+        setRecommendations(items);
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
