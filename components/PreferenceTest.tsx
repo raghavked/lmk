@@ -22,7 +22,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
       category: 'Restaurants',
       question: 'What cuisines excite you the most?',
       type: 'multiple-select',
-      options: ['Italian', 'Asian', 'Mexican', 'Mediterranean', 'Indian', 'French', 'American', 'Middle Eastern', 'Thai', 'Japanese'],
+      options: ['Italian', 'Pizza', 'Asian', 'Mexican', 'Mediterranean', 'Indian', 'French', 'American', 'Middle Eastern', 'Thai', 'Japanese'],
     },
     {
       id: 'dining_atmosphere',
@@ -36,7 +36,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
       category: 'Restaurants',
       question: 'Do you have any dietary preferences?',
       type: 'multiple-select',
-      options: ['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'None'],
+      options: ['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Halal', 'Kosher', 'None'],
     },
 
     // Movies (3 questions)
@@ -66,7 +66,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
     {
       id: 'tv_genres',
       category: 'TV Shows',
-      question: 'What TV show genres do you binge?',
+      question: 'Which TV show genres do you enjoy?',
       type: 'multiple-select',
       options: ['Drama', 'Comedy', 'Thriller', 'Reality', 'Documentary', 'Sci-Fi', 'Fantasy', 'Crime', 'Romance', 'Animation'],
     },
@@ -292,6 +292,9 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
           <div className="mb-10">
             <p className="text-gray-400 text-sm font-semibold mb-3">{question.category}</p>
             <h2 className="text-3xl font-bold text-gray-50">{question.question}</h2>
+            <p className="text-[#fea4a7] text-sm font-medium mt-2">
+              {question.type === 'multiple-select' ? 'Select all that apply' : 'Choose the best option'}
+            </p>
           </div>
 
           {/* Options */}
