@@ -104,7 +104,10 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   };
 
   const hasPreferences = profile?.taste_profile && 
-    (Array.isArray(profile.taste_profile) ? profile.taste_profile.length > 0 : Object.keys(profile.taste_profile).length > 0);
+    typeof profile.taste_profile === 'object' &&
+    !Array.isArray(profile.taste_profile) &&
+    Object.keys(profile.taste_profile).length > 0 &&
+    Object.values(profile.taste_profile).some((v: any) => v !== null && v !== undefined && (Array.isArray(v) ? v.length > 0 : true));
 
   const handleSaveProfile = async () => {
     setSettingsSaving(true);
