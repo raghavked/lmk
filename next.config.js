@@ -1,11 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: process.env.CAPACITOR_BUILD === 'true' ? 'export' : undefined,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
     ],
+    unoptimized: process.env.CAPACITOR_BUILD === 'true',
   },
   reactStrictMode: false,
+  trailingSlash: true,
   allowedDevOrigins: [
     'localhost',
     '127.0.0.1',
