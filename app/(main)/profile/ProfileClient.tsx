@@ -35,10 +35,10 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     loadRatings();
     loadFavorites();
     
-    // If no taste profile, default to preferences tab
-    const hasPreferences = profile?.taste_profile && 
-      (Array.isArray(profile.taste_profile) ? profile.taste_profile.length > 0 : Object.keys(profile.taste_profile).length > 0);
-    if (!hasPreferences) {
+    // Only auto-redirect to preferences if user has NO preferences at all
+    const hasNoPrefs = !profile?.taste_profile || 
+      (typeof profile.taste_profile === 'object' && Object.keys(profile.taste_profile).length === 0);
+    if (hasNoPrefs) {
       setActiveTab('preferences');
     }
   }, []);
@@ -103,11 +103,22 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     }
   };
 
-  const hasPreferences = profile?.taste_profile && 
-    typeof profile.taste_profile === 'object' &&
-    !Array.isArray(profile.taste_profile) &&
-    Object.keys(profile.taste_profile).length > 0 &&
-    Object.values(profile.taste_profile).some((v: any) => v !== null && v !== undefined && (Array.isArray(v) ? v.length > 0 : true));
+  const checkHasPreferences = () => {
+    if (!profile?.taste_profile) return false;
+    if (typeof profile.taste_profile !== 'object') return false;
+    if (Array.isArray(profile.taste_profile)) return profile.taste_profile.length > 0;
+    const keys = Object.keys(profile.taste_profile);
+    if (keys.length === 0) return false;
+    // Check if at least one preference has a value
+    return keys.some(key => {
+      const val = profile.taste_profile[key];
+      if (val === null || val === undefined) return false;
+      if (Array.isArray(val)) return val.length > 0;
+      if (typeof val === 'string') return val.trim().length > 0;
+      return true;
+    });
+  };
+  const hasPreferences = checkHasPreferences();
 
   const handleSaveProfile = async () => {
     setSettingsSaving(true);
