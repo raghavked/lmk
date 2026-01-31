@@ -61,6 +61,7 @@ export default function DiscoverScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getLocation();
@@ -86,7 +87,11 @@ export default function DiscoverScreen() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        console.log('No session found, user needs to log in');
+        setLoading(false);
+        return;
+      }
 
       const params = new URLSearchParams({
         category: selectedCategory,
@@ -119,12 +124,15 @@ export default function DiscoverScreen() {
           category: selectedCategory,
         }));
         setRecommendations(items);
+        setError(null);
       } else {
         const errorData = await response.text();
         console.error('API Error:', response.status, errorData);
+        setError(`Unable to load recommendations (${response.status})`);
       }
-    } catch (error) {
-      console.error('Error fetching recommendations:', error);
+    } catch (err) {
+      console.error('Error fetching recommendations:', err);
+      setError('Network error. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -171,6 +179,14 @@ export default function DiscoverScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.accent.coral} />
             <Text style={styles.loadingText}>Finding recommendations...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchRecommendations}>
+              <Text style={styles.retryText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
         ) : recommendations.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -282,6 +298,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text.secondary,
     marginTop: 8,
+  },
+  retryButton: {
+    marginTop: 16,
+    backgroundColor: Colors.accent.coral,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: Colors.background.primary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   cardContainer: {
     padding: 16,
