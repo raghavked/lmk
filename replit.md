@@ -84,3 +84,49 @@ Preferred communication style: Simple, everyday language.
 - `@supabase/supabase-js`: Database client
 - `axios`: HTTP requests to external APIs
 - `lucide-react`: Icon components
+
+## Mobile App (Capacitor)
+
+### Overview
+The app is configured to build as a native iOS/Android app using Capacitor. Capacitor wraps the web app in a native shell while providing access to device features.
+
+### Mobile Files
+- `capacitor.config.ts`: Capacitor configuration (app ID, plugins, platform settings)
+- `lib/mobile/config.ts`: Mobile detection utilities and API base URL configuration
+- `lib/mobile/plugins.ts`: Native plugin wrappers (haptics, status bar, geolocation, keyboard)
+- `components/MobileProvider.tsx`: React provider for initializing mobile plugins
+
+### Building for Mobile
+```bash
+# Build for iOS (requires Mac with Xcode)
+npm run mobile:ios
+
+# Build for Android
+npm run mobile:android
+
+# Just sync changes to native projects
+npm run cap:sync
+```
+
+### Requirements for iOS App Store
+1. Mac with Xcode installed
+2. Apple Developer account ($99/year)
+3. App icons and splash screens configured
+4. Privacy policy and app metadata
+
+### Capacitor Plugins Installed
+- `@capacitor/core`: Core functionality
+- `@capacitor/ios`: iOS platform
+- `@capacitor/android`: Android platform
+- `@capacitor/app`: App lifecycle events
+- `@capacitor/keyboard`: Keyboard control
+- `@capacitor/splash-screen`: Splash screen control
+- `@capacitor/status-bar`: Status bar styling
+- `@capacitor/haptics`: Haptic feedback
+- `@capacitor/geolocation`: GPS location
+
+### Mobile-Specific CSS
+- Safe area insets for notch/home indicator
+- Touch-friendly styling
+- Disabled pull-to-refresh for app-like feel
+- Optimized viewport settings

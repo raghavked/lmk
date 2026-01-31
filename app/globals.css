@@ -42,6 +42,50 @@ select option {
   background: #555555;
 }
 
+/* Mobile Safe Area Support - Only applied when mobile-app class is present */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* Mobile-only styles - don't affect web */
+body.mobile-app {
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--safe-area-inset-top);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
+  padding-right: var(--safe-area-inset-right);
+}
+
+html.mobile-app {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Disable text selection on mobile for app-like feel */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Disable pull-to-refresh on mobile */
+body.mobile-app {
+  overscroll-behavior-y: contain;
+}
+
+/* Active state for touch */
+.touch-active:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
 /* Utility classes */
 .main-content-padding {
   padding-left: 1rem;
