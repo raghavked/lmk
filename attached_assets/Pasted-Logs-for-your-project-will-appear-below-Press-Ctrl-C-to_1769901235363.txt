@@ -1,0 +1,63 @@
+Logs for your project will appear below. Press Ctrl+C to exit.
+iOS Bundling failed 921ms node_modules/expo-router/entry.js (1 module)
+ ERROR  Error: [BABEL] /home/runner/workspace/mobile-app/node_modules/expo-router/entry.js: Cannot find module 'react-native-worklets/plugin'
+Require stack:
+- /home/runner/workspace/mobile-app/node_modules/react-native-reanimated/plugin/index.js
+- /home/runner/workspace/mobile-app/node_modules/babel-preset-expo/build/index.js
+- /home/runner/workspace/mobile-app/node_modules/expo/internal/babel-preset.js
+- /home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/loadBabelConfig.js
+- /home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/babel-transformer.js
+- /home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js
+- /home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transform-worker/transform-worker.js
+- /home/runner/workspace/mobile-app/node_modules/metro/src/DeltaBundler/Worker.flow.js
+- /home/runner/workspace/mobile-app/node_modules/metro/src/DeltaBundler/Worker.js
+- /home/runner/workspace/mobile-app/node_modules/jest-worker/build/workers/processChild.js (While processing: "base$0")
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/home/runner/workspace/mobile-app/node_modules/react-native-reanimated/plugin/index.js:2:16)
+    at Module._compile (node:internal/modules/cjs/loader:1521:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Module.require (node:internal/modules/cjs/loader:1289:19)
+    at require (node:internal/modules/helpers:182:18)
+    at babelPresetExpo (/home/runner/workspace/mobile-app/node_modules/babel-preset-expo/build/index.js:291:62)
+    at sync (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/gensync-utils/async.js:30:25)
+    at sync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:182:19)
+    at /home/runner/workspace/mobile-app/node_modules/gensync/index.js:210:24
+    at Generator.next (<anonymous>)
+    at /home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/full.js:180:21
+    at Generator.next (<anonymous>)
+    at Function.<anonymous> (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/gensync-utils/async.js:21:3)
+    at Generator.next (<anonymous>)
+    at evaluateSync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:251:28)
+    at Function.sync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:89:14)
+    at sync (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/gensync-utils/async.js:61:25)
+    at sync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:182:19)
+    at onFirstPause (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:210:24)
+    at Generator.next (<anonymous>)
+    at cachedFunction (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/caching.js:52:46)
+    at cachedFunction.next (<anonymous>)
+    at loadPresetDescriptor (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/full.js:292:43)
+    at loadPresetDescriptor.next (<anonymous>)
+    at recursePresetDescriptors (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/full.js:77:31)
+    at recursePresetDescriptors.next (<anonymous>)
+    at /home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/full.js:156:21
+    at Generator.next (<anonymous>)
+    at loadFullConfig (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/config/full.js:113:5)
+    at loadFullConfig.next (<anonymous>)
+    at transform (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/transform.js:20:44)
+    at transform.next (<anonymous>)
+    at evaluateSync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:251:28)
+    at sync (/home/runner/workspace/mobile-app/node_modules/gensync/index.js:89:14)
+    at stopHiding - secret - don't use this - v1 (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/errors/rewrite-stack-trace.js:47:12)
+    at Object.transformSync (/home/runner/workspace/mobile-app/node_modules/@babel/core/lib/transform.js:40:76)
+    at parseWithBabel (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transformSync.js:75:18)
+    at transformSync (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transformSync.js:64:12)
+    at Object.transform (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/babel-transformer.js:127:58)
+    at transformJSWithBabel (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js:468:47)
+    at Object.transform (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transform-worker/metro-transform-worker.js:583:12)
+    at Object.transform (/home/runner/workspace/mobile-app/node_modules/@expo/metro-config/build/transform-worker/transform-worker.js:178:19)
+    at transformFile (/home/runner/workspace/mobile-app/node_modules/metro/src/DeltaBundler/Worker.flow.js:67:36)
