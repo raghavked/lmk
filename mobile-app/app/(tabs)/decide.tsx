@@ -28,7 +28,11 @@ export default function DecideScreen() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        console.log('No session, user needs to log in');
+        setLoading(false);
+        return;
+      }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/recommend?category=restaurants&limit=10`, {
@@ -49,6 +53,8 @@ export default function DecideScreen() {
           rating: r.object?.rating,
         }));
         setItems(mappedItems);
+      } else {
+        console.error('API Error:', response.status);
       }
     } catch (error) {
       console.error('Error:', error);
