@@ -34,6 +34,15 @@ interface Category {
   }[];
 }
 
+interface SavedPlan {
+  id: string;
+  title: string;
+  event_type: string;
+  city: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const eventTypes = [
   { id: 'date' as const, label: 'Date', icon: 'heart', color: Colors.accent.coral },
   { id: 'hangout' as const, label: 'Hang Out', icon: 'people', color: Colors.accent.coral },
@@ -51,12 +60,91 @@ export default function PlanMyDayScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    loadSavedPlans();
+  }, []);
 
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [messages]);
+
+  const loadSavedPlans = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      
+      const response = await fetch(`${apiUrl}/api/plan-my-day`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      const data = await response.json();
+      if (data.plans) {
+        setSavedPlans(data.plans);
+      }
+    } catch (error) {
+      console.log('Could not load saved plans');
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const loadPlan = async (planId: string) => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setLoading(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      
+      const response = await fetch(`${apiUrl}/api/plan-my-day?id=${planId}`, {
+        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      });
+      const plan = await response.json();
+      
+      if (plan.id) {
+        setSessionId(plan.id);
+        setEventType(plan.event_type as EventType);
+        setCity(plan.city);
+        setDayIntent(plan.day_intent || '');
+        
+        const chatMessages: ChatMessage[] = (plan.chat_history || []).map((msg: any) => {
+          const parsed: ChatMessage = { role: msg.role, content: msg.content };
+          return parsed;
+        });
+        
+        if (plan.categories && plan.categories.length > 0 && chatMessages.length > 0) {
+          chatMessages[chatMessages.length - 1].categories = plan.categories;
+        }
+        
+        setMessages(chatMessages);
+        setStage('chat');
+      }
+    } catch (error) {
+      console.log('Could not load plan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const handleEventSelect = async (type: EventType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -106,11 +194,16 @@ export default function PlanMyDayScreen() {
             event_type: eventType,
             city: city,
             day_intent: userMessage,
-            chat_history: []
+            chat_history: [],
+            session_id: sessionId
           })
         });
 
         const data = await response.json();
+        
+        if (data.session_id && !sessionId) {
+          setSessionId(data.session_id);
+        }
         
         if (data.error) {
           setMessages(prev => [...prev, { 
@@ -156,11 +249,16 @@ export default function PlanMyDayScreen() {
           city,
           day_intent: dayIntent,
           chat_history: chatHistory,
-          user_message: userMessage
+          user_message: userMessage,
+          session_id: sessionId
         })
       });
 
       const data = await response.json();
+      
+      if (data.session_id && !sessionId) {
+        setSessionId(data.session_id);
+      }
       
       if (data.error) {
         setMessages(prev => [...prev, { 
@@ -205,6 +303,8 @@ export default function PlanMyDayScreen() {
     setDayIntent('');
     setMessages([]);
     setInputValue('');
+    setSessionId(null);
+    loadSavedPlans();
   };
 
   const selectedEvent = eventTypes.find(e => e.id === eventType);
@@ -251,6 +351,28 @@ export default function PlanMyDayScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {!loadingPlans && savedPlans.length > 0 && (
+              <View style={styles.recentPlansSection}>
+                <View style={styles.recentPlansHeader}>
+                  <Ionicons name="time-outline" size={20} color={Colors.text.secondary} />
+                  <Text style={styles.recentPlansTitle}>Recent Plans</Text>
+                </View>
+                {savedPlans.slice(0, 5).map((plan) => (
+                  <TouchableOpacity
+                    key={plan.id}
+                    onPress={() => loadPlan(plan.id)}
+                    style={styles.savedPlanCard}
+                  >
+                    <View style={styles.savedPlanInfo}>
+                      <Text style={styles.savedPlanTitle}>{plan.title}</Text>
+                      <Text style={styles.savedPlanDate}>{formatDate(plan.updated_at)}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.text.secondary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         ) : (
           <View style={styles.chatContainer}>
@@ -419,6 +541,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text.primary,
+  },
+  recentPlansSection: {
+    marginTop: 40,
+  },
+  recentPlansHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  recentPlansTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  savedPlanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  savedPlanInfo: {
+    flex: 1,
+  },
+  savedPlanTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  savedPlanDate: {
+    fontSize: 14,
+    color: Colors.text.secondary,
   },
   chatContainer: {
     flex: 1,

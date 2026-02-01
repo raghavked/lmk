@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw, Clock, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -23,6 +23,15 @@ interface Category {
   }[];
 }
 
+interface SavedPlan {
+  id: string;
+  title: string;
+  event_type: string;
+  city: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const eventTypes = [
   { id: 'date' as const, label: 'Date', icon: Heart, color: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
   { id: 'hangout' as const, label: 'Hang Out', icon: Users, color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
@@ -42,10 +51,77 @@ export default function PlanMyDayPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    loadSavedPlans();
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const loadSavedPlans = async () => {
+    try {
+      const response = await fetch('/api/plan-my-day');
+      const data = await response.json();
+      if (data.plans) {
+        setSavedPlans(data.plans);
+      }
+    } catch (error) {
+      console.log('Could not load saved plans');
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const loadPlan = async (planId: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/plan-my-day?id=${planId}`);
+      const plan = await response.json();
+      
+      if (plan.id) {
+        setSessionId(plan.id);
+        setEventType(plan.event_type as EventType);
+        setCity(plan.city);
+        setDayIntent(plan.day_intent || '');
+        
+        const chatMessages: ChatMessage[] = (plan.chat_history || []).map((msg: any) => {
+          const parsed: ChatMessage = { role: msg.role, content: msg.content };
+          return parsed;
+        });
+        
+        if (plan.categories && plan.categories.length > 0 && chatMessages.length > 0) {
+          chatMessages[chatMessages.length - 1].categories = plan.categories;
+        }
+        
+        setMessages(chatMessages);
+        setStage('chat');
+      }
+    } catch (error) {
+      console.log('Could not load plan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const handleEventSelect = async (type: EventType) => {
     setEventType(type);
@@ -87,11 +163,16 @@ export default function PlanMyDayPage() {
             event_type: eventType,
             city: city,
             day_intent: userMessage,
-            chat_history: []
+            chat_history: [],
+            session_id: sessionId
           })
         });
 
         const data = await response.json();
+        
+        if (data.session_id && !sessionId) {
+          setSessionId(data.session_id);
+        }
         
         if (data.error) {
           setMessages(prev => [...prev, { 
@@ -131,11 +212,16 @@ export default function PlanMyDayPage() {
           city,
           day_intent: dayIntent,
           chat_history: chatHistory,
-          user_message: userMessage
+          user_message: userMessage,
+          session_id: sessionId
         })
       });
 
       const data = await response.json();
+      
+      if (data.session_id && !sessionId) {
+        setSessionId(data.session_id);
+      }
       
       if (data.error) {
         setMessages(prev => [...prev, { 
@@ -179,6 +265,8 @@ export default function PlanMyDayPage() {
     setDayIntent('');
     setMessages([]);
     setInputValue('');
+    setSessionId(null);
+    loadSavedPlans();
   };
 
   return (
@@ -212,6 +300,30 @@ export default function PlanMyDayPage() {
                 </button>
               ))}
             </div>
+
+            {!loadingPlans && savedPlans.length > 0 && (
+              <div className="mt-10">
+                <h3 className="text-lg font-semibold text-[#E6EDF3] mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-[#8B949E]" />
+                  Recent Plans
+                </h3>
+                <div className="space-y-2">
+                  {savedPlans.slice(0, 5).map((plan) => (
+                    <button
+                      key={plan.id}
+                      onClick={() => loadPlan(plan.id)}
+                      className="w-full flex items-center justify-between p-4 bg-[#21262D] rounded-xl border border-[#30363D] hover:border-[#feafb0]/50 transition-colors"
+                    >
+                      <div className="text-left">
+                        <p className="text-[#E6EDF3] font-medium">{plan.title}</p>
+                        <p className="text-[#8B949E] text-sm">{formatDate(plan.updated_at)}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-[#8B949E]" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="max-w-2xl mx-auto space-y-4">
