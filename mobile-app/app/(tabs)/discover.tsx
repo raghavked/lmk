@@ -4,12 +4,13 @@ import {
   RefreshControl, Image, Modal, TextInput, Dimensions, Linking, Alert 
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -103,27 +104,75 @@ export default function DiscoverScreen() {
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [hasMore, setHasMore] = useState(true);
 
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
+
   useEffect(() => {
-    getLocation();
-  }, []);
+    checkOnboardingAndPreferences();
+  }, [session]);
+
+  const checkOnboardingAndPreferences = async () => {
+    if (!session) {
+      setOnboardingChecked(true);
+      return;
+    }
+
+    try {
+      const onboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+      
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('taste_profile, preferences_completed')
+        .eq('id', session.user.id)
+        .single();
+
+      setProfile(profileData);
+
+      const hasPreferences = profileData?.preferences_completed || 
+        (profileData?.taste_profile && Object.keys(profileData.taste_profile).length > 0);
+
+      if (!onboardingCompleted) {
+        router.push('/onboarding');
+        return;
+      }
+
+      if (!hasPreferences) {
+        router.push('/quiz');
+        return;
+      }
+
+      setOnboardingChecked(true);
+      getLocation();
+    } catch (error) {
+      console.error('Error checking onboarding:', error);
+      setOnboardingChecked(true);
+      getLocation();
+    }
+  };
+
+  useEffect(() => {
+    if (onboardingChecked) {
+      getLocation();
+    }
+  }, [onboardingChecked]);
 
   useFocusEffect(
     useCallback(() => {
-      if (location && session) {
+      if (location && session && onboardingChecked) {
         fetchRecommendations();
       }
-    }, [selectedCategory, location, distanceFilter, session])
+    }, [selectedCategory, location, distanceFilter, session, onboardingChecked])
   );
 
   useEffect(() => {
-    if (location && session) {
+    if (location && session && onboardingChecked) {
       // Reset pagination when category, location, or filter changes
       setOffset(0);
       setSeenIds(new Set());
       setHasMore(true);
       fetchRecommendations(true);
     }
-  }, [selectedCategory, location, distanceFilter, session]);
+  }, [selectedCategory, location, distanceFilter, session, onboardingChecked]);
 
   const getLocation = async () => {
     try {
