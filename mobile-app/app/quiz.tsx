@@ -204,28 +204,51 @@ export default function QuizScreen() {
   const savePreferences = async () => {
     setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
         Alert.alert('Error', 'Please sign in to save preferences');
         return;
       }
 
-      const { error } = await supabase
+      // First check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('profiles')
-        .update({ 
-          taste_profile: preferences,
-          preferences_completed: true,
-        })
-        .eq('id', session.user.id);
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
 
-      if (error) throw error;
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            email: session.user.email,
+            taste_profile: preferences,
+            preferences_completed: true,
+          });
+        if (insertError) throw insertError;
+      } else if (fetchError) {
+        throw fetchError;
+      } else {
+        // Profile exists, update it
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            taste_profile: preferences,
+            preferences_completed: true,
+          })
+          .eq('id', session.user.id);
+        if (updateError) throw updateError;
+      }
 
       Alert.alert('Success', 'Your preferences have been saved!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)/profile') }
+        { text: 'OK', onPress: () => router.replace('/(tabs)/discover') }
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving preferences:', error);
-      Alert.alert('Error', 'Failed to save preferences');
+      Alert.alert('Error', error?.message || 'Failed to save preferences');
     } finally {
       setSaving(false);
     }

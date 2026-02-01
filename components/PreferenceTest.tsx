@@ -185,17 +185,47 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
   const handleComplete = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Save preferences to Supabase
-        await supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('User error:', userError);
+        onComplete(preferences);
+        return;
+      }
+
+      // Check if profile exists
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            taste_profile: preferences,
+            preferences_completed: true,
+          });
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+        }
+      } else if (!fetchError) {
+        // Profile exists, update it
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({
             taste_profile: preferences,
             preferences_completed: true,
           })
           .eq('id', user.id);
+        if (updateError) {
+          console.error('Error updating profile:', updateError);
+        }
       }
+      
       onComplete(preferences);
     } catch (error) {
       console.error('Error saving preferences:', error);
@@ -214,8 +244,8 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
       {/* Left Panel: Progress & Info */}
       <div className="relative hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-[#181011] overflow-hidden">
         {/* Background Decoration */}
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#fea4a7]/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#fea4a7]/5 rounded-full blur-[100px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#feafb0]/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#feafb0]/5 rounded-full blur-[100px]"></div>
 
         <div className="relative z-10 flex items-center gap-3">
           <Logo className="text-[#8b3a3a]" size={40} />
@@ -232,11 +262,11 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
           <div className="mt-12">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-400">Progress</span>
-              <span className="text-sm font-bold text-[#fea4a7]">{currentQuestion + 1}/{questions.length}</span>
+              <span className="text-sm font-bold text-[#feafb0]">{currentQuestion + 1}/{questions.length}</span>
             </div>
             <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[#fea4a7]/70 to-[#fea4a7] rounded-full transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#feafb0]/70 to-[#feafb0] rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -262,11 +292,11 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
           </div>
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm font-semibold text-gray-400">Progress</span>
-            <span className="text-sm font-bold text-[#fea4a7]">{currentQuestion + 1}/{questions.length}</span>
+            <span className="text-sm font-bold text-[#feafb0]">{currentQuestion + 1}/{questions.length}</span>
           </div>
           <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#fea4a7]/70 to-[#fea4a7] rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-[#feafb0]/70 to-[#feafb0] rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -276,7 +306,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
           <div className="mb-10">
             <p className="text-gray-400 text-sm font-semibold mb-3">{question.category}</p>
             <h2 className="text-3xl font-bold text-gray-50">{question.question}</h2>
-            <p className="text-[#fea4a7] text-sm font-medium mt-2">
+            <p className="text-[#feafb0] text-sm font-medium mt-2">
               {question.type === 'multiple-select' ? 'Select all that apply' : 'Choose the best option'}
             </p>
           </div>
@@ -294,8 +324,8 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
                   onClick={() => handleSelectOption(option)}
                   className={`w-full p-4 rounded-2xl font-medium text-left transition-all ${
                     isSelected
-                      ? 'bg-[#fea4a7] text-[#230f10] shadow-lg shadow-[#fea4a7]/30'
-                      : 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700 hover:border-[#fea4a7]/50'
+                      ? 'bg-[#feafb0] text-[#230f10] shadow-lg shadow-[#feafb0]/30'
+                      : 'bg-gray-800 text-gray-50 hover:bg-gray-700 border border-gray-700 hover:border-[#feafb0]/50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -309,7 +339,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
                         }`}
                       >
                         {isSelected && (
-                          <svg className="w-3 h-3 text-[#fea4a7]" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-3 h-3 text-[#feafb0]" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -326,7 +356,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
             <button
               onClick={handlePrevious}
               disabled={currentQuestion === 0}
-              className="flex-1 py-3 bg-gray-800 text-gray-50 rounded-2xl font-bold hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-700 hover:border-[#fea4a7]/50"
+              className="flex-1 py-3 bg-gray-800 text-gray-50 rounded-2xl font-bold hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-gray-700 hover:border-[#feafb0]/50"
             >
               <ChevronLeft className="w-5 h-5" />
               Back
@@ -334,7 +364,7 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
             <button
               onClick={handleNext}
               disabled={!isAnswered || loading}
-              className="flex-1 py-3 bg-[#fea4a7] text-[#230f10] rounded-2xl font-bold hover:bg-[#fea4a7]/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#fea4a7]/30"
+              className="flex-1 py-3 bg-[#feafb0] text-[#230f10] rounded-2xl font-bold hover:bg-[#feafb0]/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-[#feafb0]/30"
             >
               {loading ? (
                 <>
