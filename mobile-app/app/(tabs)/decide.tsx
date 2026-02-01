@@ -8,6 +8,8 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
+import { CardSkeleton } from '../../components/SkeletonLoader';
+import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -323,9 +325,8 @@ export default function DecideScreen() {
   if (loading && !currentItem) {
     return (
       <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent.coral} />
-          <Text style={styles.loadingText}>Finding something for you...</Text>
+        <View style={styles.skeletonContainer}>
+          <CardSkeleton />
         </View>
       </View>
     );
@@ -392,14 +393,18 @@ export default function DecideScreen() {
         showsVerticalScrollIndicator={false}
       >
         {error && !currentItem ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>{getCategoryEmoji(selectedCategory)}</Text>
-            <Text style={styles.emptyText}>{error}</Text>
-            <TouchableOpacity style={styles.reshuffleButton} onPress={handleReshuffle}>
-              <Ionicons name="shuffle" size={18} color={Colors.background.primary} />
-              <Text style={styles.reshuffleText}>Reshuffle</Text>
-            </TouchableOpacity>
-          </View>
+          error.includes('Network') ? (
+            <NetworkError onRetry={handleReshuffle} />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>{getCategoryEmoji(selectedCategory)}</Text>
+              <Text style={styles.emptyText}>{error}</Text>
+              <TouchableOpacity style={styles.reshuffleButton} onPress={handleReshuffle}>
+                <Ionicons name="shuffle" size={18} color={Colors.background.primary} />
+                <Text style={styles.reshuffleText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          )
         ) : currentItem ? (
           <View style={styles.cardWrapper}>
             <View style={styles.decideCard}>
@@ -659,6 +664,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  skeletonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   loadingText: {
     marginTop: 16,

@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
+import { FriendListSkeleton } from '../../components/SkeletonLoader';
+import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
+import * as Haptics from 'expo-haptics';
 
 interface Friend {
   id: string;
@@ -25,7 +29,9 @@ export default function FriendsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'friends' | 'pending' | 'search'>('friends');
   const [sentRequests, setSentRequests] = useState<string[]>([]);
 
@@ -34,6 +40,13 @@ export default function FriendsScreen() {
       loadFriends();
     }, [])
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await loadFriends();
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -48,9 +61,12 @@ export default function FriendsScreen() {
 
   const loadFriends = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
+      setError(null);
+      
       const accessToken = await getAccessToken();
       if (!accessToken) {
+        setError('Please sign in to view friends');
         setLoading(false);
         return;
       }
@@ -86,10 +102,17 @@ export default function FriendsScreen() {
 
         setSentRequests(data.sentRequests || []);
       } else {
-        console.error('Error loading friends:', await response.text());
+        const errorText = await response.text();
+        console.error('Error loading friends:', errorText);
+        setError('Could not load friends. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading friends:', err);
+      if (err.message?.includes('network') || err.message?.includes('Network')) {
+        setError('network');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,6 +244,39 @@ export default function FriendsScreen() {
   const isFriend = (userId: string) => friends.some(f => f.id === userId);
   const hasSentRequest = (userId: string) => sentRequests.includes(userId);
 
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.tabBar}>
+          {(['friends', 'pending', 'search'] as const).map((t) => (
+            <TouchableOpacity
+              key={t}
+              style={[styles.tab, tab === t && styles.activeTab]}
+              onPress={() => setTab(t)}
+            >
+              <Text style={[styles.tabText, tab === t && styles.activeTabText]}>
+                {t === 'friends' ? 'Friends' : t === 'pending' ? 'Pending' : 'Search'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <FriendListSkeleton count={5} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        {error === 'network' ? (
+          <NetworkError onRetry={loadFriends} />
+        ) : (
+          <ErrorView message={error} onRetry={loadFriends} />
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.tabBar}>
@@ -228,7 +284,10 @@ export default function FriendsScreen() {
           <TouchableOpacity
             key={t}
             style={[styles.tab, tab === t && styles.activeTab]}
-            onPress={() => setTab(t)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setTab(t);
+            }}
           >
             <Text style={[styles.tabText, tab === t && styles.activeTabText]}>
               {t === 'friends' ? `Friends (${friends.length})` : 
@@ -241,22 +300,41 @@ export default function FriendsScreen() {
 
       {tab === 'search' && (
         <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name..."
-            placeholderTextColor={Colors.text.secondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          <View style={styles.searchInputWrapper}>
+            <Ionicons name="search" size={18} color={Colors.text.secondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name..."
+              placeholderTextColor={Colors.text.secondary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
-      <ScrollView style={styles.content}>
-        {loading ? (
-          <ActivityIndicator size="large" color={Colors.accent.coral} style={styles.loader} />
-        ) : tab === 'friends' ? (
+      <ScrollView 
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent.coral}
+          />
+        }
+      >
+        {tab === 'friends' ? (
           friends.length === 0 ? (
-            <Text style={styles.emptyText}>No friends yet. Search to add friends!</Text>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color={Colors.text.secondary} />
+              <Text style={styles.emptyText}>No friends yet</Text>
+              <Text style={styles.emptySubtext}>Search to add friends!</Text>
+            </View>
           ) : (
             friends.map((friend) => (
               <View key={friend.id} style={styles.friendCard}>
@@ -349,11 +427,19 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
+    paddingTop: 8,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    gap: 8,
   },
   searchInput: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 8,
-    padding: 12,
+    flex: 1,
+    paddingVertical: 12,
     color: Colors.text.primary,
     fontSize: 16,
   },
@@ -364,10 +450,23 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: 40,
   },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
   emptyText: {
+    color: Colors.text.primary,
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptySubtext: {
     color: Colors.text.secondary,
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 8,
+    fontSize: 14,
   },
   friendCard: {
     flexDirection: 'row',

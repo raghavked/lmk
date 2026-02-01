@@ -48,6 +48,10 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **Mobile App Beta Readiness**: Added global error boundary, skeleton loaders, pull-to-refresh, network error detection, and retry buttons across all screens for improved stability.
+- **Improved Logout**: Sign out now clears all local storage (AsyncStorage) including onboarding, quiz, and decision history data.
+- **Beta Feedback Link**: Profile screen now includes Send Feedback option for beta testers to submit feedback via email.
+- **Enhanced Error Handling**: All API-calling screens (Discover, Decide, Friends, Groups, Profile) now show proper error states with retry buttons.
 - **Faster Recommendation Loading**: AI ranker upgraded from claude-3-haiku to claude-3-5-haiku model with reduced max_tokens (1024 vs 2048) for ~50% faster AI ranking responses.
 - **Improved Location Services**: Mobile app location detection now uses balanced accuracy mode for faster results with fallback to last known position if current location fails.
 - **Plan My Day Chat Memory**: Plan sessions are now automatically saved to a `plan_sessions` database table. Users can view and resume recent plans from the Plan My Day screen. Sessions include event type, city, day intent, full chat history, and AI-generated categories. Uses claude-3-5-haiku model with reduced max_tokens (1024) for faster response times.

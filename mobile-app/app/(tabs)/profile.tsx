@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator, Linking } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
+import { ProfileSkeleton } from '../../components/SkeletonLoader';
+import { ErrorView } from '../../components/ErrorBoundary';
 
 interface UserProfile {
   id: string;
@@ -13,10 +15,14 @@ interface UserProfile {
   taste_profile?: any;
 }
 
+const APP_VERSION = '1.0.0-beta';
+const FEEDBACK_EMAIL = 'feedback@lmk.app';
+
 export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -32,22 +38,32 @@ export default function ProfileScreen() {
 
   const fetchProfile = async () => {
     try {
+      setError(null);
       if (!session) return;
 
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
+      if (fetchError) throw fetchError;
+
       if (data) {
         setProfile(data);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (err: any) {
+      console.error('Error fetching profile:', err);
+      setError('Could not load profile. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSendFeedback = () => {
+    const subject = encodeURIComponent(`LMK App Feedback (${APP_VERSION})`);
+    const body = encodeURIComponent(`\n\n---\nApp Version: ${APP_VERSION}\nUser ID: ${session?.user?.id || 'unknown'}`);
+    Linking.openURL(`mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`);
   };
 
   const handleSignOut = async () => {
@@ -115,6 +131,22 @@ export default function ProfileScreen() {
 
   const hasPreferences = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
 
+  if (loading) {
+    return (
+      <ScrollView style={styles.container}>
+        <ProfileSkeleton />
+      </ScrollView>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <ErrorView message={error} onRetry={fetchProfile} />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -153,29 +185,38 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <TouchableOpacity style={styles.menuItem} onPress={openEditModal}>
+          <Ionicons name="person-outline" size={20} color={Colors.text.primary} style={styles.menuIcon} />
           <Text style={styles.menuItemText}>Edit Profile</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferences</Text>
         {hasPreferences && (
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/quiz')}>
-            <Text style={styles.menuItemText}>Retake Quiz</Text>
+            <Ionicons name="options-outline" size={20} color={Colors.text.primary} style={styles.menuIcon} />
+            <Text style={styles.menuItemText}>Retake Preference Quiz</Text>
             <Text style={styles.menuArrow}>›</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Beta</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={handleSendFeedback}>
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.accent.coral} style={styles.menuIcon} />
+          <Text style={styles.menuItemText}>Send Feedback</Text>
+          <Text style={styles.menuArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+          <Ionicons name="log-out-outline" size={20} color={Colors.error} style={styles.menuIcon} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>LMK v1.0.0</Text>
+        <Text style={styles.footerText}>LMK {APP_VERSION}</Text>
+        <Text style={styles.footerSubtext}>Made with ❤️ for beta testers</Text>
       </View>
 
       <Modal visible={showEditModal} transparent animationType="slide">
@@ -325,7 +366,6 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: Colors.background.secondary,
     padding: 16,
@@ -334,7 +374,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  menuIcon: {
+    marginRight: 12,
+  },
   menuItemText: {
+    flex: 1,
     fontSize: 16,
     color: Colors.text.primary,
   },
@@ -343,10 +387,12 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
   },
   signOutButton: {
+    flexDirection: 'row',
     backgroundColor: Colors.background.secondary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.error,
   },
@@ -358,10 +404,17 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingVertical: 32,
+    paddingBottom: 48,
   },
   footerText: {
+    fontSize: 14,
+    color: Colors.text.muted,
+    fontWeight: '600',
+  },
+  footerSubtext: {
     fontSize: 12,
     color: Colors.text.muted,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,

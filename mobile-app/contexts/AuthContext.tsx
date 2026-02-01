@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
@@ -32,7 +33,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    try {
+      const keysToRemove = [
+        'lmk_onboarding_completed',
+        'lmk_quiz_completed',
+        'lmk_decision_history',
+        'lmk_seen_ids',
+        'lmk_last_category',
+      ];
+      await AsyncStorage.multiRemove(keysToRemove);
+      console.log('[AuthContext] Cleared local storage on sign out');
+    } catch (error) {
+      console.error('[AuthContext] Error clearing local storage:', error);
+    }
     await supabase.auth.signOut();
+    setSession(null);
   };
 
   const getAccessToken = async (): Promise<string | null> => {
