@@ -301,32 +301,36 @@ Location: ${user.location?.city || 'Unknown'}
       userContext += `\n--- User's Past Ratings (use to understand their preferences) ---\n`;
       const recentRatings = userRatings.slice(0, 15);
       
+      // Normalize field names (rating vs score, review vs feedback)
+      const normalizedRatings = recentRatings.map((r: any) => ({
+        title: r.item_title || r.title || 'Unknown Item',
+        category: r.category || '',
+        score: r.rating ?? r.score ?? 0,
+        review: r.review || r.feedback || '',
+      }));
+      
       // Group ratings by score to show patterns
-      const highlyRated = recentRatings.filter((r: any) => r.score >= 4);
-      const lowRated = recentRatings.filter((r: any) => r.score <= 2);
+      const highlyRated = normalizedRatings.filter((r: any) => r.score >= 4);
+      const lowRated = normalizedRatings.filter((r: any) => r.score <= 2);
       
       if (highlyRated.length > 0) {
         userContext += `\nItems user LOVED (4-5 stars):\n`;
         for (const rating of highlyRated.slice(0, 5)) {
-          const title = rating.item_title || 'Item';
-          const category = rating.category || '';
-          const feedback = rating.feedback ? ` - "${rating.feedback}"` : '';
-          userContext += `  • ${title} (${category}): ${rating.score}/5${feedback}\n`;
+          const reviewText = rating.review ? ` - "${rating.review}"` : '';
+          userContext += `  • ${rating.title} (${rating.category}): ${rating.score}/5${reviewText}\n`;
         }
       }
       
       if (lowRated.length > 0) {
         userContext += `\nItems user DISLIKED (1-2 stars) - avoid recommending similar:\n`;
         for (const rating of lowRated.slice(0, 3)) {
-          const title = rating.item_title || 'Item';
-          const category = rating.category || '';
-          const feedback = rating.feedback ? ` - "${rating.feedback}"` : '';
-          userContext += `  • ${title} (${category}): ${rating.score}/5${feedback}\n`;
+          const reviewText = rating.review ? ` - "${rating.review}"` : '';
+          userContext += `  • ${rating.title} (${rating.category}): ${rating.score}/5${reviewText}\n`;
         }
       }
       
       // Calculate average rating to understand if user is generous or strict
-      const avgRating = userRatings.reduce((sum: number, r: any) => sum + r.score, 0) / userRatings.length;
+      const avgRating = normalizedRatings.reduce((sum: number, r: any) => sum + r.score, 0) / normalizedRatings.length;
       userContext += `\nUser's average rating: ${avgRating.toFixed(1)}/5 (${avgRating >= 4 ? 'generous rater' : avgRating >= 3 ? 'moderate rater' : 'selective rater'})\n`;
       userContext += `Total items rated: ${userRatings.length}\n`;
       userContext += `----------------------------------------------------------------\n`;
