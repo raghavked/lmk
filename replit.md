@@ -124,9 +124,50 @@ Then scan the QR code with Expo Go app on your phone.
 3. Privacy policy URL
 4. Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` environment variables
 
-### Key Features
+### Key Features (February 2026 Enhancements)
 - Dark theme matching web app (#0D1117 background, #FF6B6B coral accent)
-- Tab navigation (Discover, Decide, Profile)
-- Supabase authentication
-- Location-based recommendations
-- Haptic feedback on interactions
+- 5 Tab navigation: Discover, Decide, Friends, Groups, Profile
+- Supabase authentication with JWT Bearer token support
+- Full feature parity with web app
+
+### Discover Screen
+- Category tabs (Restaurants, Movies, TV Shows, YouTube, Reading, Activities)
+- Search bar with real-time search
+- Sorting options (AI Score, Distance, Rating, Reviews)
+- Distance filter (5/10/25/50/100 miles) for location-based categories
+- Detailed item cards with AI score badges, metrics, location, distance
+- Item detail modal with full information and rating capability
+- 5-star rating modal with optional review
+- Pull-to-refresh with haptic feedback
+
+### Decide Screen
+- Full category selector (6 categories)
+- Distance filter for restaurants/activities
+- Yes/No decision buttons with haptic feedback
+- Decision history modal with AsyncStorage persistence
+- Reshuffle functionality to clear seen items
+- Match popup celebration animation
+- Bounded storage (max 50 history, 200 seen IDs)
+
+### Friends Screen
+- User search functionality
+- Friend request management (send/accept/reject)
+- View friend list with avatars
+- API-based data loading via /api/friends endpoint
+
+### Groups Screen
+- Create groups with name/description
+- Group chat messaging
+- Poll creation for group decisions
+- API-based data loading via /api/groups endpoint
+
+### Profile Screen
+- User info display (name, email, avatar)
+- Preference quiz status and retake option
+- Settings menu items
+- Sign out functionality
+
+### API Authentication
+- Mobile app uses Bearer token authentication
+- User-scoped Supabase client respects RLS policies
+- Secure JWT validation on all API endpoints

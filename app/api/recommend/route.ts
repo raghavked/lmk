@@ -64,11 +64,17 @@ export async function GET(request: Request) {
     // Mobile app authentication with Bearer token
     const token = authHeader.substring(7);
     
-    // Use admin client to validate the token (service role can verify any JWT)
-    const adminClient = createClient(
+    // Create a user-scoped client that respects RLS policies
+    // This is the secure approach - the user's token is used for all operations
+    const userClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        },
         auth: {
           autoRefreshToken: false,
           persistSession: false
@@ -76,15 +82,16 @@ export async function GET(request: Request) {
       }
     );
     
-    const { data: { user }, error } = await adminClient.auth.getUser(token);
+    // Validate the token by getting the user
+    const { data: { user }, error } = await userClient.auth.getUser(token);
     
     if (error || !user) {
       console.error('[Recommend API] Mobile auth error:', error?.message || 'No user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Continue using admin client for database queries (bypasses RLS)
-    supabase = adminClient;
+    // Use the user-scoped client for all database queries (respects RLS)
+    supabase = userClient;
     session = { user, access_token: token };
   } else {
     // Web app authentication with cookies
