@@ -377,18 +377,23 @@ export default function DecideScreen() {
         </View>
       </View>
 
-      {error && !currentItem ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>{getCategoryEmoji(selectedCategory)}</Text>
-          <Text style={styles.emptyText}>{error}</Text>
-          <TouchableOpacity style={styles.reshuffleButton} onPress={handleReshuffle}>
-            <Ionicons name="shuffle" size={18} color={Colors.background.primary} />
-            <Text style={styles.reshuffleText}>Reshuffle</Text>
-          </TouchableOpacity>
-        </View>
-      ) : currentItem ? (
-        <View style={styles.cardWrapper}>
-          <View style={styles.decideCard}>
+      <ScrollView 
+        style={styles.scrollContent} 
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {error && !currentItem ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>{getCategoryEmoji(selectedCategory)}</Text>
+            <Text style={styles.emptyText}>{error}</Text>
+            <TouchableOpacity style={styles.reshuffleButton} onPress={handleReshuffle}>
+              <Ionicons name="shuffle" size={18} color={Colors.background.primary} />
+              <Text style={styles.reshuffleText}>Reshuffle</Text>
+            </TouchableOpacity>
+          </View>
+        ) : currentItem ? (
+          <View style={styles.cardWrapper}>
+            <View style={styles.decideCard}>
             <View style={styles.cardImageContainer}>
               {currentItem.image_url ? (
                 <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
@@ -398,12 +403,6 @@ export default function DecideScreen() {
                 </View>
               )}
               <View style={styles.cardOverlay} />
-              {currentItem.personalized_score && (
-                <View style={styles.scoreBadge}>
-                  <Ionicons name="sparkles" size={14} color={Colors.background.primary} />
-                  <Text style={styles.scoreText}>{Math.round(currentItem.personalized_score)}%</Text>
-                </View>
-              )}
             </View>
             
             <View style={styles.cardContent}>
@@ -472,11 +471,12 @@ export default function DecideScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      ) : (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent.coral} />
-        </View>
-      )}
+        ) : (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.accent.coral} />
+          </View>
+        )}
+      </ScrollView>
 
       <Modal visible={showMatchPopup} transparent animationType="fade">
         <View style={styles.matchOverlay}>
@@ -572,6 +572,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.primary,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   header: {
     paddingTop: 8,
