@@ -60,6 +60,14 @@ export async function GET(request: Request) {
   let supabase;
   let session;
 
+  // Debug: Log all headers to see what's being sent
+  const allHeaders: Record<string, string> = {};
+  request.headers.forEach((value, key) => {
+    allHeaders[key] = key.toLowerCase() === 'authorization' ? `${value.substring(0, 20)}...` : value;
+  });
+  console.log('[API] Request headers:', JSON.stringify(allHeaders));
+  console.log('[API] Auth header:', authHeader ? `present (${authHeader.substring(0, 20)}...)` : 'missing');
+
   if (authHeader?.startsWith('Bearer ')) {
     // Mobile app authentication with Bearer token
     const token = authHeader.substring(7);
@@ -105,7 +113,13 @@ export async function GET(request: Request) {
   }
 
   if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ 
+      error: 'Unauthorized', 
+      debug: { 
+        hasAuthHeader: !!authHeader,
+        authHeaderStart: authHeader?.substring(0, 15) || 'none'
+      }
+    }, { status: 401 });
   }
 
   try {
