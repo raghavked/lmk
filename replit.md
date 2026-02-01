@@ -48,11 +48,15 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **Plan My Day Feature**: AI-powered event planning with Claude integration. Users select event type (Date, Hang Out, Solo, Other), enter city, describe their ideal day, and receive categorized recommendations (Restaurant, Movie, TV Show, Activity, Reading) tailored to their event type. Chat-based interface with iterative refinement support.
 - **YouTube Category Removed**: YouTube recommendations have been completely removed from the app (category, API, and UI)
 - **AI Personalization from Ratings**: AI ranker now fetches user's past 50 ratings (with item titles, categories, scores, and reviews) to deeply personalize recommendations
 - **Loved/Disliked Item Grouping**: Ratings are grouped by score - items rated 4-5 stars are shown as "loved" and 1-2 stars as "disliked" in AI prompts
 - **Enhanced AI System Prompt**: Updated to emphasize referencing user's specific preferences and past ratings in explanations
 - **Ratings Field Normalization**: Handles both rating/score and review/feedback field names for schema flexibility
+- **Accent Color Update**: Changed from #FF6B6B to softer coral #feafb0 throughout the app
+- **Preference Quiz Improvements**: Q5 (movie style) now allows multiple selections; Pizza removed from cuisine options
+- **Smart Walkthrough**: Only shows for first-time users who haven't completed preferences
 
 ### Enhancements (January 2026)
 - **Dark/Coral Theme**: Consistent dark mode (#0D1117 background) with coral accent (#FF6B6B) across all pages

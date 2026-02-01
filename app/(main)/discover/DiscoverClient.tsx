@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Loader2, AlertCircle, ArrowDown, MapPin, Navigation as NavIcon, Search, RefreshCw, Sliders, Zap, ChevronDown } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowDown, MapPin, Navigation as NavIcon, Search, RefreshCw, Sliders, Zap, ChevronDown, Calendar } from 'lucide-react';
+import Link from 'next/link';
 import ObjectCard from '@/components/ObjectCard';
 import Navigation from '@/components/Navigation';
 import Walkthrough from '@/components/Walkthrough';
@@ -395,6 +396,15 @@ export default function DiscoverClient({ profile }: { profile: any }) {
           </div>
         )}
       </div>
+
+      {/* Plan My Day Floating Button */}
+      <Link
+        href="/plan"
+        className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-[#feafb0] text-[#0D1117] font-bold rounded-full shadow-lg shadow-[#feafb0]/30 hover:bg-[#feafb0]/90 transition-all hover:scale-105 z-50"
+      >
+        <Calendar className="w-5 h-5" />
+        Plan My Day
+      </Link>
     </div>
   );
 }
