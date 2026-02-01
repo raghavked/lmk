@@ -3,247 +3,189 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/colors';
-
-interface QuizOption {
-  id: string;
-  label: string;
-  icon: string;
-}
+import { Ionicons } from '@expo/vector-icons';
 
 interface QuizQuestion {
   id: string;
+  category: string;
   question: string;
-  emoji: string;
-  stage: 1 | 2 | 3;
-  options: QuizOption[];
+  type: 'single-select' | 'multiple-select';
+  options: string[];
 }
 
 const QUIZ_QUESTIONS: QuizQuestion[] = [
-  // STAGE 1: QUICK TASTE SCAN (5 Questions)
   {
-    id: 's1_mood',
-    question: "What's your current mood for discovery?",
-    emoji: '🧭',
-    stage: 1,
-    options: [
-      { id: 's1_mood_chill', label: 'Chill & Cozy', icon: '🛋️' },
-      { id: 's1_mood_adventure', label: 'Excited & Adventurous', icon: '🚀' },
-      { id: 's1_mood_learn', label: 'Curious & Thoughtful', icon: '🧠' },
-      { id: 's1_mood_social', label: 'Social & Lively', icon: '🎉' },
-    ],
+    id: 'cuisine_preference',
+    category: 'Restaurants',
+    question: 'What cuisines excite you the most?',
+    type: 'multiple-select',
+    options: ['Italian', 'Pizza', 'Asian', 'Mexican', 'Mediterranean', 'Indian', 'French', 'American', 'Middle Eastern', 'Thai', 'Japanese'],
   },
   {
-    id: 's1_pace',
-    question: "When you go out, do you prefer a fast pace or a slow burn?",
-    emoji: '⏱️',
-    stage: 1,
-    options: [
-      { id: 's1_pace_fast', label: 'Fast-Paced & Efficient', icon: '⚡' },
-      { id: 's1_pace_slow', label: 'Slow & Leisurely', icon: '🐌' },
-    ],
+    id: 'dining_atmosphere',
+    category: 'Restaurants',
+    question: 'What dining atmosphere do you prefer?',
+    type: 'single-select',
+    options: ['Casual & Relaxed', 'Trendy & Modern', 'Fine Dining', 'Cozy & Intimate', 'Lively & Social', 'Quiet & Peaceful'],
   },
   {
-    id: 's1_cuisine',
-    question: "Pick a flavor profile that always hits the spot.",
-    emoji: '👅',
-    stage: 1,
-    options: [
-      { id: 's1_cuisine_spicy', label: 'Spicy & Bold', icon: '🌶️' },
-      { id: 's1_cuisine_umami', label: 'Umami & Savory', icon: '🍄' },
-      { id: 's1_cuisine_sweet', label: 'Sweet & Comforting', icon: '🍰' },
-      { id: 's1_cuisine_fresh', label: 'Fresh & Bright', icon: '🍋' },
-    ],
+    id: 'dietary_preferences',
+    category: 'Restaurants',
+    question: 'Do you have any dietary preferences?',
+    type: 'multiple-select',
+    options: ['Vegetarian', 'Vegan', 'Gluten-Free', 'Keto', 'Organic', 'Halal', 'Kosher', 'None'],
   },
   {
-    id: 's1_media',
-    question: "Which type of story draws you in the most?",
-    emoji: '🎬',
-    stage: 1,
-    options: [
-      { id: 's1_media_real', label: 'Grounded in Reality', icon: '🌍' },
-      { id: 's1_media_fantasy', label: 'Escapist Fantasy', icon: '✨' },
-      { id: 's1_media_thrill', label: 'High-Stakes Thriller', icon: '💥' },
-      { id: 's1_media_comedy', label: 'Pure Comedy & Fun', icon: '😂' },
-    ],
+    id: 'movie_genres',
+    category: 'Movies',
+    question: 'Which movie genres captivate you?',
+    type: 'multiple-select',
+    options: ['Action', 'Drama', 'Comedy', 'Thriller', 'Horror', 'Sci-Fi', 'Fantasy', 'Romance', 'Animation', 'Documentary'],
   },
   {
-    id: 's1_activity',
-    question: "When you have free time, what's your default setting?",
-    emoji: '🎯',
-    stage: 1,
-    options: [
-      { id: 's1_activity_home', label: 'Homebody (Cozy & Indoor)', icon: '🏠' },
-      { id: 's1_activity_culture', label: 'Cultural (Museums, Shows)', icon: '🖼️' },
-      { id: 's1_activity_nature', label: 'Nature (Hikes, Parks)', icon: '🌲' },
-      { id: 's1_activity_city', label: 'City Explorer', icon: '🏙️' },
-    ],
-  },
-  // STAGE 2: SCENARIO-BASED (6 Questions)
-  {
-    id: 's2_friday_night',
-    question: "It's Friday night, you're tired. What's the takeout vibe?",
-    emoji: '😴',
-    stage: 2,
-    options: [
-      { id: 's2_friday_comfort', label: 'Comfort Food & Nostalgia', icon: '🍕' },
-      { id: 's2_friday_healthy', label: 'Healthy & Fresh Reset', icon: '🥗' },
-      { id: 's2_friday_exotic', label: 'Exotic & Adventurous', icon: '🍜' },
-      { id: 's2_friday_fancy', label: 'Prestige & Treat Yourself', icon: '🥂' },
-    ],
+    id: 'movie_style',
+    category: 'Movies',
+    question: 'What type of movie experience do you prefer?',
+    type: 'single-select',
+    options: ['Blockbuster & Entertaining', 'Thought-Provoking', 'Emotional & Moving', 'Artistic & Experimental', 'Light & Fun', 'Intense & Gripping', 'No preference'],
   },
   {
-    id: 's2_movie_length',
-    question: "You're starting a movie. How long is too long?",
-    emoji: '⏳',
-    stage: 2,
-    options: [
-      { id: 's2_movie_short', label: 'Under 90 mins (Quick Hit)', icon: '⏱️' },
-      { id: 's2_movie_standard', label: '90 - 150 mins (Standard)', icon: '🍿' },
-      { id: 's2_movie_epic', label: 'Over 150 mins (Epic)', icon: '🎬' },
-    ],
+    id: 'movie_era',
+    category: 'Movies',
+    question: 'What era of films do you enjoy?',
+    type: 'multiple-select',
+    options: ['Classic (Pre-1980)', 'Golden Age (1980-2000)', 'Modern (2000-2015)', 'Recent (2015+)', 'No preference'],
   },
   {
-    id: 's2_tv_genre',
-    question: "What's the one TV genre you'll always give a chance?",
-    emoji: '📺',
-    stage: 2,
-    options: [
-      { id: 's2_tv_prestige', label: 'Prestige Drama', icon: '🏆' },
-      { id: 's2_tv_procedural', label: 'Comfort Procedural', icon: '🚨' },
-      { id: 's2_tv_sitcom', label: 'Classic Sitcom', icon: '🤣' },
-      { id: 's2_tv_reality', label: 'Competition Reality', icon: '🏅' },
-    ],
+    id: 'tv_genres',
+    category: 'TV Shows',
+    question: 'Which TV show genres do you enjoy?',
+    type: 'multiple-select',
+    options: ['Drama', 'Comedy', 'Thriller', 'Reality', 'Documentary', 'Sci-Fi', 'Fantasy', 'Crime', 'Romance', 'Animation'],
   },
   {
-    id: 's2_youtube_topic',
-    question: "Which YouTube rabbit hole are you most likely to fall down?",
-    emoji: '🕳️',
-    stage: 2,
-    options: [
-      { id: 's2_youtube_explain', label: 'Deep Explanations', icon: '🔬' },
-      { id: 's2_youtube_craft', label: 'Creative Process', icon: '🎨' },
-      { id: 's2_youtube_gaming', label: 'Gaming & Streaming', icon: '🎮' },
-      { id: 's2_youtube_vlog', label: 'Lifestyle Vlogs', icon: '🤳' },
-    ],
+    id: 'show_commitment',
+    category: 'TV Shows',
+    question: 'How do you prefer to watch shows?',
+    type: 'single-select',
+    options: ['Quick episodes (20-30 min)', 'Long episodes (45-60 min)', 'Mix of both', 'No preference'],
   },
   {
-    id: 's2_reading_format',
-    question: "When you read, what format is your go-to?",
-    emoji: '📚',
-    stage: 2,
-    options: [
-      { id: 's2_reading_book', label: 'Physical Book', icon: '📖' },
-      { id: 's2_reading_article', label: 'Long-Form Articles', icon: '📰' },
-      { id: 's2_reading_comic', label: 'Graphic Novels & Comics', icon: '🦸' },
-      { id: 's2_reading_audio', label: 'Audiobooks & Podcasts', icon: '🎧' },
-    ],
+    id: 'show_tone',
+    category: 'TV Shows',
+    question: 'What tone appeals to you most?',
+    type: 'multiple-select',
+    options: ['Dark & Serious', 'Light & Humorous', 'Suspenseful', 'Heartwarming', 'Adventurous', 'Intellectual'],
   },
   {
-    id: 's2_activity_social',
-    question: "When planning a group activity, what's your priority?",
-    emoji: '🤝',
-    stage: 2,
-    options: [
-      { id: 's2_activity_easy', label: 'Low-Effort & Easy', icon: '✅' },
-      { id: 's2_activity_unique', label: 'Unique & Memorable', icon: '🌟' },
-      { id: 's2_activity_active', label: 'Physically Active', icon: '💪' },
-      { id: 's2_activity_food', label: 'Centered Around Food', icon: '🍻' },
-    ],
-  },
-  // STAGE 3: FINE-GRAINED CONTROLS (6 Questions)
-  {
-    id: 's3_slider_price',
-    question: "Price Sensitivity: How much does cost factor in?",
-    emoji: '💰',
-    stage: 3,
-    options: [
-      { id: 's3_slider_price_low', label: 'Value-Focused', icon: '💸' },
-      { id: 's3_slider_price_high', label: 'Quality-Focused', icon: '💎' },
-    ],
+    id: 'book_genres',
+    category: 'Reading',
+    question: 'Which book genres captivate you?',
+    type: 'multiple-select',
+    options: ['Fiction', 'Mystery', 'Romance', 'Sci-Fi', 'Fantasy', 'Non-Fiction', 'Biography', 'Self-Help', 'Thriller', 'Historical'],
   },
   {
-    id: 's3_slider_noise',
-    question: "Noise Level: Quiet or lively environments?",
-    emoji: '🔊',
-    stage: 3,
-    options: [
-      { id: 's3_slider_noise_quiet', label: 'Quiet & Intimate', icon: '🤫' },
-      { id: 's3_slider_noise_lively', label: 'Lively & Buzzing', icon: '🥳' },
-    ],
+    id: 'reading_pace',
+    category: 'Reading',
+    question: 'What reading pace do you prefer?',
+    type: 'single-select',
+    options: ['Fast-paced & Gripping', 'Slow & Thoughtful', 'Mix of both', 'No preference'],
   },
   {
-    id: 's3_slider_risk',
-    question: "Risk Tolerance: How often do you try something new?",
-    emoji: '🎲',
-    stage: 3,
-    options: [
-      { id: 's3_slider_risk_low', label: 'Stick to what I know', icon: '✅' },
-      { id: 's3_slider_risk_high', label: 'Always try the wild card', icon: '🤯' },
-    ],
+    id: 'book_depth',
+    category: 'Reading',
+    question: 'How deep do you like your books to be?',
+    type: 'single-select',
+    options: ['Light & Easy', 'Moderately Complex', 'Intellectually Challenging', 'No preference'],
   },
   {
-    id: 's3_multi_food',
-    question: "What kind of food experience do you enjoy? (Select all)",
-    emoji: '🍽️',
-    stage: 3,
-    options: [
-      { id: 's3_multi_food_street', label: 'Street Food & Food Trucks', icon: '🚚' },
-      { id: 's3_multi_food_omakase', label: 'Omakase & Tasting Menus', icon: '🍣' },
-      { id: 's3_multi_food_brunch', label: 'Brunch & Breakfast Spots', icon: '🍳' },
-      { id: 's3_multi_food_vegan', label: 'Plant-Based & Vegan', icon: '🌱' },
-    ],
+    id: 'activity_type',
+    category: 'Activities',
+    question: 'What types of activities excite you?',
+    type: 'multiple-select',
+    options: ['Outdoor & Adventure', 'Sports & Fitness', 'Arts & Culture', 'Social & Nightlife', 'Wellness & Relaxation', 'Learning & Workshops', 'Gaming & Entertainment', 'Travel & Exploration'],
   },
   {
-    id: 's3_multi_movie',
-    question: "What kind of movie tone do you seek? (Select all)",
-    emoji: '🎭',
-    stage: 3,
-    options: [
-      { id: 's3_multi_movie_oscar', label: 'Oscar Bait & Prestige', icon: '🏆' },
-      { id: 's3_multi_movie_indie', label: 'Indie & Arthouse', icon: '📽️' },
-      { id: 's3_multi_movie_horror', label: 'Horror & Suspense', icon: '👻' },
-      { id: 's3_multi_movie_musical', label: 'Musical & Dance', icon: '🎶' },
-    ],
+    id: 'activity_energy',
+    category: 'Activities',
+    question: 'What energy level do you prefer?',
+    type: 'single-select',
+    options: ['High Energy & Active', 'Moderate & Balanced', 'Low Key & Relaxed', 'Varies by mood'],
   },
   {
-    id: 's3_multi_activity',
-    question: "What kind of activity appeals to you? (Select all)",
-    emoji: '🤸',
-    stage: 3,
-    options: [
-      { id: 's3_multi_activity_live', label: 'Live Music & Concerts', icon: '🎤' },
-      { id: 's3_multi_activity_sport', label: 'Watching Live Sports', icon: '🏈' },
-      { id: 's3_multi_activity_spa', label: 'Spa & Wellness', icon: '🧖' },
-      { id: 's3_multi_activity_game', label: 'Board Games & Arcades', icon: '🎲' },
-    ],
+    id: 'activity_group',
+    category: 'Activities',
+    question: 'Do you prefer activities solo or with others?',
+    type: 'single-select',
+    options: ['Solo', 'Small Group (2-4)', 'Large Group (5+)', 'Flexible'],
+  },
+  {
+    id: 'discovery_style',
+    category: 'General',
+    question: 'How do you like to discover new things?',
+    type: 'multiple-select',
+    options: ['Recommendations from friends', 'Trending & Popular', 'Hidden gems & Niche', 'Curated by experts', 'Random discovery', 'Based on my history'],
+  },
+  {
+    id: 'budget_range',
+    category: 'General',
+    question: 'What is your typical budget range?',
+    type: 'single-select',
+    options: ['Budget-Friendly', 'Moderate', 'Premium', 'Luxury', 'Varies'],
   },
 ];
 
+const getCategoryEmoji = (category: string) => {
+  switch (category) {
+    case 'Restaurants': return '🍽️';
+    case 'Movies': return '🎬';
+    case 'TV Shows': return '📺';
+    case 'Reading': return '📚';
+    case 'Activities': return '🎯';
+    case 'General': return '✨';
+    default: return '🎯';
+  }
+};
+
 export default function QuizScreen() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [preferences, setPreferences] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState(false);
 
   const question = QUIZ_QUESTIONS[currentQuestion];
-  const isMultiSelect = question.id.includes('multi');
-  const currentStage = question.stage;
-  const stageProgress = QUIZ_QUESTIONS.filter(q => q.stage === currentStage);
-  const stageIndex = stageProgress.findIndex(q => q.id === question.id);
+  const progress = ((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100;
 
-  const toggleAnswer = (value: string) => {
-    const current = answers[question.id] || [];
-    if (current.includes(value)) {
-      setAnswers({ ...answers, [question.id]: current.filter(v => v !== value) });
+  const handleSelectOption = (value: string) => {
+    if (question.type === 'single-select') {
+      setPreferences({
+        ...preferences,
+        [question.id]: value,
+      });
     } else {
-      if (isMultiSelect) {
-        setAnswers({ ...answers, [question.id]: [...current, value] });
-      } else {
-        setAnswers({ ...answers, [question.id]: [value] });
-      }
+      const current = preferences[question.id] || [];
+      const updated = current.includes(value)
+        ? current.filter((v: string) => v !== value)
+        : [...current, value];
+      setPreferences({
+        ...preferences,
+        [question.id]: updated,
+      });
     }
   };
 
-  const isSelected = (value: string) => (answers[question.id] || []).includes(value);
+  const isSelected = (value: string) => {
+    if (question.type === 'single-select') {
+      return preferences[question.id] === value;
+    }
+    return (preferences[question.id] || []).includes(value);
+  };
+
+  const isAnswered = () => {
+    const answer = preferences[question.id];
+    if (!answer) return false;
+    if (Array.isArray(answer)) return answer.length > 0;
+    return true;
+  };
 
   const handleNext = async () => {
     if (currentQuestion < QUIZ_QUESTIONS.length - 1) {
@@ -270,7 +212,10 @@ export default function QuizScreen() {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ taste_profile: answers })
+        .update({ 
+          taste_profile: preferences,
+          preferences_completed: true,
+        })
         .eq('id', session.user.id);
 
       if (error) throw error;
@@ -286,23 +231,14 @@ export default function QuizScreen() {
     }
   };
 
-  const getStageLabel = (stage: number) => {
-    switch (stage) {
-      case 1: return 'Quick Taste Scan';
-      case 2: return 'Scenario-Based';
-      case 3: return 'Fine-Tuning';
-      default: return '';
-    }
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
-          <Text style={styles.closeText}>✕</Text>
+          <Ionicons name="close" size={28} color={Colors.text.secondary} />
         </TouchableOpacity>
         <View style={styles.progressInfo}>
-          <Text style={styles.stageLabel}>Stage {currentStage}: {getStageLabel(currentStage)}</Text>
+          <Text style={styles.categoryLabel}>{question.category}</Text>
           <Text style={styles.progress}>
             {currentQuestion + 1} of {QUIZ_QUESTIONS.length}
           </Text>
@@ -310,27 +246,33 @@ export default function QuizScreen() {
       </View>
 
       <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${((currentQuestion + 1) / QUIZ_QUESTIONS.length) * 100}%` }]} />
+        <View style={[styles.progressFill, { width: `${progress}%` }]} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.emoji}>{question.emoji}</Text>
+        <Text style={styles.emoji}>{getCategoryEmoji(question.category)}</Text>
         <Text style={styles.questionTitle}>{question.question}</Text>
         <Text style={styles.hint}>
-          {isMultiSelect ? 'Select all that apply' : 'Select one'}
+          {question.type === 'multiple-select' ? 'Select all that apply' : 'Choose the best option'}
         </Text>
 
         <View style={styles.options}>
           {question.options.map((option) => (
             <TouchableOpacity
-              key={option.id}
-              style={[styles.option, isSelected(option.id) && styles.optionSelected]}
-              onPress={() => toggleAnswer(option.id)}
+              key={option}
+              style={[styles.option, isSelected(option) && styles.optionSelected]}
+              onPress={() => handleSelectOption(option)}
             >
-              <Text style={styles.optionIcon}>{option.icon}</Text>
-              <Text style={[styles.optionText, isSelected(option.id) && styles.optionTextSelected]}>
-                {option.label}
+              <Text style={[styles.optionText, isSelected(option) && styles.optionTextSelected]}>
+                {option}
               </Text>
+              {question.type === 'multiple-select' && (
+                <View style={[styles.checkbox, isSelected(option) && styles.checkboxSelected]}>
+                  {isSelected(option) && (
+                    <Ionicons name="checkmark" size={14} color={Colors.background.primary} />
+                  )}
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -339,21 +281,27 @@ export default function QuizScreen() {
       <View style={styles.footer}>
         {currentQuestion > 0 && (
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="chevron-back" size={20} color={Colors.text.primary} />
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
           style={[
             styles.nextButton, 
-            saving && styles.buttonDisabled,
-            (answers[question.id]?.length || 0) === 0 && styles.buttonDisabled
+            currentQuestion === 0 && styles.nextButtonFull,
+            (saving || !isAnswered()) && styles.buttonDisabled
           ]}
           onPress={handleNext}
-          disabled={saving || (answers[question.id]?.length || 0) === 0}
+          disabled={saving || !isAnswered()}
         >
           <Text style={styles.nextText}>
-            {currentQuestion === QUIZ_QUESTIONS.length - 1 ? (saving ? 'Saving...' : 'Finish') : 'Next'}
+            {currentQuestion === QUIZ_QUESTIONS.length - 1 
+              ? (saving ? 'Saving...' : 'Complete') 
+              : 'Next'}
           </Text>
+          {!saving && currentQuestion < QUIZ_QUESTIONS.length - 1 && (
+            <Ionicons name="chevron-forward" size={20} color={Colors.background.primary} />
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -373,28 +321,29 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  closeText: {
-    fontSize: 24,
-    color: Colors.text.secondary,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 22,
   },
   progressInfo: {
     flex: 1,
     alignItems: 'flex-end',
   },
-  stageLabel: {
+  categoryLabel: {
     fontSize: 12,
     color: Colors.accent.coral,
-    fontWeight: '600',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
     marginBottom: 2,
   },
   progress: {
     fontSize: 14,
     color: Colors.text.secondary,
+    fontWeight: '600',
   },
   progressBar: {
     height: 4,
@@ -412,23 +361,25 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emoji: {
-    fontSize: 48,
+    fontSize: 56,
     textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginTop: 24,
+    marginBottom: 20,
   },
   questionTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: Colors.text.primary,
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
+    lineHeight: 34,
   },
   hint: {
     fontSize: 14,
-    color: Colors.text.secondary,
-    marginBottom: 24,
+    color: Colors.accent.coral,
+    marginBottom: 28,
     textAlign: 'center',
+    fontWeight: '600',
   },
   options: {
     gap: 12,
@@ -437,29 +388,39 @@ const styles = StyleSheet.create({
   option: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: Colors.background.secondary,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     borderWidth: 2,
     borderColor: Colors.border,
-    marginBottom: 12,
   },
   optionSelected: {
     borderColor: Colors.accent.coral,
-    backgroundColor: `${Colors.accent.coral}20`,
-  },
-  optionIcon: {
-    fontSize: 24,
-    marginRight: 12,
+    backgroundColor: `${Colors.accent.coral}15`,
   },
   optionText: {
     fontSize: 16,
     color: Colors.text.primary,
     flex: 1,
+    fontWeight: '500',
   },
   optionTextSelected: {
     color: Colors.accent.coral,
     fontWeight: '600',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: Colors.accent.coral,
+    borderColor: Colors.accent.coral,
   },
   footer: {
     flexDirection: 'row',
@@ -469,29 +430,38 @@ const styles = StyleSheet.create({
   },
   backButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
+    padding: 18,
+    borderRadius: 16,
     backgroundColor: Colors.background.secondary,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   backText: {
-    fontSize: 18,
+    fontSize: 17,
     color: Colors.text.primary,
     fontWeight: '600',
   },
   nextButton: {
     flex: 2,
-    padding: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
+    padding: 18,
+    borderRadius: 16,
     backgroundColor: Colors.accent.coral,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  nextButtonFull: {
+    flex: 1,
   },
   nextText: {
-    fontSize: 18,
+    fontSize: 17,
     color: Colors.background.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   buttonDisabled: {
     opacity: 0.5,

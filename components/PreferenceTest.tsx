@@ -85,22 +85,6 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
       options: ['Dark & Serious', 'Light & Humorous', 'Suspenseful', 'Heartwarming', 'Adventurous', 'Intellectual'],
     },
 
-    // YouTube (2 questions)
-    {
-      id: 'youtube_content',
-      category: 'YouTube',
-      question: 'What YouTube content interests you?',
-      type: 'multiple-select',
-      options: ['Education', 'Entertainment', 'Music', 'Gaming', 'Vlogs', 'Tutorials', 'News', 'Comedy', 'Tech', 'Lifestyle'],
-    },
-    {
-      id: 'youtube_length',
-      category: 'YouTube',
-      question: 'What video length do you prefer?',
-      type: 'single-select',
-      options: ['Short (under 5 min)', 'Medium (5-15 min)', 'Long (15-30 min)', 'Very Long (30+ min)', 'Any length'],
-    },
-
     // Reading (3 questions)
     {
       id: 'book_genres',
