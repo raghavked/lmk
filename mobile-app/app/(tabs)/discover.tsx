@@ -542,19 +542,6 @@ export default function DiscoverScreen() {
                     ))}
                   </View>
 
-                  {selectedItem.personalized_score && (
-                    <View style={styles.aiScoreSection}>
-                      <View style={styles.aiScoreHeader}>
-                        <Ionicons name="sparkles" size={16} color={Colors.accent.coral} />
-                        <Text style={styles.aiScoreLabel}>AI Match Score</Text>
-                      </View>
-                      <View style={styles.aiScoreBar}>
-                        <View style={[styles.aiScoreFill, { width: `${selectedItem.personalized_score}%` }]} />
-                      </View>
-                      <Text style={styles.aiScoreValue}>{Math.round(selectedItem.personalized_score)}% match</Text>
-                    </View>
-                  )}
-
                   {selectedItem.explanation?.why_youll_like && (
                     <View style={styles.explanationSection}>
                       <Text style={styles.sectionTitle}>Why You'll Like It</Text>
