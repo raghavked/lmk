@@ -43,7 +43,7 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
           <div className="text-5xl">{currentStep.emoji}</div>
           <button
             onClick={onComplete}
-            className="p-2 hover:bg-gray-800 rounded-full transition text-gray-400 hover:text-[#fea4a7]"
+            className="p-2 hover:bg-gray-800 rounded-full transition text-gray-400 hover:text-[#feafb0]"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -58,7 +58,7 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
             <div
               key={i}
               className={`h-2 rounded-full transition-all ${
-                i === step ? 'bg-[#fea4a7] w-8' : 'bg-gray-700 w-2'
+                i === step ? 'bg-[#feafb0] w-8' : 'bg-gray-700 w-2'
               }`}
             />
           ))}
@@ -68,7 +68,7 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
           {step > 0 && (
             <button
               onClick={() => setStep(step - 1)}
-              className="flex-1 py-3 bg-gray-800 text-gray-50 rounded-2xl font-bold hover:bg-gray-700 transition border border-gray-700 hover:border-[#fea4a7]/50"
+              className="flex-1 py-3 bg-gray-800 text-gray-50 rounded-2xl font-bold hover:bg-gray-700 transition border border-gray-700 hover:border-[#feafb0]/50"
             >
               Back
             </button>
@@ -82,7 +82,7 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
                 localStorage.setItem('lmk_walkthrough_completed', 'true');
               }
             }}
-            className="flex-1 py-3 bg-[#fea4a7] text-[#230f10] rounded-2xl font-bold hover:bg-[#fea4a7]/90 transition flex items-center justify-center gap-2 shadow-lg shadow-[#fea4a7]/30"
+            className="flex-1 py-3 bg-[#feafb0] text-[#230f10] rounded-2xl font-bold hover:bg-[#feafb0]/90 transition flex items-center justify-center gap-2 shadow-lg shadow-[#feafb0]/30"
           >
             {step === steps.length - 1 ? 'Get Started' : 'Next'}
             <ChevronRight className="w-4 h-4" />
