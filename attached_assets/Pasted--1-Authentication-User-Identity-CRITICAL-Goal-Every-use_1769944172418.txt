@@ -1,0 +1,159 @@
+🔐 1. Authentication & User Identity (CRITICAL)
+Goal: Every user action is tied to a real user and persists.
+Replit Checks
+ Environment variables loaded correctly:
+SUPABASE_URL
+SUPABASE_ANON_KEY
+ No secrets hardcoded in frontend
+ App reload does NOT reset auth state
+Supabase Checks
+ Auth provider enabled (Email / OAuth)
+ auth.users mapped correctly to app user table
+ RLS enabled on all user-facing tables
+ Policies:
+Users can only read/write their own data
+Friends data is read-only where needed
+App Behavior
+ Login persists across refresh
+ Logout clears memory + local state
+ New user flow creates:
+Profile row
+Preferences row
+Empty history rows
+🧠 2. Memory & Preferences Persistence (YOU CALLED THIS OUT)
+Goal: No AI, social, or recommendation feature runs without memory saved.
+Required Supabase Tables
+(If missing, add them)
+profiles
+id (uuid, PK, auth.users)
+username
+avatar_url
+created_at
+user_preferences
+user_id (uuid, FK)
+category_weights (jsonb)
+dietary_restrictions (text[])
+price_range
+location_bias
+updated_at
+interaction_memory
+id (uuid, PK)
+user_id (uuid)
+object_id (text)
+object_type (text)
+rating (int)
+tags (text[])
+notes (text)
+created_at
+ai_recommendation_logs
+id (uuid)
+user_id (uuid)
+input_snapshot (jsonb)
+output_snapshot (jsonb)
+latency_ms
+created_at
+App Checks
+ Every rating writes to interaction_memory
+ Preference test writes to user_preferences
+ AI reads ONLY from Supabase (not local-only state)
+ App reload → recommendations stay consistent
+ No feature silently fails if Supabase is slow
+🤖 3. AI Recommendations (Concurrency + Stability)
+Goal: AI never blocks UI, never loses context, never recomputes unnecessarily.
+Replit / Backend
+ AI calls wrapped in try/catch
+ Timeout fallback (cached results)
+ Concurrency-safe (Promise.all where needed)
+ Rate limits respected
+App
+ Loading state shown
+ Partial results allowed
+ Cached recommendations shown first
+ “Refresh recommendations” works
+Supabase
+ AI input snapshots stored
+ Output cached per user/session
+ Old logs auto-expire (cron / retention)
+👥 4. Friends & Social Features
+Goal: Social features enhance UX but never break core flows.
+Tables
+friends
+user_id
+friend_id
+status (pending/accepted)
+created_at
+friend_activity
+user_id
+friend_id
+object_id
+rating
+comment
+created_at
+App Checks
+ Add friend works
+ Accept / reject works
+ Friend ratings visible
+ Photos upload correctly
+ No duplicate friend rows
+ Offline → retries later
+🖼 5. Media & Uploads (Photos)
+Goal: Zero broken uploads during demo.
+Supabase Storage
+ Bucket exists (user-media)
+ Size limits enforced
+ RLS restricts uploads to owner
+ CDN URLs returned
+App
+ Image compression before upload
+ Upload progress shown
+ Failure retry button
+ Images cached locally
+📱 6. Mobile UX (BETA JUDGEMENT ZONE)
+Goal: No obvious jank on phones.
+App
+ All buttons reachable with thumb
+ No overflow on small screens
+ Skeleton loaders used
+ No blocking modals
+ Haptics optional but clean
+Expo / Replit
+ Hot reload stable
+ No console spam
+ Memory usage stable after 5+ minutes
+⚙️ 7. Error Handling & Observability
+Goal: Bugs don’t kill the demo.
+App
+ Global error boundary
+ User-friendly fallback messages
+ Retry buttons everywhere
+Supabase
+ Errors logged
+ Latency monitored
+ No silent failures
+🚀 8. Scalability Sanity Checks
+Goal: “This won’t fall apart with 100 users.”
+ All list queries paginated
+ No select *
+ JSONB indexed where used
+ Read-heavy operations cached
+ AI calls deduplicated
+🧪 9. Beta Testing Readiness
+Goal: You can confidently hand this to testers.
+ Feature flags enabled
+ Test users seeded
+ Reset user data script
+ Version displayed in app
+ Feedback link built-in
+⏱️ 3-Day Execution Plan
+Day 1
+Supabase schema audit + fixes
+Auth + memory persistence
+Kill all blocking bugs
+Day 2
+AI concurrency + caching
+Social + uploads stabilized
+Mobile UX cleanup
+Day 3
+Full walkthrough QA
+Demo rehearsal
+Beta build freeze
