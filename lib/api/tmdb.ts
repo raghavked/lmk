@@ -233,12 +233,33 @@ export class TMDBAPI {
     const genreNames = genres.map((g: any) => g.name).join(', ');
     const year = movie.release_date ? new Date(movie.release_date).getFullYear() : '';
     const ratingInfo = movie.vote_average ? `${movie.vote_average.toFixed(1)}/10` : '';
+    const voteCountInfo = movie.vote_count ? `based on ${movie.vote_count.toLocaleString()} reviews` : '';
+    const runtimeInfo = movie.runtime ? `${movie.runtime} minutes long` : '';
+    
+    // Build comprehensive description
+    let description = '';
+    if (movie.overview) {
+      description = movie.overview;
+    }
+    if (genreNames) {
+      description += description ? ` This ${genreNames} film` : `A ${genreNames} film`;
+    }
+    if (year) {
+      description += ` was released in ${year}`;
+    }
+    description += '.';
+    if (runtimeInfo) {
+      description += ` ${runtimeInfo}.`;
+    }
+    if (ratingInfo) {
+      description += ` Rated ${ratingInfo} on TMDB${voteCountInfo ? ` ${voteCountInfo}` : ''}.`;
+    }
     
     return {
       id: `tmdb_movie_${movie.id}`,
       category: 'movies',
       title: movie.title,
-      description: movie.overview ? `${movie.overview}${genreNames ? ` A ${genreNames} film` : ''}${year ? ` from ${year}` : ''}.${ratingInfo ? ` Rated ${ratingInfo} on TMDB.` : ''}` : `${genreNames} film${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      description: description.trim() || 'A movie on TMDB.',
       external_rating: movie.vote_average,
       primary_image: movie.poster_path ? {
         url: `${this.imageBaseUrl}/w500${movie.poster_path}`,
@@ -288,12 +309,38 @@ export class TMDBAPI {
     const genreNames = genres.map((g: any) => g.name).join(', ');
     const year = tv.first_air_date ? new Date(tv.first_air_date).getFullYear() : '';
     const ratingInfo = tv.vote_average ? `${tv.vote_average.toFixed(1)}/10` : '';
+    const voteCountInfo = tv.vote_count ? `based on ${tv.vote_count.toLocaleString()} reviews` : '';
+    const seasonsInfo = tv.number_of_seasons ? `${tv.number_of_seasons} season${tv.number_of_seasons > 1 ? 's' : ''}` : '';
+    const episodesInfo = tv.number_of_episodes ? `${tv.number_of_episodes} episode${tv.number_of_episodes > 1 ? 's' : ''}` : '';
+    const episodeRuntime = tv.episode_run_time?.[0] ? `~${tv.episode_run_time[0]} min per episode` : '';
+    
+    // Build comprehensive description
+    let description = '';
+    if (tv.overview) {
+      description = tv.overview;
+    }
+    if (genreNames) {
+      description += description ? ` This ${genreNames} series` : `A ${genreNames} series`;
+    }
+    if (year) {
+      description += ` first aired in ${year}`;
+    }
+    description += '.';
+    if (seasonsInfo || episodesInfo) {
+      description += ` ${[seasonsInfo, episodesInfo].filter(Boolean).join(' with ')}.`;
+    }
+    if (episodeRuntime) {
+      description += ` ${episodeRuntime}.`;
+    }
+    if (ratingInfo) {
+      description += ` Rated ${ratingInfo} on TMDB${voteCountInfo ? ` ${voteCountInfo}` : ''}.`;
+    }
     
     return {
       id: `tmdb_tv_${tv.id}`,
       category: 'tv_shows',
       title: tv.name,
-      description: tv.overview ? `${tv.overview}${genreNames ? ` A ${genreNames} series` : ''}${year ? ` from ${year}` : ''}.${ratingInfo ? ` Rated ${ratingInfo} on TMDB.` : ''}` : `${genreNames} series${year ? ` from ${year}` : ''}. ${ratingInfo ? `Rated ${ratingInfo}.` : ''}`,
+      description: description.trim() || 'A TV series on TMDB.',
       external_rating: tv.vote_average,
       primary_image: tv.poster_path ? {
         url: `${this.imageBaseUrl}/w500${tv.poster_path}`,

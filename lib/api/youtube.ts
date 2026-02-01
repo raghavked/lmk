@@ -159,11 +159,35 @@ export class YouTubeAPI {
   private normalize(item: any, stats: any) {
     const videoId = item.id.videoId;
     
+    // Build comprehensive description with channel, views, duration, and publish info
+    const channelName = item.snippet.channelTitle || 'Unknown Channel';
+    const viewCount = stats ? parseInt(stats.statistics.viewCount || '0') : 0;
+    const likeCount = stats ? parseInt(stats.statistics.likeCount || '0') : 0;
+    const duration = stats ? this.parseDuration(stats.contentDetails.duration) : 0;
+    const publishDate = item.snippet.publishedAt ? new Date(item.snippet.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+    
+    // Format numbers for readability
+    const formatNumber = (num: number) => {
+      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+      if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+      return num.toString();
+    };
+    
+    // Build rich description
+    const baseDesc = item.snippet.description?.substring(0, 300) || '';
+    const channelInfo = `By ${channelName}`;
+    const statsInfo = viewCount > 0 ? `${formatNumber(viewCount)} views, ${formatNumber(likeCount)} likes` : '';
+    const durationInfo = duration > 0 ? `${duration} minute${duration !== 1 ? 's' : ''} long` : '';
+    const dateInfo = publishDate ? `Published ${publishDate}` : '';
+    
+    const descriptionParts = [baseDesc, channelInfo, statsInfo, durationInfo, dateInfo].filter(Boolean);
+    const enhancedDescription = descriptionParts.join('. ').replace(/\.\./g, '.').trim();
+    
     return {
       id: `youtube_${videoId}`, // Explicit ID for de-duplication
       category: 'youtube_videos',
       title: item.snippet.title,
-      description: item.snippet.description,
+      description: enhancedDescription || 'Watch this video on YouTube.',
       primary_image: {
         url:
           item.snippet.thumbnails.high?.url ||

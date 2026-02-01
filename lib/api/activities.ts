@@ -100,10 +100,22 @@ export class ActivitiesAPI {
   }
   
   private normalize(business: any) {
+    // Build comprehensive description similar to restaurants
+    const categoryTypes = business.categories?.map((c: any) => c.title).join(', ') || 'Local activity';
+    const priceDesc = business.price ? `${business.price} price range` : '';
+    const ratingDesc = business.rating ? `Rated ${business.rating}/5 stars with ${business.review_count || 0} reviews on Yelp` : '';
+    const locationDesc = business.location?.city ? `Located in ${business.location.city}${business.location.state ? `, ${business.location.state}` : ''}` : '';
+    const distanceDesc = business.distance ? `${(business.distance * 0.000621371).toFixed(1)} miles away` : '';
+    const phoneDesc = business.display_phone || '';
+    
+    // Combine all parts into rich description
+    const descriptionParts = [categoryTypes, priceDesc, ratingDesc, locationDesc, distanceDesc, phoneDesc].filter(Boolean);
+    const enhancedDescription = descriptionParts.join('. ').trim() + '.';
+    
     return {
       id: business.id,
       title: business.name,
-      description: business.snippet_text || business.review_highlights?.join(', ') || 'Popular activity',
+      description: enhancedDescription || 'Popular local activity.',
       category: 'activities',
       location: {
         address: business.location?.address1 || '',
