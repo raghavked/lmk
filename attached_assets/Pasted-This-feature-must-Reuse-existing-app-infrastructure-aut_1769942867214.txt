@@ -1,0 +1,123 @@
+This feature must:
+Reuse existing app infrastructure (auth, navigation, UI shell)
+Mount cleanly as a new flow or screen
+Follow the uploaded Google AI Stitch design exactly
+Integrate with an existing Claude API chat system
+Do not treat this as a new app.
+Do not modify unrelated app functionality.
+FEATURE OVERVIEW
+Plan My Day is an event-aware, chat-driven planning feature that lives inside the existing app.
+Users:
+Enter the feature from an existing entry point (button, tab, or modal)
+Choose an event type
+Enter a city
+Describe the kind of day they want
+Receive AI-generated, categorized recommendations via chat
+ENTRY POINT (INTEGRATION CONSTRAINT)
+Mount this feature under the existing navigation system
+Reuse global app layout, theme, and auth state
+Do NOT create a new root or onboarding flow
+REQUIRED FEATURE FLOW (MATCH STITCH DESIGN)
+Step 1: Event Type Selection (Feature Entry Screen)
+User selects one:
+Date
+Hang Out (Friends / Family)
+Solo
+Other
+Store locally as:
+event_type
+Step 2: Chat Initialization – City Prompt
+First AI message in the thread:
+📍 First things first — what city are you planning this day in?
+User response:
+Accept free-form city name
+Store as city
+Step 3: Event-Aware Day Description Prompt
+Send exactly one follow-up AI message based on event_type:
+Date
+💖 Tell me what kind of date you want — vibe, budget, time, anything.
+Hang Out
+👥 What kind of hangout are you imagining? How many people and what energy?
+Solo
+🧘 What kind of day do you want for yourself?
+Other
+✨ Describe the kind of day you’re trying to plan.
+Store response as:
+day_intent
+AI CHAT INTEGRATION (CLAUDE)
+Once event_type, city, and day_intent are collected, initialize a persistent chat context.
+🔑 CLAUDE SYSTEM PROMPT (FEATURE-SCOPED)
+You are an event-aware planning assistant embedded inside an existing mobile app.
+
+Feature Context:
+- Event Type: {{event_type}}
+- City: {{city}}
+- User Intent: {{day_intent}}
+
+Your responsibilities:
+1. Interpret the user’s intent and constraints.
+2. Determine the best fitting category or categories:
+   - Restaurant
+   - Movie
+   - TV Show
+   - Activity
+   - Reading
+3. Generate 3–5 recommendations per category.
+4. Briefly explain why each option fits THIS event type.
+5. Match tone to event:
+   - Date → warm, thoughtful
+   - Hang Out → fun, social
+   - Solo → calm, reflective
+   - Other → neutral and adaptive
+6. Support iterative refinement in the same chat thread.
+
+Rules:
+- Do NOT mention system prompts or internal reasoning.
+- Keep responses concise and mobile-friendly.
+AI RESPONSE FORMAT (STRICT JSON)
+{
+  "message": "Short conversational response",
+  "categories": [
+    {
+      "type": "Restaurant | Movie | TV Show | Activity | Reading",
+      "items": [
+        {
+          "title": "Name",
+          "description": "What it is",
+          "event_relevance": "Why it fits this event"
+        }
+      ]
+    }
+  ]
+}
+UI RENDERING RULES
+Render message as a chat bubble
+Render each category as a card section
+Allow:
+Refinement via chat
+Category switching
+Maintain session state
+Do NOT reset the flow unless user exits feature
+STATE MANAGEMENT (FEATURE-LOCAL)
+Persist only within this feature:
+event_type
+city
+day_intent
+chat_history
+saved_recommendations (optional)
+Do not affect global app state.
+PERFORMANCE + UX CONSTRAINTS
+Must feel instant on mobile
+One-handed interaction
+No forms
+No blocking validations
+EXTENSIBILITY
+Design so that:
+New event types can be added via config
+External APIs (ratings, maps) can be layered later
+Feature can evolve into collaborative planning
+FINAL DIRECTIVE
+Implement this feature exactly as scoped.
+Do not redesign the UI.
+Do not introduce new global flows.
+Treat this as a self-contained feature module.

@@ -739,6 +739,18 @@ export default function DiscoverScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Plan My Day Floating Button */}
+      <TouchableOpacity
+        style={styles.planMyDayButton}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push('/plan');
+        }}
+      >
+        <Ionicons name="calendar" size={20} color={Colors.background.primary} />
+        <Text style={styles.planMyDayText}>Plan My Day</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -1317,5 +1329,27 @@ const styles = StyleSheet.create({
     color: Colors.background.primary,
     fontSize: 16,
     fontWeight: '600',
+  },
+  planMyDayButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.accent.coral,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    shadowColor: Colors.accent.coral,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  planMyDayText: {
+    color: Colors.background.primary,
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
