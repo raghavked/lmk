@@ -15,6 +15,24 @@ function RootLayoutNav() {
     );
   }
 
+  if (!session) {
+    return (
+      <>
+        <StatusBar style="light" backgroundColor={Colors.background.primary} />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: Colors.background.primary },
+            headerTintColor: Colors.text.primary,
+            headerTitleStyle: { fontWeight: 'bold' },
+            contentStyle: { backgroundColor: Colors.background.primary },
+          }}
+        >
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+        </Stack>
+      </>
+    );
+  }
+
   return (
     <>
       <StatusBar style="light" backgroundColor={Colors.background.primary} />
@@ -26,20 +44,14 @@ function RootLayoutNav() {
           contentStyle: { backgroundColor: Colors.background.primary },
         }}
       >
-        {session ? (
-          <>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen 
-              name="quiz" 
-              options={{ 
-                headerShown: false,
-                presentation: 'modal',
-              }} 
-            />
-          </>
-        ) : (
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
-        )}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="quiz" 
+          options={{ 
+            headerShown: false,
+            presentation: 'modal',
+          }} 
+        />
       </Stack>
     </>
   );
