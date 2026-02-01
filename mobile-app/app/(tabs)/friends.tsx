@@ -47,76 +47,42 @@ export default function FriendsScreen() {
   const loadFriends = async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         setLoading(false);
         return;
       }
 
-      const { data: friendsData1 } = await supabase
-        .from('friends')
-        .select('friend_id, profiles!friends_friend_id_fkey(id, full_name, avatar_url)')
-        .eq('user_id', user.id)
-        .eq('status', 'accepted');
-
-      const { data: friendsData2 } = await supabase
-        .from('friends')
-        .select('user_id, profiles!friends_user_id_fkey(id, full_name, avatar_url)')
-        .eq('friend_id', user.id)
-        .eq('status', 'accepted');
-
-      const { data: pendingData } = await supabase
-        .from('friends')
-        .select('user_id, profiles!friends_user_id_fkey(id, full_name, avatar_url)')
-        .eq('friend_id', user.id)
-        .eq('status', 'pending');
-
-      const { data: sentData } = await supabase
-        .from('friends')
-        .select('friend_id')
-        .eq('user_id', user.id)
-        .eq('status', 'pending');
-
-      const allFriends: Friend[] = [];
-      
-      friendsData1?.forEach((f: any) => {
-        if (f.profiles) {
-          allFriends.push({
-            id: f.profiles.id,
-            full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
-            status: 'accepted',
-          });
-        }
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
 
-      friendsData2?.forEach((f: any) => {
-        if (f.profiles) {
-          allFriends.push({
-            id: f.profiles.id,
-            full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
-            status: 'accepted',
-          });
-        }
-      });
+      if (response.ok) {
+        const data = await response.json();
+        
+        const allFriends: Friend[] = (data.friends || []).map((f: any) => ({
+          id: f.id,
+          full_name: f.full_name || 'Unknown User',
+          avatar_url: f.avatar_url,
+          status: 'accepted' as const,
+        }));
+        setFriends(allFriends);
 
-      setFriends(allFriends);
+        const pending: Friend[] = (data.pending || []).map((f: any) => ({
+          id: f.id,
+          full_name: f.full_name || 'Unknown User',
+          avatar_url: f.avatar_url,
+          status: 'pending' as const,
+        }));
+        setPendingRequests(pending);
 
-      const pending: Friend[] = [];
-      pendingData?.forEach((f: any) => {
-        if (f.profiles) {
-          pending.push({
-            id: f.profiles.id,
-            full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
-            status: 'pending',
-          });
-        }
-      });
-      setPendingRequests(pending);
-
-      setSentRequests(sentData?.map((s: any) => s.friend_id) || []);
+        setSentRequests(data.sentRequests || []);
+      } else {
+        console.error('Error loading friends:', await response.text());
+      }
     } catch (err) {
       console.error('Error loading friends:', err);
     } finally {
@@ -129,17 +95,20 @@ export default function FriendsScreen() {
     
     setSearching(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .ilike('full_name', `%${searchQuery}%`)
-        .neq('id', user.id)
-        .limit(10);
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
 
-      setSearchResults(data || []);
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.users || []);
+      }
     } catch (err) {
       console.error('Error searching users:', err);
     } finally {
@@ -149,26 +118,33 @@ export default function FriendsScreen() {
 
   const sendFriendRequest = async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         Alert.alert('Error', 'Please sign in to send friend requests');
         return;
       }
 
-      const { error } = await supabase.from('friends').insert({
-        user_id: user.id,
-        friend_id: userId,
-        status: 'pending',
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'send',
+          friendId: userId,
+        }),
       });
 
-      if (error) {
-        console.error('Error sending request:', error);
-        Alert.alert('Error', 'Could not send friend request. Please try again.');
-        return;
+      if (response.ok) {
+        setSentRequests([...sentRequests, userId]);
+        Alert.alert('Success', 'Friend request sent!');
+      } else {
+        const errorData = await response.json();
+        console.error('Error sending request:', errorData);
+        Alert.alert('Error', errorData.error || 'Could not send friend request. Please try again.');
       }
-
-      setSentRequests([...sentRequests, userId]);
-      Alert.alert('Success', 'Friend request sent!');
     } catch (err) {
       console.error('Error sending request:', err);
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -177,16 +153,26 @@ export default function FriendsScreen() {
 
   const acceptRequest = async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      await supabase
-        .from('friends')
-        .update({ status: 'accepted' })
-        .eq('user_id', userId)
-        .eq('friend_id', user.id);
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'accept',
+          friendId: userId,
+        }),
+      });
 
-      loadFriends();
+      if (response.ok) {
+        Alert.alert('Success', 'Friend request accepted!');
+        loadFriends();
+      }
     } catch (err) {
       console.error('Error accepting request:', err);
     }
@@ -194,16 +180,25 @@ export default function FriendsScreen() {
 
   const rejectRequest = async (userId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-      await supabase
-        .from('friends')
-        .delete()
-        .eq('user_id', userId)
-        .eq('friend_id', user.id);
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'reject',
+          friendId: userId,
+        }),
+      });
 
-      loadFriends();
+      if (response.ok) {
+        loadFriends();
+      }
     } catch (err) {
       console.error('Error rejecting request:', err);
     }
