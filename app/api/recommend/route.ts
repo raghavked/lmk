@@ -178,7 +178,7 @@ export async function GET(request: Request) {
 
     let rawRecommendations = [];
     
-    const fetchFromAPI = async (fetchLimit: number) => {
+    const fetchFromAPI = async (fetchLimit: number, customRadius?: number) => {
       const apiInstance = new ApiClass();
       return await apiInstance.getRecommendations({
         category,
@@ -189,10 +189,14 @@ export async function GET(request: Request) {
         profile: profileWithTaste as any,
         lat: lat ? parseFloat(lat) : undefined,
         lng: lng ? parseFloat(lng) : undefined,
-        radius: radius ? parseInt(radius) : undefined,
+        radius: customRadius ?? (radius ? parseInt(radius) : undefined),
       });
     };
 
+    // Check if this is a location-based category
+    const isLocationBased = category === 'restaurants' || category === 'activities';
+    const requestedRadius = radius ? parseInt(radius) : 16000; // Default ~10 miles in meters
+    
     if (cached && (now - cached.timestamp) < CACHE_TTL) {
       console.log(`[Recommend API] Using cached data for ${category}`);
       rawRecommendations = [...cached.data];
@@ -200,6 +204,22 @@ export async function GET(request: Request) {
       console.log(`[Recommend API] Fetching fresh recommendations from ${category} API...`);
       try {
         rawRecommendations = await fetchFromAPI(50);
+        
+        // For location-based categories, also fetch from expanded radius to ensure more results
+        if (isLocationBased && rawRecommendations.length < 30) {
+          const expandedRadius = Math.min(requestedRadius * 2, 80000); // Double radius, max ~50 miles
+          console.log(`[Recommend API] Fetching additional items from expanded radius (${(expandedRadius / 1609).toFixed(0)} mi)...`);
+          try {
+            const expandedResults = await fetchFromAPI(30, expandedRadius);
+            const existingIds = new Set(rawRecommendations.map((r: any) => r.id));
+            const additionalItems = expandedResults.filter((r: any) => !existingIds.has(r.id));
+            rawRecommendations = [...rawRecommendations, ...additionalItems.slice(0, 20)];
+            console.log(`[Recommend API] Added ${additionalItems.slice(0, 20).length} items from expanded radius`);
+          } catch (e) {
+            console.warn('[Recommend API] Failed to fetch expanded radius:', e);
+          }
+        }
+        
         recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
       } catch (apiError) {
         console.error(`Error fetching from ${category} API:`, apiError);
