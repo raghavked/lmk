@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
@@ -16,6 +17,12 @@ export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +64,55 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const openEditModal = () => {
+    setEditName(profile?.full_name || '');
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowEditModal(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!session) return;
+    
+    setSaving(true);
+    try {
+      if (editName.trim() && editName !== profile?.full_name) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ full_name: editName.trim() })
+          .eq('id', session.user.id);
+        
+        if (error) throw error;
+      }
+
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          Alert.alert('Error', 'New passwords do not match');
+          setSaving(false);
+          return;
+        }
+        if (newPassword.length < 6) {
+          Alert.alert('Error', 'Password must be at least 6 characters');
+          setSaving(false);
+          return;
+        }
+        
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        if (error) throw error;
+      }
+
+      Alert.alert('Success', 'Profile updated successfully!');
+      setShowEditModal(false);
+      fetchProfile();
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const hasPreferences = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
 
   return (
@@ -96,16 +152,8 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}>
+        <TouchableOpacity style={styles.menuItem} onPress={openEditModal}>
           <Text style={styles.menuItemText}>Edit Profile</Text>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Notifications', 'Notification settings coming soon!')}>
-          <Text style={styles.menuItemText}>Notifications</Text>
-          <Text style={styles.menuArrow}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Privacy', 'Privacy settings coming soon!')}>
-          <Text style={styles.menuItemText}>Privacy</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
       </View>
@@ -129,6 +177,73 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>LMK v1.0.0</Text>
       </View>
+
+      <Modal visible={showEditModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Display Name</Text>
+              <TextInput
+                style={styles.input}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Enter your name"
+                placeholderTextColor={Colors.text.muted}
+              />
+
+              <Text style={styles.sectionHeader}>Change Password</Text>
+              <Text style={styles.inputSubtext}>Leave blank to keep current password</Text>
+
+              <Text style={styles.inputLabel}>New Password</Text>
+              <TextInput
+                style={styles.input}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Enter new password"
+                placeholderTextColor={Colors.text.muted}
+                secureTextEntry
+              />
+
+              <Text style={styles.inputLabel}>Confirm New Password</Text>
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm new password"
+                placeholderTextColor={Colors.text.muted}
+                secureTextEntry
+              />
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton} 
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+                onPress={handleSaveProfile}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={Colors.background.primary} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -247,5 +362,96 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 12,
     color: Colors.text.muted,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.secondary,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text.secondary,
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  input: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sectionHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  inputSubtext: {
+    fontSize: 13,
+    color: Colors.text.muted,
+    marginBottom: 8,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: Colors.accent.coral,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.background.primary,
   },
 });
