@@ -64,12 +64,15 @@ export async function GET(request: Request) {
     // Mobile app authentication with Bearer token
     const token = authHeader.substring(7);
     
-    // Use service role to validate JWT and query database
-    // Note: RLS policies have recursion issues, so we use service role
-    // but ALL queries are explicitly scoped by session.user.id for security
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[API] Missing SUPABASE_SERVICE_ROLE_KEY');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+    
+    // Create client with service role for database access
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
         auth: {
           autoRefreshToken: false,
@@ -78,17 +81,21 @@ export async function GET(request: Request) {
       }
     );
     
-    // Validate the token by getting the user
-    const { data: { user }, error } = await adminClient.auth.getUser(token);
+    // Validate the JWT token
+    const { data, error } = await adminClient.auth.getUser(token);
     
-    if (error || !user) {
-      console.error('[Recommend API] Mobile auth error:', error?.message || 'No user found');
+    if (error) {
+      console.error('[API] Token validation error:', error.message, error.status);
+      return NextResponse.json({ error: 'Unauthorized', details: error.message }, { status: 401 });
+    }
+    
+    if (!data.user) {
+      console.error('[API] No user found in token');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Use admin client but ALL queries filter by session.user.id
     supabase = adminClient;
-    session = { user, access_token: token };
+    session = { user: data.user, access_token: token };
   } else {
     // Web app authentication with cookies
     const cookieStore = await cookies();
