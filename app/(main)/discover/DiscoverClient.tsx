@@ -176,15 +176,23 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [category, query, userLocation, distanceFilter, sortBy]);
 
   useEffect(() => {
-    const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
     const preferencesCompleted = profile?.preferences_completed;
+    const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
+    
+    // If user has already completed preferences, skip both walkthrough and quiz
+    if (preferencesCompleted || hasTasteProfile) {
+      detectLocation();
+      return;
+    }
+    
+    // For new users without preferences, check if they've seen the walkthrough
+    const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
     
     if (!walkthroughCompleted) {
       setShowWalkthrough(true);
-    } else if (preferencesCompleted === false) {
-      setShowPreferenceTest(true);
     } else {
-      detectLocation();
+      // Walkthrough done but no preferences - show quiz
+      setShowPreferenceTest(true);
     }
   }, [profile, detectLocation]);
 
