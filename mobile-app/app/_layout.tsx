@@ -1,16 +1,18 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/colors';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background.primary }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.accent.coral} />
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -64,10 +66,26 @@ function RootLayoutNav() {
   );
 }
 
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background.primary,
+  },
+  loadingText: {
+    marginTop: 12,
+    color: Colors.text.secondary,
+    fontSize: 14,
+  },
+});
+
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <ErrorBoundary fallbackMessage="The app encountered an unexpected error. Please restart the app or try again.">
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

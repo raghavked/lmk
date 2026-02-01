@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, RefreshControl } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
+import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
+import { FriendListSkeleton } from '../../components/SkeletonLoader';
+import * as Haptics from 'expo-haptics';
 
 interface Group {
   id: string;
@@ -28,6 +32,8 @@ export default function GroupsScreen() {
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -44,6 +50,13 @@ export default function GroupsScreen() {
     }, [])
   );
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await loadGroups();
+    setRefreshing(false);
+  }, []);
+
   useEffect(() => {
     if (selectedGroup) {
       loadMessages();
@@ -59,10 +72,13 @@ export default function GroupsScreen() {
   };
 
   const loadGroups = async () => {
-    setLoading(true);
     try {
+      if (!refreshing) setLoading(true);
+      setError(null);
+
       const accessToken = await getAccessToken();
       if (!accessToken) {
+        setError('Please sign in to view groups');
         setLoading(false);
         return;
       }
@@ -80,14 +96,20 @@ export default function GroupsScreen() {
       if (response.ok) {
         const data = await response.json();
         setGroups(data.groups || []);
-        if (data.groups && data.groups.length > 0) {
+        if (data.groups && data.groups.length > 0 && !selectedGroup) {
           setSelectedGroup(data.groups[0]);
         }
       } else {
         console.error('Error loading groups:', await response.text());
+        setError('Could not load groups. Please try again.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading groups:', err);
+      if (err.name === 'TypeError' || err.message?.toLowerCase().includes('network') || err.message?.toLowerCase().includes('fetch')) {
+        setError('network');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -222,10 +244,28 @@ export default function GroupsScreen() {
     activities: '🎯 Activities',
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color={Colors.accent.coral} style={styles.loader} />
+        <View style={styles.header}>
+          <Text style={styles.title}>Groups</Text>
+        </View>
+        <FriendListSkeleton count={4} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Groups</Text>
+        </View>
+        {error === 'network' ? (
+          <NetworkError onRetry={loadGroups} />
+        ) : (
+          <ErrorView message={error} onRetry={loadGroups} />
+        )}
       </View>
     );
   }
@@ -234,8 +274,15 @@ export default function GroupsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Groups</Text>
-        <TouchableOpacity style={styles.newBtn} onPress={() => setShowCreateGroup(true)}>
-          <Text style={styles.newBtnText}>+ New</Text>
+        <TouchableOpacity 
+          style={styles.newBtn} 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowCreateGroup(true);
+          }}
+        >
+          <Ionicons name="add" size={18} color={Colors.background.primary} />
+          <Text style={styles.newBtnText}>New</Text>
         </TouchableOpacity>
       </View>
 
@@ -393,10 +440,13 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
   },
   newBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.accent.coral,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
+    gap: 4,
   },
   newBtnText: {
     color: Colors.background.primary,

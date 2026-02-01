@@ -8,6 +8,8 @@ import { useFocusEffect, router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
+import { CardListSkeleton } from '../../components/SkeletonLoader';
+import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -518,18 +520,13 @@ export default function DiscoverScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent.coral} />}
       >
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.accent.coral} />
-            <Text style={styles.loadingText}>Finding recommendations...</Text>
-          </View>
+          <CardListSkeleton count={3} />
         ) : error ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>⚠️</Text>
-            <Text style={styles.emptyText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchRecommendations}>
-              <Text style={styles.retryText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
+          error.includes('Network') || error.includes('connection') ? (
+            <NetworkError onRetry={() => fetchRecommendations()} />
+          ) : (
+            <ErrorView message={error} onRetry={() => fetchRecommendations()} />
+          )
         ) : recommendations.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🔍</Text>
