@@ -44,23 +44,50 @@ export class AIRanker {
   ): Promise<RankedResult[]> {
     if (!objects || objects.length === 0) return [];
     
-    const limitedObjects = objects.slice(0, 8);
-    
-    const cacheKey = this.getCacheKey(limitedObjects, context.category);
-    const cached = aiCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) {
-      console.log('[AIRanker] Using cached AI response');
-      return cached.data;
-    }
+    // Process items in batches of 10 for better coverage while staying within token limits
+    const BATCH_SIZE = 10;
+    const allResults: RankedResult[] = [];
     
     const claudeApiKey = process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY;
     const openAIApiKey = process.env.OPENAI_API_KEY;
+    
+    // Process all items in batches
+    for (let i = 0; i < objects.length; i += BATCH_SIZE) {
+      const batch = objects.slice(i, i + BATCH_SIZE);
+      const cacheKey = this.getCacheKey(batch, context.category);
+      const cached = aiCache.get(cacheKey);
+      
+      if (cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) {
+        console.log(`[AIRanker] Using cached AI response for batch ${i / BATCH_SIZE + 1}`);
+        allResults.push(...cached.data);
+        continue;
+      }
+      
+      const batchResults = await this.rankBatch(batch, user, context, claudeApiKey, openAIApiKey);
+      aiCache.set(cacheKey, { data: batchResults, timestamp: Date.now() });
+      allResults.push(...batchResults);
+    }
+    
+    // Re-rank all results and assign final ranks
+    return allResults.map((result, idx) => ({
+      ...result,
+      rank: idx + 1,
+    }));
+  }
+  
+  private async rankBatch(
+    objects: any[],
+    user: any,
+    context: AIRankingContext,
+    claudeApiKey: string | undefined,
+    openAIApiKey: string | undefined
+  ): Promise<RankedResult[]> {
     
     if (!claudeApiKey && !openAIApiKey) {
       return this.getFallbackRankings(objects, context);
     }
 
-    const prompt = this.buildPrompt(limitedObjects, user, context);
+    const prompt = this.buildPrompt(objects, user, context);
     const systemPrompt = this.getSystemPrompt(context.category, !!context.location);
     
     try {
@@ -69,7 +96,7 @@ export class AIRanker {
       if (claudeApiKey) {
         content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
       } else {
-        return this.getFallbackRankings(limitedObjects, context);
+        return this.getFallbackRankings(objects, context);
       }
 
       if (!content) {
@@ -106,7 +133,7 @@ export class AIRanker {
       const rankings = parsed.rankings || [];
       
       const results = rankings.map((ranking: any) => {
-        const obj = limitedObjects[ranking.object_index - 1];
+        const obj = objects[ranking.object_index - 1];
         if (!obj) return null;
         
         let finalWhyYoullLike = ranking.why_youll_like || ranking.why_youll_like_it;
@@ -135,16 +162,15 @@ export class AIRanker {
         };
       }).filter(Boolean);
       
-      if (results.length === 0 && limitedObjects.length > 0) {
+      if (results.length === 0 && objects.length > 0) {
         console.warn('[AIRanker] AI returned 0 results, using fallback');
-        return this.getFallbackRankings(limitedObjects, context);
+        return this.getFallbackRankings(objects, context);
       }
       
-      aiCache.set(cacheKey, { data: results, timestamp: Date.now() });
       return results;
     } catch (error) {
       console.error('AI ranking error:', error);
-      return this.getFallbackRankings(limitedObjects, context);
+      return this.getFallbackRankings(objects, context);
     }
   }
 
