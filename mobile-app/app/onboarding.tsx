@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
 
@@ -33,11 +34,29 @@ const STEPS = [
 export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
 
+  useEffect(() => {
+    AsyncStorage.setItem('lmk_onboarding_completed', 'true');
+    
+    const saveWalkthroughSeen = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from('profiles')
+            .update({ walkthrough_seen: true })
+            .eq('id', session.user.id);
+        }
+      } catch (error) {
+        console.log('Could not save walkthrough status to profile');
+      }
+    };
+    saveWalkthroughSeen();
+  }, []);
+
   const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
-      await AsyncStorage.setItem('lmk_onboarding_completed', 'true');
       router.replace('/quiz');
     }
   };
@@ -48,8 +67,7 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    await AsyncStorage.setItem('lmk_onboarding_completed', 'true');
+  const handleSkip = () => {
     router.replace('/quiz');
   };
 
