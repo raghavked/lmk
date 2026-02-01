@@ -79,6 +79,19 @@ CREATE TABLE IF NOT EXISTS group_messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS plan_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  city TEXT NOT NULL,
+  day_intent TEXT,
+  chat_history JSONB DEFAULT '[]',
+  categories JSONB DEFAULT '[]',
+  title TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 3. Performance indexes for scaling
 CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
@@ -87,6 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_messages_group_id ON group_messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_id ON plan_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_created_at ON plan_sessions(created_at DESC);
 
 -- 4. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -95,6 +110,7 @@ ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE plan_sessions ENABLE ROW LEVEL SECURITY;
 
 -- 5. Drop existing policies (prevents duplicates)
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
@@ -141,6 +157,16 @@ CREATE POLICY "Users can leave groups" ON group_members FOR DELETE USING (auth.u
 
 CREATE POLICY "Users can view messages" ON group_messages FOR SELECT USING (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid()));
 CREATE POLICY "Users can send messages" ON group_messages FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can view own plans" ON plan_sessions;
+DROP POLICY IF EXISTS "Users can create plans" ON plan_sessions;
+DROP POLICY IF EXISTS "Users can update own plans" ON plan_sessions;
+DROP POLICY IF EXISTS "Users can delete own plans" ON plan_sessions;
+
+CREATE POLICY "Users can view own plans" ON plan_sessions FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create plans" ON plan_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own plans" ON plan_sessions FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own plans" ON plan_sessions FOR DELETE USING (auth.uid() = user_id);
 
 -- 7. Auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
