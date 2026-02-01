@@ -20,7 +20,7 @@ interface Message {
   poll_id?: string;
 }
 
-const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'youtube_videos', 'reading', 'activities'];
+const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'reading', 'activities'];
 
 export default function GroupsScreen() {
   const { getAccessToken } = useAuth();
@@ -218,7 +218,6 @@ export default function GroupsScreen() {
     restaurants: '🍽️ Restaurants',
     movies: '🎬 Movies',
     tv_shows: '📺 TV Shows',
-    youtube_videos: '▶️ YouTube',
     reading: '📚 Reading',
     activities: '🎯 Activities',
   };

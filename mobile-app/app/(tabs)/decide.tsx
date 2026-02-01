@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
-type Category = 'restaurants' | 'movies' | 'tv_shows' | 'youtube_videos' | 'reading' | 'activities';
+type Category = 'restaurants' | 'movies' | 'tv_shows' | 'reading' | 'activities';
 
 interface DecideItem {
   id: string;
@@ -50,8 +50,6 @@ const getCategoryIcon = (id: Category, isActive: boolean) => {
       return <MaterialCommunityIcons name="movie-open" size={size} color={color} />;
     case 'tv_shows':
       return <Ionicons name="tv" size={size} color={color} />;
-    case 'youtube_videos':
-      return <Ionicons name="play-circle" size={size} color={color} />;
     case 'reading':
       return <Ionicons name="book" size={size} color={color} />;
     case 'activities':
@@ -66,7 +64,6 @@ const getCategoryEmoji = (category: string) => {
     case 'restaurants': return '🍽️';
     case 'movies': return '🎬';
     case 'tv_shows': return '📺';
-    case 'youtube_videos': return '🎥';
     case 'reading': return '📚';
     case 'activities': return '🎯';
     default: return '✨';
@@ -77,7 +74,6 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'restaurants', name: 'Restaurants' },
   { id: 'movies', name: 'Movies' },
   { id: 'tv_shows', name: 'TV Shows' },
-  { id: 'youtube_videos', name: 'YouTube' },
   { id: 'reading', name: 'Reading' },
   { id: 'activities', name: 'Activities' },
 ];

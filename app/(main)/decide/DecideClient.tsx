@@ -6,7 +6,7 @@ import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 import ObjectCard from '@/components/ObjectCard';
 
-const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'youtube_videos', 'reading', 'activities'];
+const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'reading', 'activities'];
 
 interface DecisionItem {
   item: any;
@@ -212,7 +212,6 @@ export default function DecideClient({ profile }: { profile: any }) {
     restaurants: '🍽️ Restaurants',
     movies: '🎬 Movies',
     tv_shows: '📺 TV Shows',
-    youtube_videos: '🎥 YouTube',
     reading: '📚 Reading',
     activities: '🎯 Activities',
   };

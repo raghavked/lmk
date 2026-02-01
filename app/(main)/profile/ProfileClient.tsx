@@ -725,36 +725,6 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
                       </div>
                     )}
 
-                    {/* YouTube Section */}
-                    {(profile.taste_profile?.youtube_content || profile.taste_profile?.youtube_length || profile.taste_profile?.youtube_purpose) && (
-                      <div className="mb-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-xl">▶️</span>
-                          <h4 className="font-bold text-text-primary">YouTube</h4>
-                        </div>
-                        <div className="bg-background-tertiary rounded-xl p-4 space-y-3">
-                          {profile.taste_profile?.youtube_content && (
-                            <div>
-                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Content Types</span>
-                              <p className="text-text-primary text-sm">{Array.isArray(profile.taste_profile.youtube_content) ? profile.taste_profile.youtube_content.join(', ') : profile.taste_profile.youtube_content}</p>
-                            </div>
-                          )}
-                          {profile.taste_profile?.youtube_length && (
-                            <div>
-                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Video Length</span>
-                              <p className="text-text-primary text-sm">{profile.taste_profile.youtube_length}</p>
-                            </div>
-                          )}
-                          {profile.taste_profile?.youtube_purpose && (
-                            <div>
-                              <span className="text-xs font-bold text-coral uppercase tracking-wider">Watching Purpose</span>
-                              <p className="text-text-primary text-sm">{profile.taste_profile.youtube_purpose}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
                     {/* Reading Section */}
                     {(profile.taste_profile?.reading_genres || profile.taste_profile?.reading_style || profile.taste_profile?.reading_format) && (
                       <div className="mb-6">

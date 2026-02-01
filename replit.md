@@ -41,10 +41,10 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **YouTube Category Removed**: YouTube recommendations have been completely removed from the app (category, API, and UI)
 - **AI Personalization from Ratings**: AI ranker now fetches user's past 50 ratings (with item titles, categories, scores, and reviews) to deeply personalize recommendations
 - **Loved/Disliked Item Grouping**: Ratings are grouped by score - items rated 4-5 stars are shown as "loved" and 1-2 stars as "disliked" in AI prompts
 - **Enhanced AI System Prompt**: Updated to emphasize referencing user's specific preferences and past ratings in explanations
-- **YouTube API Fix**: Defensive check for non-iterable tasteProfile with fallback to default search terms
 - **Ratings Field Normalization**: Handles both rating/score and review/feedback field names for schema flexibility
 
 ### Enhancements (January 2026)
