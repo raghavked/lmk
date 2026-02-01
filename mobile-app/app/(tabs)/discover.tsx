@@ -163,7 +163,7 @@ export default function DiscoverScreen() {
 
       const params = new URLSearchParams({
         category: selectedCategory,
-        limit: '15',
+        limit: '20',
         offset: currentOffset.toString(),
         sort_by: 'personalized_score',
         mode: 'discover',
@@ -232,7 +232,7 @@ export default function DiscoverScreen() {
         setSeenIds(updatedSeenIds);
         
         // Check if there are more items to load
-        if (rawItems.length < 15 || newItems.length === 0) {
+        if (rawItems.length < 20 || newItems.length === 0) {
           setHasMore(false);
         }
         
@@ -257,11 +257,11 @@ export default function DiscoverScreen() {
   };
 
   const loadMoreRecommendations = async () => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore) return;
     
     setLoadingMore(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const newOffset = offset + 15;
+    const newOffset = offset + 20;
     setOffset(newOffset);
     await fetchRecommendations(false, newOffset);
   };
@@ -517,7 +517,7 @@ export default function DiscoverScreen() {
             ))}
             
             {/* Show More Button */}
-            {hasMore && recommendations.length > 0 && (
+            {recommendations.length > 0 && (
               <TouchableOpacity 
                 style={styles.showMoreButton} 
                 onPress={loadMoreRecommendations}
@@ -532,12 +532,6 @@ export default function DiscoverScreen() {
                   </>
                 )}
               </TouchableOpacity>
-            )}
-            
-            {!hasMore && recommendations.length > 0 && (
-              <View style={styles.endOfListContainer}>
-                <Text style={styles.endOfListText}>You've seen all recommendations</Text>
-              </View>
             )}
           </View>
         )}
