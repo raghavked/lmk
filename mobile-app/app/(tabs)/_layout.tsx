@@ -126,9 +126,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
   },
   headerTitle: {
     fontSize: 20,
