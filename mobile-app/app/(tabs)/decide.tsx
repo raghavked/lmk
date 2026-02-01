@@ -114,11 +114,24 @@ export default function DecideScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 10000,
+        });
         setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+      } else {
+        console.log('Location permission denied');
       }
     } catch (error) {
       console.warn('Location error:', error);
+      try {
+        const lastKnown = await Location.getLastKnownPositionAsync({});
+        if (lastKnown) {
+          setLocation({ lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude });
+        }
+      } catch (fallbackError) {
+        console.warn('Location fallback error:', fallbackError);
+      }
     }
   };
 
