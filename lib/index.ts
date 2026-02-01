@@ -18,7 +18,7 @@ export interface UserProfile {
 // Recommendation Object Types
 export interface RecommendationObject {
   id: string;
-  category: 'restaurants' | 'movies' | 'tv_shows' | 'youtube_videos' | 'reading' | 'activities';
+  category: 'restaurants' | 'movies' | 'tv_shows' | 'reading' | 'activities';
   title: string;
   description: string;
   primary_image?: {

@@ -3,7 +3,6 @@ export const CATEGORIES = [
   { id: 'restaurants', label: 'Restaurants', emoji: '🍽️' },
   { id: 'movies', label: 'Movies', emoji: '🎬' },
   { id: 'tv_shows', label: 'TV Shows', emoji: '📺' },
-  { id: 'youtube_videos', label: 'YouTube', emoji: '▶️' },
   { id: 'reading', label: 'Reading', emoji: '📚' },
   { id: 'activities', label: 'Activities', emoji: '🎯' },
 ] as const;

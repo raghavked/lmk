@@ -1,5 +1,5 @@
 
-export type CategoryType = 'restaurants' | 'movies' | 'tv_shows' | 'youtube_videos' | 'reading' | 'activities';
+export type CategoryType = 'restaurants' | 'movies' | 'tv_shows' | 'reading' | 'activities';
 
 export interface Profile {
   id: string;
