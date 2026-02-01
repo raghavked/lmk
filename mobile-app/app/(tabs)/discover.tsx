@@ -13,7 +13,6 @@ import * as Haptics from 'expo-haptics';
 const { width } = Dimensions.get('window');
 
 type Category = 'restaurants' | 'movies' | 'tv_shows' | 'youtube_videos' | 'reading' | 'activities';
-type SortBy = 'personalized_score' | 'distance' | 'rating' | 'reviews';
 
 interface RecommendationItem {
   id: string;
@@ -84,13 +83,6 @@ const CATEGORIES: { id: Category; name: string }[] = [
   { id: 'activities', name: 'Activities' },
 ];
 
-const SORT_OPTIONS: { id: SortBy; label: string }[] = [
-  { id: 'personalized_score', label: 'AI Score' },
-  { id: 'distance', label: 'Distance' },
-  { id: 'rating', label: 'Rating' },
-  { id: 'reviews', label: 'Reviews' },
-];
-
 const DISTANCE_OPTIONS = [5, 10, 25, 50, 100];
 
 export default function DiscoverScreen() {
@@ -100,10 +92,8 @@ export default function DiscoverScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortBy>('personalized_score');
   const [distanceFilter, setDistanceFilter] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSortPicker, setShowSortPicker] = useState(false);
   const [showDistancePicker, setShowDistancePicker] = useState(false);
   const [selectedItem, setSelectedItem] = useState<RecommendationItem | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -120,14 +110,14 @@ export default function DiscoverScreen() {
       if (location) {
         fetchRecommendations();
       }
-    }, [selectedCategory, location, sortBy, distanceFilter])
+    }, [selectedCategory, location, distanceFilter])
   );
 
   useEffect(() => {
     if (location) {
       fetchRecommendations();
     }
-  }, [selectedCategory, location, sortBy, distanceFilter]);
+  }, [selectedCategory, location, distanceFilter]);
 
   const getLocation = async () => {
     try {
@@ -154,7 +144,7 @@ export default function DiscoverScreen() {
       const params = new URLSearchParams({
         category: selectedCategory,
         limit: '15',
-        sort_by: sortBy,
+        sort_by: 'personalized_score',
         mode: 'discover',
       });
 
@@ -218,7 +208,7 @@ export default function DiscoverScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await fetchRecommendations();
     setRefreshing(false);
-  }, [selectedCategory, location, sortBy, distanceFilter]);
+  }, [selectedCategory, location, distanceFilter]);
 
   const handleSearch = () => {
     fetchRecommendations();
@@ -377,21 +367,15 @@ export default function DiscoverScreen() {
         })}
       </ScrollView>
 
-      <View style={styles.filtersRow}>
-        <TouchableOpacity style={styles.filterButton} onPress={() => setShowSortPicker(true)}>
-          <Ionicons name="swap-vertical" size={16} color={Colors.accent.coral} />
-          <Text style={styles.filterText}>{SORT_OPTIONS.find(s => s.id === sortBy)?.label}</Text>
-          <Ionicons name="chevron-down" size={14} color={Colors.text.secondary} />
-        </TouchableOpacity>
-        
-        {(selectedCategory === 'restaurants' || selectedCategory === 'activities') && (
+      {(selectedCategory === 'restaurants' || selectedCategory === 'activities') && (
+        <View style={styles.filtersRow}>
           <TouchableOpacity style={styles.filterButton} onPress={() => setShowDistancePicker(true)}>
             <Ionicons name="location" size={16} color={Colors.accent.coral} />
             <Text style={styles.filterText}>{distanceFilter} mi</Text>
             <Ionicons name="chevron-down" size={14} color={Colors.text.secondary} />
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       <ScrollView
         style={styles.content}
@@ -475,30 +459,6 @@ export default function DiscoverScreen() {
         )}
         <View style={{ height: 100 }} />
       </ScrollView>
-
-      <Modal visible={showSortPicker} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowSortPicker(false)}>
-          <View style={styles.pickerModal}>
-            <Text style={styles.pickerTitle}>Sort By</Text>
-            {SORT_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[styles.pickerOption, sortBy === option.id && styles.pickerOptionActive]}
-                onPress={() => {
-                  setSortBy(option.id);
-                  setShowSortPicker(false);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Text style={[styles.pickerOptionText, sortBy === option.id && styles.pickerOptionTextActive]}>
-                  {option.label}
-                </Text>
-                {sortBy === option.id && <Ionicons name="checkmark" size={20} color={Colors.accent.coral} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       <Modal visible={showDistancePicker} transparent animationType="fade">
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setShowDistancePicker(false)}>
