@@ -134,8 +134,18 @@ export default function DiscoverScreen() {
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      // Debug: Log session state
+      console.log('[Discover] Session check:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        tokenLength: session?.access_token?.length || 0,
+        sessionError: sessionError?.message || 'none'
+      });
+      
+      if (!session || !session.access_token) {
+        console.log('[Discover] No valid session, showing login message');
         setError('Please log in to see recommendations');
         setLoading(false);
         return;
@@ -159,11 +169,18 @@ export default function DiscoverScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+      const fullUrl = `${apiUrl}/api/recommend?${params}`;
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`,
+      };
+      
+      console.log('[Discover] Making API request:', {
+        url: fullUrl.substring(0, 80) + '...',
+        hasAuthHeader: !!headers.Authorization,
+        tokenPreview: session.access_token.substring(0, 20) + '...'
       });
+      
+      const response = await fetch(fullUrl, { headers });
 
       if (response.ok) {
         const data = await response.json();
