@@ -157,6 +157,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Error fetching user profile' }, { status: 500 });
     }
 
+    // 1b. Fetch User's Past Ratings for personalization
+    // First try with item_title, fallback to basic fields if column doesn't exist
+    let userRatings: any[] = [];
+    const { data: ratingsData, error: ratingsError } = await supabase
+      .from('ratings')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (ratingsError) {
+      console.warn('[Recommend API] Could not fetch user ratings:', ratingsError.message);
+    } else {
+      userRatings = ratingsData || [];
+      console.log(`[Recommend API] Found ${userRatings.length} user ratings for personalization`);
+    }
+
     // 2. Get Raw Recommendations
     const ApiClass = API_MAP[category];
     if (!ApiClass) {
@@ -173,7 +190,8 @@ export async function GET(request: Request) {
 
     const profileWithTaste = { 
       ...finalProfile, 
-      taste_profile: finalProfile?.taste_profile || tasteProfile 
+      taste_profile: finalProfile?.taste_profile || tasteProfile,
+      user_ratings: userRatings || [],
     };
 
     let rawRecommendations = [];
