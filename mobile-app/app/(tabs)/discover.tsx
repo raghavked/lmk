@@ -438,12 +438,6 @@ export default function DiscoverScreen() {
                   <View style={styles.categoryBadge}>
                     <Text style={styles.categoryBadgeText}>{item.category.replace('_', ' ')}</Text>
                   </View>
-                  {item.personalized_score && (
-                    <View style={styles.scoreBadge}>
-                      <Ionicons name="sparkles" size={12} color={Colors.background.primary} />
-                      <Text style={styles.scoreText}>{Math.round(item.personalized_score)}%</Text>
-                    </View>
-                  )}
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
