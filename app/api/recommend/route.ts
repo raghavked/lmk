@@ -57,21 +57,28 @@ export async function GET(request: Request) {
 
   // Support both cookie-based auth (web) and Bearer token auth (mobile)
   const authHeader = request.headers.get('Authorization');
+  const xAuthToken = request.headers.get('X-Auth-Token');
   let supabase;
   let session;
 
   // Debug: Log all headers to see what's being sent
   const allHeaders: Record<string, string> = {};
   request.headers.forEach((value, key) => {
-    allHeaders[key] = key.toLowerCase() === 'authorization' ? `${value.substring(0, 20)}...` : value;
+    if (key.toLowerCase() === 'authorization' || key.toLowerCase() === 'x-auth-token') {
+      allHeaders[key] = `${value.substring(0, 20)}...`;
+    } else {
+      allHeaders[key] = value;
+    }
   });
   console.log('[API] Request headers:', JSON.stringify(allHeaders));
-  console.log('[API] Auth header:', authHeader ? `present (${authHeader.substring(0, 20)}...)` : 'missing');
+  console.log('[API] Auth header:', authHeader ? `present` : 'missing');
+  console.log('[API] X-Auth-Token:', xAuthToken ? `present (len: ${xAuthToken.length})` : 'missing');
 
-  if (authHeader?.startsWith('Bearer ')) {
-    // Mobile app authentication with Bearer token
-    const token = authHeader.substring(7);
-    
+  // Try Bearer token first, then X-Auth-Token as fallback
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+
+  if (token) {
+    // Mobile app authentication with Bearer token or X-Auth-Token
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('[API] Missing SUPABASE_SERVICE_ROLE_KEY');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });

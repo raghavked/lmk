@@ -6,6 +6,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
@@ -86,6 +87,7 @@ const CATEGORIES: { id: Category; name: string }[] = [
 const DISTANCE_OPTIONS = [5, 10, 25, 50, 100];
 
 export default function DiscoverScreen() {
+  const { session, getAccessToken } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<Category>('restaurants');
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,17 +109,17 @@ export default function DiscoverScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (location) {
+      if (location && session) {
         fetchRecommendations();
       }
-    }, [selectedCategory, location, distanceFilter])
+    }, [selectedCategory, location, distanceFilter, session])
   );
 
   useEffect(() => {
-    if (location) {
+    if (location && session) {
       fetchRecommendations();
     }
-  }, [selectedCategory, location, distanceFilter]);
+  }, [selectedCategory, location, distanceFilter, session]);
 
   const getLocation = async () => {
     try {
@@ -134,17 +136,15 @@ export default function DiscoverScreen() {
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = await getAccessToken();
       
-      // Debug: Log session state
       console.log('[Discover] Session check:', {
         hasSession: !!session,
-        hasAccessToken: !!session?.access_token,
-        tokenLength: session?.access_token?.length || 0,
-        sessionError: sessionError?.message || 'none'
+        hasAccessToken: !!accessToken,
+        tokenLength: accessToken?.length || 0,
       });
       
-      if (!session || !session.access_token) {
+      if (!accessToken) {
         console.log('[Discover] No valid session, showing login message');
         setError('Please log in to see recommendations');
         setLoading(false);
@@ -170,17 +170,22 @@ export default function DiscoverScreen() {
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const fullUrl = `${apiUrl}/api/recommend?${params}`;
-      const headers = {
-        'Authorization': `Bearer ${session.access_token}`,
-      };
       
       console.log('[Discover] Making API request:', {
-        url: fullUrl.substring(0, 80) + '...',
-        hasAuthHeader: !!headers.Authorization,
-        tokenPreview: session.access_token.substring(0, 20) + '...'
+        url: fullUrl.substring(0, 60),
+        tokenLength: accessToken.length,
+        tokenPreview: accessToken.substring(0, 20)
       });
       
-      const response = await fetch(fullUrl, { headers });
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -254,15 +259,15 @@ export default function DiscoverScreen() {
     
     setIsSubmittingRating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/ratings`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           item_id: selectedItem.id,

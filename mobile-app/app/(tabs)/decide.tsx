@@ -6,6 +6,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
@@ -84,6 +85,7 @@ const CATEGORIES: { id: Category; name: string }[] = [
 const DISTANCE_OPTIONS = [5, 10, 25, 50, 100];
 
 export default function DecideScreen() {
+  const { session, getAccessToken } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<Category>('restaurants');
   const [currentItem, setCurrentItem] = useState<DecideItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -174,8 +176,8 @@ export default function DecideScreen() {
     setError(null);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         setError('Please log in');
         setLoading(false);
         return;
@@ -199,9 +201,14 @@ export default function DecideScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      console.log('[Decide] Making API request with token length:', accessToken.length);
+      
       const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
