@@ -29,12 +29,46 @@ export interface RankedResult {
 }
 
 const aiCache = new Map<string, { data: RankedResult[], timestamp: number }>();
-const AI_CACHE_TTL = 10 * 60 * 1000;
+const AI_CACHE_TTL = 30 * 60 * 1000; // 30 minutes for better cost efficiency
+
+// Rate limiting for AI API calls
+const userRateLimits = new Map<string, { count: number, resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 20; // Max AI requests per user per minute
+
+function hashPreferences(tasteProfile: any): string {
+  if (!tasteProfile || typeof tasteProfile !== 'object') return 'default';
+  const keys = Object.keys(tasteProfile).sort();
+  const values = keys.map(k => {
+    const v = tasteProfile[k];
+    if (Array.isArray(v)) return v.slice().sort().join('|');
+    return String(v);
+  });
+  return keys.map((k, i) => `${k}:${values[i]}`).join(';').substring(0, 100);
+}
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const limit = userRateLimits.get(userId);
+  
+  if (!limit || now > limit.resetTime) {
+    userRateLimits.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (limit.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+  
+  limit.count++;
+  return true;
+}
 
 export class AIRanker {
-  private getCacheKey(objects: any[], category: string): string {
+  private getCacheKey(objects: any[], category: string, tasteProfile?: any): string {
     const ids = objects.map(o => o.id).sort().join(',');
-    return `${category}:${ids}`;
+    const prefHash = hashPreferences(tasteProfile);
+    return `${category}:${prefHash}:${ids}`;
   }
 
   async rank(
@@ -43,6 +77,15 @@ export class AIRanker {
     context: AIRankingContext
   ): Promise<RankedResult[]> {
     if (!objects || objects.length === 0) return [];
+    
+    const userId = user?.id || 'anonymous';
+    const tasteProfile = user?.taste_profile;
+    
+    // Check rate limit before making AI calls
+    if (!checkRateLimit(userId)) {
+      console.log(`[AIRanker] Rate limit exceeded for user ${userId}, using fallback`);
+      return this.getFallbackRankings(objects, context);
+    }
     
     // Process items in batches of 10 for better coverage while staying within token limits
     const BATCH_SIZE = 10;
@@ -54,7 +97,7 @@ export class AIRanker {
     // Process all items in batches
     for (let i = 0; i < objects.length; i += BATCH_SIZE) {
       const batch = objects.slice(i, i + BATCH_SIZE);
-      const cacheKey = this.getCacheKey(batch, context.category);
+      const cacheKey = this.getCacheKey(batch, context.category, tasteProfile);
       const cached = aiCache.get(cacheKey);
       
       if (cached && (Date.now() - cached.timestamp) < AI_CACHE_TTL) {

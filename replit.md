@@ -2,7 +2,15 @@
 
 ## Overview
 
-LMK is an AI-powered recommendation engine that provides personalized suggestions across multiple categories: restaurants, movies, TV shows, YouTube videos, books, and activities. The app uses Claude AI to generate personalized rankings and explanations based on user taste profiles and social signals.
+LMK is an AI-powered recommendation engine that provides personalized suggestions across 5 categories: restaurants, movies, TV shows, books, and activities. The app uses Claude AI to generate personalized rankings and explanations based on user taste profiles and social signals.
+
+## Beta Launch Status
+
+The app is ready for beta launch with multiple users. Key scaling features include:
+- **Extended Caching**: 15-minute recommendation cache, 30-minute AI response cache
+- **Rate Limiting**: 20 AI requests per user per minute to prevent abuse
+- **User-Aware Caching**: AI responses cached by user preference profile for cost efficiency
+- **Fallback Ranking**: Graceful degradation if AI limits exceeded
 
 ## User Preferences
 
@@ -26,7 +34,6 @@ Preferred communication style: Simple, everyday language.
 ### Data Sources
 - **Yelp API**: Restaurant data with location-based search
 - **TMDB API**: Movies and TV show metadata
-- **YouTube API**: Video recommendations
 - **NewsAPI**: Articles for reading category
 - **Open Library API**: Book recommendations
 
@@ -77,8 +84,30 @@ Preferred communication style: Simple, everyday language.
 - `ANTHROPIC_API_KEY` or `CLAUDE_API_KEY`: AI ranking and personalization
 - `YELP_API_KEY`: Restaurant search
 - `TMDB_API_KEY`: Movie and TV show data
-- `YOUTUBE_API_KEY`: Video recommendations
 - `NEWS_API_KEY`: Article/reading content
+
+### Recommended Database Indexes (Run in Supabase SQL Editor)
+For optimal performance with multiple users, add these indexes:
+```sql
+-- Ratings table indexes
+CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
+CREATE INDEX IF NOT EXISTS idx_ratings_created_at ON ratings(created_at DESC);
+
+-- Friends table indexes
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
+
+-- Group members indexes
+CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+
+-- Messages indexes
+CREATE INDEX IF NOT EXISTS idx_messages_group_id ON messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+```
 
 ### Supabase Configuration
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
@@ -138,7 +167,7 @@ Then scan the QR code with Expo Go app on your phone.
 - Full feature parity with web app
 
 ### Discover Screen
-- Category tabs (Restaurants, Movies, TV Shows, YouTube, Reading, Activities)
+- Category tabs (Restaurants, Movies, TV Shows, Reading, Activities)
 - Search bar with real-time search
 - Sorting options (AI Score, Distance, Rating, Reviews)
 - Distance filter (5/10/25/50/100 miles) for location-based categories
@@ -148,7 +177,7 @@ Then scan the QR code with Expo Go app on your phone.
 - Pull-to-refresh with haptic feedback
 
 ### Decide Screen
-- Full category selector (6 categories)
+- Full category selector (5 categories)
 - Distance filter for restaurants/activities
 - Yes/No decision buttons with haptic feedback
 - Decision history modal with AsyncStorage persistence
