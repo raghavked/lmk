@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 
 interface Friend {
@@ -18,6 +19,7 @@ interface SearchResult {
 }
 
 export default function FriendsScreen() {
+  const { getAccessToken } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,8 +49,8 @@ export default function FriendsScreen() {
   const loadFriends = async () => {
     try {
       setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         setLoading(false);
         return;
       }
@@ -56,7 +58,7 @@ export default function FriendsScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/friends`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
@@ -95,13 +97,13 @@ export default function FriendsScreen() {
     
     setSearching(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
@@ -118,8 +120,8 @@ export default function FriendsScreen() {
 
   const sendFriendRequest = async (userId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         Alert.alert('Error', 'Please sign in to send friend requests');
         return;
       }
@@ -128,7 +130,7 @@ export default function FriendsScreen() {
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -153,14 +155,14 @@ export default function FriendsScreen() {
 
   const acceptRequest = async (userId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -180,14 +182,14 @@ export default function FriendsScreen() {
 
   const rejectRequest = async (userId: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 
 interface Group {
@@ -22,6 +23,7 @@ interface Message {
 const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'youtube_videos', 'reading', 'activities'];
 
 export default function GroupsScreen() {
+  const { getAccessToken } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,8 +61,8 @@ export default function GroupsScreen() {
   const loadGroups = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         setLoading(false);
         return;
       }
@@ -68,7 +70,7 @@ export default function GroupsScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/groups`, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
 
@@ -111,8 +113,8 @@ export default function GroupsScreen() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const accessToken = await getAccessToken();
+      if (!accessToken) {
         Alert.alert('Error', 'Please sign in to create groups');
         return;
       }
@@ -121,7 +123,7 @@ export default function GroupsScreen() {
       const response = await fetch(`${apiUrl}/api/groups`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

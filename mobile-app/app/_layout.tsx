@@ -1,27 +1,11 @@
-import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/colors';
-import { Session } from '@supabase/supabase-js';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
-export default function RootLayout() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+function RootLayoutNav() {
+  const { session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -58,5 +42,13 @@ export default function RootLayout() {
         )}
       </Stack>
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }
