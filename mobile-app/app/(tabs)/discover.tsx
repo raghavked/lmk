@@ -40,7 +40,7 @@ const getCategoryIcon = (id: Category, isActive: boolean) => {
     case 'reading':
       return <Ionicons name="book" size={size} color={color} />;
     case 'activities':
-      return <MaterialCommunityIcons name="sparkles" size={size} color={color} />;
+      return <MaterialCommunityIcons name="star-four-points" size={size} color={color} />;
     default:
       return null;
   }

@@ -65,9 +65,16 @@ export async function GET(request: Request) {
     const token = authHeader.substring(7);
     supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
     );
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
