@@ -141,7 +141,7 @@ export default function DiscoverScreen() {
     }
   };
 
-  const fetchRecommendations = async (reset: boolean = true, currentOffset: number = 0) => {
+  const fetchRecommendations = async (reset: boolean = true, currentOffset: number = 0, customRadius?: number): Promise<number> => {
     if (reset) {
       setLoading(true);
     }
@@ -172,7 +172,8 @@ export default function DiscoverScreen() {
       if (location) {
         params.append('lat', location.lat.toString());
         params.append('lng', location.lng.toString());
-        params.append('radius', (distanceFilter * 1609).toString());
+        const radiusToUse = customRadius || distanceFilter;
+        params.append('radius', (radiusToUse * 1609).toString());
       }
 
       if (searchQuery.trim()) {
@@ -231,9 +232,12 @@ export default function DiscoverScreen() {
         newItems.forEach((item: RecommendationItem) => updatedSeenIds.add(item.id));
         setSeenIds(updatedSeenIds);
         
-        // Check if there are more items to load
-        if (rawItems.length < 20 || newItems.length === 0) {
+        // Use API's hasMore flag or check if we got items
+        const apiHasMore = data.hasMore ?? (rawItems.length >= 20);
+        if (!apiHasMore && newItems.length === 0) {
           setHasMore(false);
+        } else {
+          setHasMore(true);
         }
         
         if (reset) {
@@ -242,14 +246,17 @@ export default function DiscoverScreen() {
           setRecommendations(prev => [...prev, ...newItems]);
         }
         setError(null);
+        return newItems.length;
       } else {
         const errorData = await response.text();
         console.error('API Error:', response.status, errorData);
         setError(`Unable to load recommendations`);
+        return 0;
       }
     } catch (err) {
       console.error('Error fetching recommendations:', err);
       setError('Network error. Please check your connection.');
+      return 0;
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -261,9 +268,23 @@ export default function DiscoverScreen() {
     
     setLoadingMore(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // For location-based categories, try expanding radius if we get no new items
+    const isLocationBased = selectedCategory === 'restaurants' || selectedCategory === 'activities';
+    const currentRadiusIndex = DISTANCE_OPTIONS.indexOf(distanceFilter);
+    
     const newOffset = offset + 20;
     setOffset(newOffset);
-    await fetchRecommendations(false, newOffset);
+    const newItemsCount = await fetchRecommendations(false, newOffset);
+    
+    // If no new items were found and we can expand the radius, do so
+    if (newItemsCount === 0 && isLocationBased && currentRadiusIndex < DISTANCE_OPTIONS.length - 1) {
+      const nextRadius = DISTANCE_OPTIONS[currentRadiusIndex + 1];
+      console.log(`[Discover] No new items found, expanding radius from ${distanceFilter} to ${nextRadius} miles`);
+      setDistanceFilter(nextRadius);
+      setOffset(0);
+      // Fetch with expanded radius - this will trigger the useEffect which resets and fetches
+    }
   };
 
   const onRefresh = useCallback(async () => {
@@ -272,7 +293,7 @@ export default function DiscoverScreen() {
     setOffset(0);
     setSeenIds(new Set());
     setHasMore(true);
-    await fetchRecommendations(true, 0);
+    await fetchRecommendations(true, 0, distanceFilter);
     setRefreshing(false);
   }, [selectedCategory, location, distanceFilter]);
 

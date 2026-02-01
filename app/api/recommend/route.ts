@@ -366,8 +366,17 @@ export async function GET(request: Request) {
       rank: idx + 1,
     }));
 
-    console.log(`[Recommend API] Returning ${rankedResults.length} ranked results`);
-    return NextResponse.json({ results: rankedResults });
+    // Apply offset-based pagination
+    const paginatedResults = rankedResults.slice(offset, offset + limit);
+
+    console.log(`[Recommend API] Returning ${paginatedResults.length} results (offset: ${offset}, limit: ${limit}, total: ${rankedResults.length})`);
+    return NextResponse.json({ 
+      results: paginatedResults,
+      total: rankedResults.length,
+      offset,
+      limit,
+      hasMore: offset + limit < rankedResults.length,
+    });
   } catch (error) {
     console.error('[Recommend API] Fatal error:', error);
     return NextResponse.json({ 
