@@ -91,7 +91,7 @@ For optimal performance with multiple users, add these indexes:
 ```sql
 -- Ratings table indexes
 CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
-CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
+CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_created_at ON ratings(created_at DESC);
 
 -- Friends table indexes
