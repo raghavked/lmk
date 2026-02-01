@@ -20,7 +20,7 @@ const config: Config = {
           800: '#075985',
           900: '#0c3d66',
         },
-        'coral': '#FF6B6B',
+        'coral': '#feafb0',
         'background-primary': '#0D1117',
         'background-secondary': '#161B22',
         'background-tertiary': '#21262D',

@@ -10,9 +10,9 @@ export const Colors = {
     muted: '#6E7681',
   },
   accent: {
-    coral: '#FF6B6B',
-    coralLight: '#FF8A8A',
-    coralDark: '#E55555',
+    coral: '#feafb0',
+    coralLight: '#ffc4c5',
+    coralDark: '#e89a9b',
   },
   border: '#30363D',
   success: '#3FB950',

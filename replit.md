@@ -21,7 +21,7 @@ Preferred communication style: Simple, everyday language.
 ### Frontend Architecture
 - **Framework**: Next.js 14 with App Router
 - **UI**: React 18 with TypeScript, Tailwind CSS for styling
-- **Design System**: Dark mode aesthetic with coral accent color (#FF6B6B) for AI metrics
+- **Design System**: Dark mode aesthetic with soft coral accent color (#feafb0) for AI metrics
 - **Components**: Card-based recommendation display with modal details, category tabs, pull-to-refresh
 - **State Management**: React hooks (useState, useEffect, useCallback) with localStorage for persistence
 
