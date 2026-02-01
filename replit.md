@@ -48,6 +48,7 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **Plan My Day Chat Memory**: Plan sessions are now automatically saved to a `plan_sessions` database table. Users can view and resume recent plans from the Plan My Day screen. Sessions include event type, city, day intent, full chat history, and AI-generated categories. Uses claude-3-5-haiku model with reduced max_tokens (1024) for faster response times.
 - **Plan My Day Feature**: AI-powered event planning with Claude integration. Users select event type (Date, Hang Out, Solo, Other), enter city, describe their ideal day, and receive categorized recommendations (Restaurant, Movie, TV Show, Activity, Reading) tailored to their event type. Chat-based interface with iterative refinement support. Back button shows "Discover" for clear navigation.
 - **YouTube Category Removed**: YouTube recommendations have been completely removed from the app (category, API, and UI)
 - **AI Personalization from Ratings**: AI ranker now fetches user's past 50 ratings (with item titles, categories, scores, and reviews) to deeply personalize recommendations
