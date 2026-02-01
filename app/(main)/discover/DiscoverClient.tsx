@@ -52,7 +52,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     { id: 'restaurants', label: 'Restaurants', icon: '🍽️' },
     { id: 'movies', label: 'Movies', icon: '🎬' },
     { id: 'tv_shows', label: 'TV Shows', icon: '📺' },
-    { id: 'youtube_videos', label: 'YouTube', icon: '🎥' },
     { id: 'reading', label: 'Reading', icon: '📚' },
     { id: 'activities', label: 'Activities', icon: '🎯' },
   ];

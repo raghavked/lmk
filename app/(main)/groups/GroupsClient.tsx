@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'youtube_videos', 'reading', 'activities'];
+const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'reading', 'activities'];
 
 interface Group {
   id: string;
@@ -217,7 +217,6 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
     restaurants: '🍽️ Restaurants',
     movies: '🎬 Movies',
     tv_shows: '📺 TV Shows',
-    youtube_videos: '🎥 YouTube',
     reading: '📚 Reading',
     activities: '🎯 Activities',
   };
