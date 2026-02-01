@@ -118,8 +118,6 @@ export default function DiscoverScreen() {
     }
 
     try {
-      const onboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
-      
       const { data: profileData } = await supabase
         .from('profiles')
         .select('taste_profile, preferences_completed')
@@ -131,18 +129,23 @@ export default function DiscoverScreen() {
       const hasPreferences = profileData?.preferences_completed || 
         (profileData?.taste_profile && Object.keys(profileData.taste_profile).length > 0);
 
+      // If user already has preferences, skip onboarding and quiz
+      if (hasPreferences) {
+        setOnboardingChecked(true);
+        getLocation();
+        return;
+      }
+
+      // For new users without preferences, check if they've seen the onboarding
+      const onboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+
       if (!onboardingCompleted) {
         router.push('/onboarding');
         return;
       }
 
-      if (!hasPreferences) {
-        router.push('/quiz');
-        return;
-      }
-
-      setOnboardingChecked(true);
-      getLocation();
+      // Onboarding done but no preferences - show quiz
+      router.push('/quiz');
     } catch (error) {
       console.error('Error checking onboarding:', error);
       setOnboardingChecked(true);

@@ -19,7 +19,7 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     category: 'Restaurants',
     question: 'What cuisines excite you the most?',
     type: 'multiple-select',
-    options: ['Italian', 'Pizza', 'Asian', 'Mexican', 'Mediterranean', 'Indian', 'French', 'American', 'Middle Eastern', 'Thai', 'Japanese'],
+    options: ['Italian', 'Asian', 'Mexican', 'Mediterranean', 'Indian', 'French', 'American', 'Middle Eastern', 'Thai', 'Japanese'],
   },
   {
     id: 'dining_atmosphere',
