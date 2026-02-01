@@ -474,18 +474,14 @@ export default function DiscoverScreen() {
           <View style={styles.cardContainer}>
             {recommendations.map((item, index) => (
               <TouchableOpacity key={`${item.id}-${index}`} style={styles.card} onPress={() => handleItemPress(item)}>
-                <View style={styles.cardImageContainer}>
-                  {item.image_url ? (
+                {item.image_url && (
+                  <View style={styles.cardImageContainer}>
                     <Image source={{ uri: item.image_url }} style={styles.cardImage} />
-                  ) : (
-                    <View style={styles.cardImagePlaceholder}>
-                      <Text style={styles.placeholderEmoji}>{getCategoryEmoji(item.category)}</Text>
-                    </View>
-                  )}
-                  <View style={styles.cardOverlay} />
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>{item.category.replace('_', ' ')}</Text>
+                    <View style={styles.cardOverlay} />
                   </View>
+                )}
+                <View style={styles.categoryBadgeStandalone}>
+                  <Text style={styles.categoryBadgeText}>{item.category.replace('_', ' ')}</Text>
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
@@ -574,12 +570,8 @@ export default function DiscoverScreen() {
             </TouchableOpacity>
             {selectedItem && (
               <ScrollView showsVerticalScrollIndicator={false}>
-                {selectedItem.image_url ? (
+                {selectedItem.image_url && (
                   <Image source={{ uri: selectedItem.image_url }} style={styles.detailImage} />
-                ) : (
-                  <View style={styles.detailImagePlaceholder}>
-                    <Text style={styles.detailPlaceholderEmoji}>{getCategoryEmoji(selectedItem.category)}</Text>
-                  </View>
                 )}
                 <View style={styles.detailContent}>
                   <Text style={styles.detailTitle}>{selectedItem.title}</Text>
@@ -868,6 +860,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+  },
+  categoryBadgeStandalone: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.accent.coral,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 16,
+    marginTop: 12,
   },
   categoryBadgeText: {
     fontSize: 10,

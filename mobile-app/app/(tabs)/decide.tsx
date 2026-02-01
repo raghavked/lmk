@@ -390,16 +390,12 @@ export default function DecideScreen() {
         ) : currentItem ? (
           <View style={styles.cardWrapper}>
             <View style={styles.decideCard}>
-            <View style={styles.cardImageContainer}>
-              {currentItem.image_url ? (
+            {currentItem.image_url && (
+              <View style={styles.cardImageContainer}>
                 <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
-              ) : (
-                <View style={styles.cardImagePlaceholder}>
-                  <Text style={styles.placeholderEmoji}>{getCategoryEmoji(currentItem.category)}</Text>
-                </View>
-              )}
-              <View style={styles.cardOverlay} />
-            </View>
+                <View style={styles.cardOverlay} />
+              </View>
+            )}
             
             <View style={styles.cardContent}>
               <Text style={styles.cardTitle} numberOfLines={2}>{currentItem.title}</Text>
