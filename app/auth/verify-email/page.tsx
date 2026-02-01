@@ -83,7 +83,7 @@ function VerifyContent() {
       <div className="max-w-md w-full bg-[#161B22] rounded-3xl shadow-2xl p-10 border border-[#30363D]">
         <div className="text-center mb-10">
           <div className="flex justify-center mb-6">
-            <Logo className="text-[#FF6B6B]" size={48} />
+            <Logo className="text-[#feafb0]" size={48} />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-50 mb-2 tracking-tight">Verify Email</h1>
           <p className="text-gray-400 font-medium">
@@ -113,7 +113,7 @@ function VerifyContent() {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               required
-              className="w-full h-14 text-center text-2xl tracking-[0.5em] font-bold bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#FF6B6B]/50 focus:border-[#FF6B6B]/50 transition-all outline-none"
+              className="w-full h-14 text-center text-2xl tracking-[0.5em] font-bold bg-[#21262D] border border-[#30363D] rounded-full text-gray-50 placeholder:text-gray-500 focus:ring-2 focus:ring-[#feafb0]/50 focus:border-[#feafb0]/50 transition-all outline-none"
               maxLength={6}
             />
           </div>
