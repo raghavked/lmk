@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import Logo from './Logo';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface WalkthroughProps {
   onComplete: () => void;
@@ -10,6 +11,26 @@ interface WalkthroughProps {
 
 export default function Walkthrough({ onComplete }: WalkthroughProps) {
   const [step, setStep] = useState(0);
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    localStorage.setItem('lmk_walkthrough_completed', 'true');
+    
+    const saveWalkthroughSeen = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          await supabase
+            .from('profiles')
+            .update({ walkthrough_seen: true })
+            .eq('id', session.user.id);
+        }
+      } catch (error) {
+        console.log('Could not save walkthrough status to profile');
+      }
+    };
+    saveWalkthroughSeen();
+  }, [supabase]);
 
   const steps = [
     {
@@ -79,7 +100,6 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
                 setStep(step + 1);
               } else {
                 onComplete();
-                localStorage.setItem('lmk_walkthrough_completed', 'true');
               }
             }}
             className="flex-1 py-3 bg-[#feafb0] text-[#230f10] rounded-2xl font-bold hover:bg-[#feafb0]/90 transition flex items-center justify-center gap-2 shadow-lg shadow-[#feafb0]/30"

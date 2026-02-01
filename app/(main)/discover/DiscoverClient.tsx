@@ -179,6 +179,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   useEffect(() => {
     const preferencesCompleted = profile?.preferences_completed;
     const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
+    const walkthroughSeen = profile?.walkthrough_seen;
     
     // If user has already completed preferences, skip both walkthrough and quiz
     if (preferencesCompleted || hasTasteProfile) {
@@ -186,10 +187,10 @@ export default function DiscoverClient({ profile }: { profile: any }) {
       return;
     }
     
-    // For new users without preferences, check if they've seen the walkthrough
-    const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
+    // Check if walkthrough was seen (database flag takes priority, then localStorage fallback)
+    const localWalkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
     
-    if (!walkthroughCompleted) {
+    if (!walkthroughSeen && !localWalkthroughCompleted) {
       setShowWalkthrough(true);
     } else {
       // Walkthrough done but no preferences - show quiz

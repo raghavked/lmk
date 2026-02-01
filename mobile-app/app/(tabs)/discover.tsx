@@ -120,7 +120,7 @@ export default function DiscoverScreen() {
     try {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('taste_profile, preferences_completed')
+        .select('taste_profile, preferences_completed, walkthrough_seen')
         .eq('id', session.user.id)
         .single();
 
@@ -136,10 +136,11 @@ export default function DiscoverScreen() {
         return;
       }
 
-      // For new users without preferences, check if they've seen the onboarding
-      const onboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+      // Check if walkthrough was seen (database flag takes priority, then AsyncStorage fallback)
+      const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+      const walkthroughSeen = profileData?.walkthrough_seen;
 
-      if (!onboardingCompleted) {
+      if (!walkthroughSeen && !localOnboardingCompleted) {
         router.push('/onboarding');
         return;
       }
