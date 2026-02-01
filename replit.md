@@ -40,7 +40,14 @@ Preferred communication style: Simple, everyday language.
 - **Tables**: profiles (user data, taste profiles), ratings (user feedback)
 - **Types**: Defined in `lib/supabase/types.ts`
 
-### Recent Enhancements (January 2026)
+### Recent Enhancements (February 2026)
+- **AI Personalization from Ratings**: AI ranker now fetches user's past 50 ratings (with item titles, categories, scores, and reviews) to deeply personalize recommendations
+- **Loved/Disliked Item Grouping**: Ratings are grouped by score - items rated 4-5 stars are shown as "loved" and 1-2 stars as "disliked" in AI prompts
+- **Enhanced AI System Prompt**: Updated to emphasize referencing user's specific preferences and past ratings in explanations
+- **YouTube API Fix**: Defensive check for non-iterable tasteProfile with fallback to default search terms
+- **Ratings Field Normalization**: Handles both rating/score and review/feedback field names for schema flexibility
+
+### Enhancements (January 2026)
 - **Dark/Coral Theme**: Consistent dark mode (#0D1117 background) with coral accent (#FF6B6B) across all pages
 - **Location-Based Recommendations**: Real-time geolocation with distance calculation and sorting (closest first)
 - **Location Fallback**: Uses profile location when geolocation is unavailable; proper null checks for 0 coordinates
