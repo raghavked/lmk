@@ -59,14 +59,27 @@ export default function GroupsScreen() {
   const loadGroups = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from('groups')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      setGroups(data || []);
-      if (data && data.length > 0) {
-        setSelectedGroup(data[0]);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/groups`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGroups(data.groups || []);
+        if (data.groups && data.groups.length > 0) {
+          setSelectedGroup(data.groups[0]);
+        }
+      } else {
+        console.error('Error loading groups:', await response.text());
       }
     } catch (err) {
       console.error('Error loading groups:', err);
@@ -96,42 +109,39 @@ export default function GroupsScreen() {
       Alert.alert('Error', 'Please enter a group name');
       return;
     }
-    if (!profile) {
-      Alert.alert('Error', 'Please sign in to create groups');
-      return;
-    }
 
     try {
-      const { data: group, error } = await supabase
-        .from('groups')
-        .insert({
-          name: newGroupName,
-          description: newGroupDescription,
-          created_by: profile.id,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating group:', error);
-        Alert.alert('Error', 'Could not create group. Please try again.');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        Alert.alert('Error', 'Please sign in to create groups');
         return;
       }
 
-      if (group) {
-        await supabase
-          .from('group_members')
-          .insert({
-            group_id: group.id,
-            user_id: profile.id,
-          });
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/groups`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newGroupName,
+          description: newGroupDescription,
+        }),
+      });
 
-        setGroups([group, ...groups]);
-        setSelectedGroup(group);
+      if (response.ok) {
+        const data = await response.json();
+        setGroups([data.group, ...groups]);
+        setSelectedGroup(data.group);
         setNewGroupName('');
         setNewGroupDescription('');
         setShowCreateGroup(false);
         Alert.alert('Success', 'Group created!');
+      } else {
+        const errorData = await response.json();
+        console.error('Error creating group:', errorData);
+        Alert.alert('Error', errorData.error || 'Could not create group. Please try again.');
       }
     } catch (err) {
       console.error('Error creating group:', err);

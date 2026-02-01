@@ -65,6 +65,17 @@ export async function GET(request: Request) {
     const token = authHeader.substring(7);
     supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    // Validate the JWT token by getting the user
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      console.error('Mobile auth error:', error);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    // Create a new client with the token for database queries
+    supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         global: {
@@ -74,10 +85,6 @@ export async function GET(request: Request) {
         }
       }
     );
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     session = { user, access_token: token };
   } else {
     // Web app authentication with cookies
