@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
@@ -34,10 +35,12 @@ export default function GroupsScreen() {
   const [pollCategory, setPollCategory] = useState('restaurants');
   const [profile, setProfile] = useState<any>(null);
 
-  useEffect(() => {
-    loadProfile();
-    loadGroups();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      loadGroups();
+    }, [])
+  );
 
   useEffect(() => {
     if (selectedGroup) {
@@ -89,10 +92,17 @@ export default function GroupsScreen() {
   };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim() || !profile) return;
+    if (!newGroupName.trim()) {
+      Alert.alert('Error', 'Please enter a group name');
+      return;
+    }
+    if (!profile) {
+      Alert.alert('Error', 'Please sign in to create groups');
+      return;
+    }
 
     try {
-      const { data: group } = await supabase
+      const { data: group, error } = await supabase
         .from('groups')
         .insert({
           name: newGroupName,
@@ -101,6 +111,12 @@ export default function GroupsScreen() {
         })
         .select()
         .single();
+
+      if (error) {
+        console.error('Error creating group:', error);
+        Alert.alert('Error', 'Could not create group. Please try again.');
+        return;
+      }
 
       if (group) {
         await supabase
@@ -115,9 +131,11 @@ export default function GroupsScreen() {
         setNewGroupName('');
         setNewGroupDescription('');
         setShowCreateGroup(false);
+        Alert.alert('Success', 'Group created!');
       }
     } catch (err) {
       console.error('Error creating group:', err);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 

@@ -95,18 +95,28 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Edit Profile', 'Profile editing coming soon!')}>
           <Text style={styles.menuItemText}>Edit Profile</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Notifications', 'Notification settings coming soon!')}>
           <Text style={styles.menuItemText}>Notifications</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => Alert.alert('Privacy', 'Privacy settings coming soon!')}>
           <Text style={styles.menuItemText}>Privacy</Text>
           <Text style={styles.menuArrow}>›</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Preferences</Text>
+        {hasPreferences && (
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/quiz')}>
+            <Text style={styles.menuItemText}>Retake Quiz</Text>
+            <Text style={styles.menuArrow}>›</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.section}>

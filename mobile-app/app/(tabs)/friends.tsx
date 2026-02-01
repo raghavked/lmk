@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
@@ -26,9 +27,11 @@ export default function FriendsScreen() {
   const [tab, setTab] = useState<'friends' | 'pending' | 'search'>('friends');
   const [sentRequests, setSentRequests] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadFriends();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadFriends();
+    }, [])
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -45,7 +48,10 @@ export default function FriendsScreen() {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data: friendsData1 } = await supabase
         .from('friends')
@@ -144,18 +150,28 @@ export default function FriendsScreen() {
   const sendFriendRequest = async (userId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        Alert.alert('Error', 'Please sign in to send friend requests');
+        return;
+      }
 
-      await supabase.from('friends').insert({
+      const { error } = await supabase.from('friends').insert({
         user_id: user.id,
         friend_id: userId,
         status: 'pending',
       });
 
+      if (error) {
+        console.error('Error sending request:', error);
+        Alert.alert('Error', 'Could not send friend request. Please try again.');
+        return;
+      }
+
       setSentRequests([...sentRequests, userId]);
       Alert.alert('Success', 'Friend request sent!');
     } catch (err) {
       console.error('Error sending request:', err);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 
