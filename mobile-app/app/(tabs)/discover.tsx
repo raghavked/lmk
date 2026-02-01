@@ -269,22 +269,9 @@ export default function DiscoverScreen() {
     setLoadingMore(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // For location-based categories, try expanding radius if we get no new items
-    const isLocationBased = selectedCategory === 'restaurants' || selectedCategory === 'activities';
-    const currentRadiusIndex = DISTANCE_OPTIONS.indexOf(distanceFilter);
-    
     const newOffset = offset + 20;
     setOffset(newOffset);
-    const newItemsCount = await fetchRecommendations(false, newOffset);
-    
-    // If no new items were found and we can expand the radius, do so
-    if (newItemsCount === 0 && isLocationBased && currentRadiusIndex < DISTANCE_OPTIONS.length - 1) {
-      const nextRadius = DISTANCE_OPTIONS[currentRadiusIndex + 1];
-      console.log(`[Discover] No new items found, expanding radius from ${distanceFilter} to ${nextRadius} miles`);
-      setDistanceFilter(nextRadius);
-      setOffset(0);
-      // Fetch with expanded radius - this will trigger the useEffect which resets and fetches
-    }
+    await fetchRecommendations(false, newOffset);
   };
 
   const onRefresh = useCallback(async () => {
