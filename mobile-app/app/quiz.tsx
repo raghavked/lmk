@@ -276,7 +276,7 @@ export default function QuizScreen() {
       if (error) throw error;
 
       Alert.alert('Success', 'Your preferences have been saved!', [
-        { text: 'OK', onPress: () => router.back() }
+        { text: 'OK', onPress: () => router.replace('/(tabs)/profile') }
       ]);
     } catch (error) {
       console.error('Error saving preferences:', error);
