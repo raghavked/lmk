@@ -184,8 +184,9 @@ export default function PlanMyDayPage() {
   return (
     <div className="flex flex-col h-screen bg-[#0D1117]">
       <header className="flex items-center justify-between px-4 py-3 border-b border-[#30363D]">
-        <button onClick={() => router.back()} className="p-2 hover:bg-[#21262D] rounded-full">
+        <button onClick={() => router.back()} className="flex items-center gap-1 p-2 hover:bg-[#21262D] rounded-full">
           <ArrowLeft className="w-5 h-5 text-[#E6EDF3]" />
+          <span className="text-sm text-[#E6EDF3]">Discover</span>
         </button>
         <h1 className="text-lg font-semibold text-[#E6EDF3]">Plan My Day</h1>
         <button onClick={resetFlow} className="p-2 hover:bg-[#21262D] rounded-full">
