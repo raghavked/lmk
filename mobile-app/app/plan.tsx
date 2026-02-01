@@ -216,8 +216,9 @@ export default function PlanMyDayScreen() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={20} color={Colors.text.primary} />
+          <Text style={styles.backButtonText}>Discover</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Plan My Day</Text>
         <TouchableOpacity onPress={resetFlow} style={styles.headerButton}>
@@ -353,6 +354,16 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: Colors.text.primary,
   },
   headerTitle: {
     fontSize: 18,
