@@ -50,8 +50,11 @@ export class YouTubeAPI {
       'education': 'educational',
     };
     
-    for (const profile of tasteProfile) {
-      if (profile.tags) {
+    // Ensure tasteProfile is an array before iterating
+    const profiles = Array.isArray(tasteProfile) ? tasteProfile : [];
+    
+    for (const profile of profiles) {
+      if (profile && profile.tags) {
         for (const tagObj of profile.tags) {
           const tag = tagObj.tag?.toLowerCase() || '';
           if (tagObj.weight >= 1 && tagToTerm[tag]) {
@@ -61,7 +64,8 @@ export class YouTubeAPI {
       }
     }
     
-    return [...new Set(terms)];
+    // Return default terms if no preferences found
+    return [...new Set(terms.length > 0 ? terms : ['trending', 'popular'])];
   }
   
   async search(params: YouTubeSearchParams) {

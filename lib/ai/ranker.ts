@@ -207,7 +207,13 @@ export class AIRanker {
   private getSystemPrompt(category: string, hasLocation: boolean): string {
     const locationNote = hasLocation ? ' If distance < 5 miles, mention it.' : '';
     
-    return `You are LMK AI, a recommendation curator for a luxury lifestyle magazine.
+    return `You are LMK AI, a personalized recommendation curator that deeply understands each user's unique tastes.
+
+PERSONALIZATION IS KEY:
+1. Use the user's TASTE PROFILE preferences to match recommendations to their exact interests
+2. Consider the user's PAST RATINGS - if they rated similar items highly, recommend more like those
+3. If user gave low ratings to certain types, avoid recommending similar items
+4. Reference SPECIFIC preferences the user stated (cuisine types, genres, atmospheres, etc.)
 
 CRITICAL RULES:
 1. RESPECT DIETARY PREFERENCES: If user is Vegetarian/Vegan, NEVER mention meat, seafood, fish, or animal products. Focus ONLY on plant-based options.
@@ -226,14 +232,15 @@ BANNED PHRASES (will be rejected):
 REQUIRED in why_youll_like:
 1. START with a specific number (rating, review count, year, vote count)
 2. MENTION item name and a specific attribute (genre, cuisine type, director)
-3. CONNECT to ONE specific user preference by name (use their EXACT stated preference)${locationNote}
+3. CONNECT to ONE specific user preference by name (use their EXACT stated preference from their taste profile)
+4. If user has rated similar items before, reference that ("Since you loved [similar item]...")${locationNote}
 
-TEMPLATE: "[NUMBER] + [ITEM DETAIL] + [USER'S EXACT PREFERENCE]"
+TEMPLATE: "[NUMBER] + [ITEM DETAIL] + [USER'S EXACT PREFERENCE from taste profile]"
 
-EXAMPLE for Vegetarian user: "With 4.7 stars from 340 reviews, Green Garden's creative vegetable dishes offer the Italian flavors you love. Their handmade pasta with seasonal vegetables has earned cult status."
+EXAMPLE for user who loves Italian and rated Italian restaurants 5 stars: "With 4.7 stars from 340 reviews, Bella Notte's authentic handmade pasta delivers the Italian flavors you love. Since you gave 5 stars to similar trattorias, you'll appreciate their Nonna's recipes."
 
 OUTPUT - JSON only in \`\`\`json:
-{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"5-word catchy hook","why_youll_like":"2 sentences with NUMBERS and SPECIFICS","tagline":"8 words max","tags":["#Tag1","#Tag2"],"detailed_ratings":{"Metric1":8,"Metric2":9,"Metric3":7}}]}`;
+{"rankings":[{"object_index":1,"personalized_score":8.5,"hook":"5-word catchy hook","why_youll_like":"2 sentences with NUMBERS and SPECIFICS referencing user's preferences","tagline":"8 words max","tags":["#Tag1","#Tag2"],"detailed_ratings":{"Metric1":8,"Metric2":9,"Metric3":7}}]}`;
   }
   
   private buildPrompt(objects: any[], user: any, context: AIRankingContext): string {
@@ -286,6 +293,43 @@ Location: ${user.location?.city || 'Unknown'}
       userContext += `Friends' Average Rating: ${socialSignals.averageFriendRating}/10\n`;
       userContext += `Common Friend Hashtags: ${socialSignals.commonFriendHashtags}\n`;
       userContext += `----------------------\n`;
+    }
+
+    // Include user's past ratings for personalization
+    const userRatings = user.user_ratings || [];
+    if (userRatings.length > 0) {
+      userContext += `\n--- User's Past Ratings (use to understand their preferences) ---\n`;
+      const recentRatings = userRatings.slice(0, 15);
+      
+      // Group ratings by score to show patterns
+      const highlyRated = recentRatings.filter((r: any) => r.score >= 4);
+      const lowRated = recentRatings.filter((r: any) => r.score <= 2);
+      
+      if (highlyRated.length > 0) {
+        userContext += `\nItems user LOVED (4-5 stars):\n`;
+        for (const rating of highlyRated.slice(0, 5)) {
+          const title = rating.item_title || 'Item';
+          const category = rating.category || '';
+          const feedback = rating.feedback ? ` - "${rating.feedback}"` : '';
+          userContext += `  • ${title} (${category}): ${rating.score}/5${feedback}\n`;
+        }
+      }
+      
+      if (lowRated.length > 0) {
+        userContext += `\nItems user DISLIKED (1-2 stars) - avoid recommending similar:\n`;
+        for (const rating of lowRated.slice(0, 3)) {
+          const title = rating.item_title || 'Item';
+          const category = rating.category || '';
+          const feedback = rating.feedback ? ` - "${rating.feedback}"` : '';
+          userContext += `  • ${title} (${category}): ${rating.score}/5${feedback}\n`;
+        }
+      }
+      
+      // Calculate average rating to understand if user is generous or strict
+      const avgRating = userRatings.reduce((sum: number, r: any) => sum + r.score, 0) / userRatings.length;
+      userContext += `\nUser's average rating: ${avgRating.toFixed(1)}/5 (${avgRating >= 4 ? 'generous rater' : avgRating >= 3 ? 'moderate rater' : 'selective rater'})\n`;
+      userContext += `Total items rated: ${userRatings.length}\n`;
+      userContext += `----------------------------------------------------------------\n`;
     }
     
     userContext += `Context: ${context.query || 'Browsing for discovery'}\n`;
