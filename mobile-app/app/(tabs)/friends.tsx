@@ -58,7 +58,10 @@ export default function FriendsScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/friends`, {
         headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
       });
 
@@ -103,7 +106,10 @@ export default function FriendsScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
       });
 
@@ -130,8 +136,10 @@ export default function FriendsScreen() {
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
         body: JSON.stringify({
           action: 'send',
@@ -162,8 +170,10 @@ export default function FriendsScreen() {
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
         body: JSON.stringify({
           action: 'accept',
@@ -189,8 +199,10 @@ export default function FriendsScreen() {
       const response = await fetch(`${apiUrl}/api/friends`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
         body: JSON.stringify({
           action: 'reject',

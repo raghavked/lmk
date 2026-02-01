@@ -7,12 +7,24 @@ const supabaseAdmin = createClient(
 );
 
 async function authenticateRequest(request: Request) {
+  let token: string | null = null;
+  
   const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
+  }
+  
+  if (!token) {
+    const xAuthToken = request.headers.get('X-Auth-Token');
+    if (xAuthToken) {
+      token = xAuthToken;
+    }
+  }
+  
+  if (!token) {
     return null;
   }
   
-  const token = authHeader.substring(7);
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) {
     return null;

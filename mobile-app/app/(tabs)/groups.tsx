@@ -70,7 +70,10 @@ export default function GroupsScreen() {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/groups`, {
         headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
       });
 
@@ -123,8 +126,10 @@ export default function GroupsScreen() {
       const response = await fetch(`${apiUrl}/api/groups`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
         body: JSON.stringify({
           name: newGroupName,
