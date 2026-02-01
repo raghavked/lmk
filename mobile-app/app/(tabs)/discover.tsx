@@ -92,6 +92,7 @@ export default function DiscoverScreen() {
   const [recommendations, setRecommendations] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [distanceFilter, setDistanceFilter] = useState(10);
@@ -102,6 +103,9 @@ export default function DiscoverScreen() {
   const [userRating, setUserRating] = useState(0);
   const [userReview, setUserReview] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     getLocation();
@@ -117,7 +121,11 @@ export default function DiscoverScreen() {
 
   useEffect(() => {
     if (location && session) {
-      fetchRecommendations();
+      // Reset pagination when category, location, or filter changes
+      setOffset(0);
+      setSeenIds(new Set());
+      setHasMore(true);
+      fetchRecommendations(true);
     }
   }, [selectedCategory, location, distanceFilter, session]);
 
@@ -133,8 +141,10 @@ export default function DiscoverScreen() {
     }
   };
 
-  const fetchRecommendations = async () => {
-    setLoading(true);
+  const fetchRecommendations = async (reset: boolean = true, currentOffset: number = 0) => {
+    if (reset) {
+      setLoading(true);
+    }
     try {
       const accessToken = await getAccessToken();
       
@@ -154,6 +164,7 @@ export default function DiscoverScreen() {
       const params = new URLSearchParams({
         category: selectedCategory,
         limit: '15',
+        offset: currentOffset.toString(),
         sort_by: 'personalized_score',
         mode: 'discover',
       });
@@ -174,7 +185,7 @@ export default function DiscoverScreen() {
       console.log('[Discover] Making API request:', {
         url: fullUrl.substring(0, 60),
         tokenLength: accessToken.length,
-        tokenPreview: accessToken.substring(0, 20)
+        offset: currentOffset
       });
       
       const response = await fetch(fullUrl, {
@@ -189,7 +200,7 @@ export default function DiscoverScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        const items = (data.results || []).map((r: any) => ({
+        const rawItems = (data.results || []).map((r: any) => ({
           id: r.object?.id || r.id || Math.random().toString(),
           title: r.object?.title || r.title || 'Untitled',
           description: r.object?.description || '',
@@ -210,7 +221,26 @@ export default function DiscoverScreen() {
           external_url: r.object?.external_url || r.object?.url,
           explanation: r.explanation,
         }));
-        setRecommendations(items);
+        
+        // Filter out duplicates based on seenIds
+        const currentSeenIds = reset ? new Set<string>() : seenIds;
+        const newItems = rawItems.filter((item: RecommendationItem) => !currentSeenIds.has(item.id));
+        
+        // Update seenIds with new item IDs
+        const updatedSeenIds = new Set(currentSeenIds);
+        newItems.forEach((item: RecommendationItem) => updatedSeenIds.add(item.id));
+        setSeenIds(updatedSeenIds);
+        
+        // Check if there are more items to load
+        if (rawItems.length < 15 || newItems.length === 0) {
+          setHasMore(false);
+        }
+        
+        if (reset) {
+          setRecommendations(newItems);
+        } else {
+          setRecommendations(prev => [...prev, ...newItems]);
+        }
         setError(null);
       } else {
         const errorData = await response.text();
@@ -222,13 +252,27 @@ export default function DiscoverScreen() {
       setError('Network error. Please check your connection.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const loadMoreRecommendations = async () => {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newOffset = offset + 15;
+    setOffset(newOffset);
+    await fetchRecommendations(false, newOffset);
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await fetchRecommendations();
+    setOffset(0);
+    setSeenIds(new Set());
+    setHasMore(true);
+    await fetchRecommendations(true, 0);
     setRefreshing(false);
   }, [selectedCategory, location, distanceFilter]);
 
@@ -471,6 +515,30 @@ export default function DiscoverScreen() {
                 </View>
               </TouchableOpacity>
             ))}
+            
+            {/* Show More Button */}
+            {hasMore && recommendations.length > 0 && (
+              <TouchableOpacity 
+                style={styles.showMoreButton} 
+                onPress={loadMoreRecommendations}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={Colors.accent.coral} />
+                ) : (
+                  <>
+                    <Ionicons name="add-circle-outline" size={20} color={Colors.accent.coral} />
+                    <Text style={styles.showMoreText}>Show More</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+            
+            {!hasMore && recommendations.length > 0 && (
+              <View style={styles.endOfListContainer}>
+                <Text style={styles.endOfListText}>You've seen all recommendations</Text>
+              </View>
+            )}
           </View>
         )}
         <View style={{ height: 100 }} />
@@ -887,6 +955,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text.primary,
     fontWeight: '600',
+  },
+  showMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: Colors.accent.coral,
+    gap: 8,
+  },
+  showMoreText: {
+    fontSize: 16,
+    color: Colors.accent.coral,
+    fontWeight: '600',
+  },
+  endOfListContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginTop: 16,
+  },
+  endOfListText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
   },
   modalOverlay: {
     flex: 1,
