@@ -19,7 +19,7 @@ export default function Walkthrough({ onComplete }: WalkthroughProps) {
     },
     {
       title: 'Browse Categories',
-      description: 'Explore Restaurants, Movies, TV Shows, YouTube, Reading, and Activities',
+      description: 'Explore Restaurants, Movies, TV Shows, Reading, and Activities',
       emoji: '🎯',
     },
     {
