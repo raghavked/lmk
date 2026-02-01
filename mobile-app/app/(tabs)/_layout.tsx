@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
@@ -29,6 +29,18 @@ function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
   return (
     <View style={styles.tabIconContainer}>
       {renderIcon()}
+    </View>
+  );
+}
+
+function HeaderWithLogo({ title }: { title: string }) {
+  return (
+    <View style={styles.headerContainer}>
+      <Image 
+        source={require('../../assets/icon.png')} 
+        style={styles.headerLogo} 
+      />
+      <Text style={styles.headerTitle}>{title}</Text>
     </View>
   );
 }
@@ -64,7 +76,7 @@ export default function TabsLayout() {
         options={{
           title: 'Discover',
           tabBarIcon: ({ focused }) => <TabIcon name="discover" focused={focused} />,
-          headerTitle: 'LMK',
+          headerTitle: () => <HeaderWithLogo title="LMK" />,
         }}
       />
       <Tabs.Screen
@@ -72,7 +84,7 @@ export default function TabsLayout() {
         options={{
           title: 'Decide',
           tabBarIcon: ({ focused }) => <TabIcon name="decide" focused={focused} />,
-          headerTitle: 'Decide',
+          headerTitle: () => <HeaderWithLogo title="Decide" />,
         }}
       />
       <Tabs.Screen
@@ -80,7 +92,7 @@ export default function TabsLayout() {
         options={{
           title: 'Friends',
           tabBarIcon: ({ focused }) => <TabIcon name="friends" focused={focused} />,
-          headerTitle: 'Friends',
+          headerTitle: () => <HeaderWithLogo title="Friends" />,
         }}
       />
       <Tabs.Screen
@@ -88,7 +100,7 @@ export default function TabsLayout() {
         options={{
           title: 'Groups',
           tabBarIcon: ({ focused }) => <TabIcon name="groups" focused={focused} />,
-          headerTitle: 'Groups',
+          headerTitle: () => <HeaderWithLogo title="Groups" />,
         }}
       />
       <Tabs.Screen
@@ -96,7 +108,7 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ focused }) => <TabIcon name="profile" focused={focused} />,
-          headerTitle: 'Profile',
+          headerTitle: () => <HeaderWithLogo title="Profile" />,
         }}
       />
     </Tabs>
@@ -107,5 +119,20 @@ const styles = StyleSheet.create({
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerLogo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
   },
 });

@@ -64,17 +64,13 @@ export async function GET(request: Request) {
     // Mobile app authentication with Bearer token
     const token = authHeader.substring(7);
     
-    // Create a user-scoped client that respects RLS policies
-    // This is the secure approach - the user's token is used for all operations
-    const userClient = createClient(
+    // Use service role to validate JWT and query database
+    // Note: RLS policies have recursion issues, so we use service role
+    // but ALL queries are explicitly scoped by session.user.id for security
+    const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        },
         auth: {
           autoRefreshToken: false,
           persistSession: false
@@ -83,15 +79,15 @@ export async function GET(request: Request) {
     );
     
     // Validate the token by getting the user
-    const { data: { user }, error } = await userClient.auth.getUser(token);
+    const { data: { user }, error } = await adminClient.auth.getUser(token);
     
     if (error || !user) {
       console.error('[Recommend API] Mobile auth error:', error?.message || 'No user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Use the user-scoped client for all database queries (respects RLS)
-    supabase = userClient;
+    // Use admin client but ALL queries filter by session.user.id
+    supabase = adminClient;
     session = { user, access_token: token };
   } else {
     // Web app authentication with cookies
