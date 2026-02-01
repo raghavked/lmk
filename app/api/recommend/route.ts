@@ -17,7 +17,7 @@ const API_MAP: Record<string, any> = {
 };
 
 const recommendationCache = new Map<string, { data: any[], timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000;
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better performance at scale
 
 function getCacheKey(category: string, lat?: string | null, lng?: string | null, radius?: string | null, query?: string): string {
   return `${category}:${lat || ''}:${lng || ''}:${radius || ''}:${query || ''}`;
