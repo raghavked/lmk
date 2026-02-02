@@ -8,13 +8,19 @@ import {
   ScrollView, 
   KeyboardAvoidingView, 
   Platform,
-  ActivityIndicator 
+  ActivityIndicator,
+  Dimensions,
+  Image
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { supabase } from '../lib/supabase';
 import * as Haptics from 'expo-haptics';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = SCREEN_WIDTH * 0.75;
+const CARD_MARGIN = 8;
 
 type EventType = 'date' | 'hangout' | 'solo' | 'other' | null;
 type Stage = 'event_select' | 'city_prompt' | 'intent_prompt' | 'chat';
@@ -49,6 +55,16 @@ const eventTypes = [
   { id: 'solo' as const, label: 'Solo', icon: 'person', color: Colors.accent.coral },
   { id: 'other' as const, label: 'Other', icon: 'sparkles', color: Colors.accent.coral },
 ];
+
+const getCategoryIcon = (type: string): any => {
+  const lower = type.toLowerCase();
+  if (lower.includes('restaurant') || lower.includes('food') || lower.includes('dining')) return 'restaurant';
+  if (lower.includes('movie') || lower.includes('film')) return 'film';
+  if (lower.includes('tv') || lower.includes('show')) return 'tv';
+  if (lower.includes('activity') || lower.includes('activities')) return 'walk';
+  if (lower.includes('read') || lower.includes('book')) return 'book';
+  return 'sparkles';
+};
 
 export default function PlanMyDayScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
@@ -397,18 +413,54 @@ export default function PlanMyDayScreen() {
                 {msg.categories && msg.categories.length > 0 && (
                   <View style={styles.categoriesContainer}>
                     {msg.categories.map((cat, catIdx) => (
-                      <View key={catIdx} style={styles.categoryCard}>
+                      <View key={catIdx} style={styles.categorySection}>
                         <View style={styles.categoryHeader}>
-                          <View style={styles.categoryDot} />
+                          <Ionicons 
+                            name={getCategoryIcon(cat.type)} 
+                            size={18} 
+                            color={Colors.accent.coral} 
+                          />
                           <Text style={styles.categoryTitle}>{cat.type}</Text>
+                          <Text style={styles.categoryCount}>{cat.items.length} picks</Text>
                         </View>
-                        {cat.items.map((item, itemIdx) => (
-                          <View key={itemIdx} style={styles.itemCard}>
-                            <Text style={styles.itemTitle}>{item.title}</Text>
-                            <Text style={styles.itemDescription}>{item.description}</Text>
-                            <Text style={styles.itemRelevance}>{item.event_relevance}</Text>
-                          </View>
-                        ))}
+                        <ScrollView 
+                          horizontal 
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.cardsScrollContent}
+                          decelerationRate="fast"
+                          snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
+                        >
+                          {cat.items.map((item, itemIdx) => (
+                            <TouchableOpacity 
+                              key={itemIdx} 
+                              style={styles.swipeCard}
+                              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                              activeOpacity={0.9}
+                            >
+                              <View style={styles.swipeCardGradient}>
+                                <Ionicons 
+                                  name={getCategoryIcon(cat.type)} 
+                                  size={32} 
+                                  color={Colors.accent.coral + '40'} 
+                                  style={styles.cardBgIcon}
+                                />
+                              </View>
+                              <View style={styles.swipeCardContent}>
+                                <Text style={styles.swipeCardTitle} numberOfLines={2}>{item.title}</Text>
+                                <Text style={styles.swipeCardDescription} numberOfLines={3}>{item.description}</Text>
+                                <View style={styles.swipeCardRelevanceBox}>
+                                  <Ionicons name="sparkles" size={12} color={Colors.accent.coral} />
+                                  <Text style={styles.swipeCardRelevance} numberOfLines={2}>{item.event_relevance}</Text>
+                                </View>
+                              </View>
+                              <View style={styles.swipeCardFooter}>
+                                <View style={styles.categoryBadge}>
+                                  <Text style={styles.categoryBadgeText}>{cat.type}</Text>
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
                       </View>
                     ))}
                   </View>
@@ -616,54 +668,102 @@ const styles = StyleSheet.create({
     color: Colors.background.primary,
   },
   categoriesContainer: {
-    marginTop: 12,
-    gap: 12,
+    marginTop: 16,
+    gap: 20,
+    marginLeft: -16,
+    marginRight: -16,
   },
-  categoryCard: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
+  categorySection: {
+    marginBottom: 8,
   },
   categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
-  },
-  categoryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.accent.coral,
+    paddingHorizontal: 16,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.accent.coral,
-  },
-  itemCard: {
-    backgroundColor: Colors.background.tertiary,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: Colors.text.primary,
-    marginBottom: 4,
+    flex: 1,
   },
-  itemDescription: {
+  categoryCount: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+  },
+  cardsScrollContent: {
+    paddingHorizontal: 12,
+    gap: CARD_MARGIN,
+  },
+  swipeCard: {
+    width: CARD_WIDTH,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 20,
+    marginHorizontal: CARD_MARGIN,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+    minHeight: 180,
+  },
+  swipeCardGradient: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    padding: 16,
+  },
+  cardBgIcon: {
+    opacity: 0.3,
+  },
+  swipeCardContent: {
+    padding: 16,
+    flex: 1,
+    gap: 8,
+  },
+  swipeCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    lineHeight: 24,
+  },
+  swipeCardDescription: {
     fontSize: 14,
     color: Colors.text.secondary,
-    marginBottom: 6,
+    lineHeight: 20,
   },
-  itemRelevance: {
+  swipeCardRelevanceBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: Colors.accent.coral + '15',
+    padding: 10,
+    borderRadius: 10,
+    marginTop: 4,
+  },
+  swipeCardRelevance: {
     fontSize: 13,
     color: Colors.accent.coral,
-    fontStyle: 'italic',
+    flex: 1,
+    lineHeight: 18,
+  },
+  swipeCardFooter: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
+  categoryBadge: {
+    backgroundColor: Colors.background.tertiary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    color: Colors.text.secondary,
+    fontWeight: '500',
+    textTransform: 'uppercase',
   },
   loadingContainer: {
     padding: 16,

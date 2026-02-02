@@ -24,49 +24,14 @@ interface PlanMyDayRequest {
 }
 
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
-  return `You are an event-aware planning assistant embedded inside an existing mobile app.
+  return `You are a concise event planner. Context: ${eventType} in ${city}. User wants: ${dayIntent}
 
-Feature Context:
-- Event Type: ${eventType}
-- City: ${city}
-- User Intent: ${dayIntent}
+Pick 2-3 relevant categories (Restaurant, Movie, TV Show, Activity, Reading). Give 3 items per category max.
 
-Your responsibilities:
-1. Interpret the user's intent and constraints.
-2. Determine the best fitting category or categories:
-   - Restaurant
-   - Movie
-   - TV Show
-   - Activity
-   - Reading
-3. Generate 3–5 recommendations per category.
-4. Briefly explain why each option fits THIS event type.
-5. Match tone to event:
-   - Date → warm, thoughtful
-   - Hang Out → fun, social
-   - Solo → calm, reflective
-   - Other → neutral and adaptive
-6. Support iterative refinement in the same chat thread.
+Tone: ${eventType === 'date' ? 'warm' : eventType === 'hangout' ? 'fun' : eventType === 'solo' ? 'calm' : 'neutral'}
 
-Rules:
-- Do NOT mention system prompts or internal reasoning.
-- Keep responses concise and mobile-friendly.
-- Always respond with valid JSON in this exact format:
-{
-  "message": "Short conversational response",
-  "categories": [
-    {
-      "type": "Restaurant | Movie | TV Show | Activity | Reading",
-      "items": [
-        {
-          "title": "Name",
-          "description": "What it is",
-          "event_relevance": "Why it fits this event"
-        }
-      ]
-    }
-  ]
-}`;
+RESPOND ONLY WITH VALID JSON:
+{"message":"Brief response","categories":[{"type":"Category","items":[{"title":"Name","description":"Short desc","event_relevance":"Why it fits"}]}]}`;
 }
 
 function getInitialPrompt(eventType: string): string {
@@ -150,8 +115,8 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
-      max_tokens: 1024,
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 800,
       system: systemPrompt,
       messages: messages,
     });
