@@ -69,6 +69,10 @@ interface PlanItem {
   address?: string;
   cuisine?: string;
   vibe?: string;
+  image_url?: string;
+  review_count?: number;
+  yelp_url?: string;
+  yelp_id?: string;
 }
 
 interface Category {
@@ -498,10 +502,20 @@ export default function PlanMyDayScreen() {
                               activeOpacity={0.9}
                             >
                               <View style={styles.fullCardImageContainer}>
-                                <Image 
-                                  source={{ uri: getPlaceholderImage(cat.type, item.title) }}
-                                  style={styles.fullCardImage}
-                                />
+                                {item.image_url ? (
+                                  <Image 
+                                    source={{ uri: item.image_url }}
+                                    style={styles.fullCardImage}
+                                  />
+                                ) : (
+                                  <View style={styles.fullCardImagePlaceholder}>
+                                    <Ionicons 
+                                      name={getCategoryIcon(cat.type)} 
+                                      size={48} 
+                                      color={Colors.accent.coral} 
+                                    />
+                                  </View>
+                                )}
                                 <View style={styles.fullCardOverlay} />
                                 <View style={styles.fullCardCategoryBadge}>
                                   <Text style={styles.fullCardCategoryText}>{cat.type}</Text>
@@ -612,10 +626,20 @@ export default function PlanMyDayScreen() {
             </TouchableOpacity>
             {selectedItem && (
               <ScrollView showsVerticalScrollIndicator={false}>
-                <Image 
-                  source={{ uri: getPlaceholderImage(selectedItem.category, selectedItem.item.title) }} 
-                  style={styles.detailImage} 
-                />
+                {selectedItem.item.image_url ? (
+                  <Image 
+                    source={{ uri: selectedItem.item.image_url }} 
+                    style={styles.detailImage} 
+                  />
+                ) : (
+                  <View style={[styles.detailImage, styles.detailImagePlaceholder]}>
+                    <Ionicons 
+                      name={getCategoryIcon(selectedItem.category)} 
+                      size={64} 
+                      color={Colors.accent.coral} 
+                    />
+                  </View>
+                )}
                 <View style={styles.detailContent}>
                   <View style={styles.detailCategoryBadge}>
                     <Text style={styles.detailCategoryText}>{selectedItem.category}</Text>
@@ -657,16 +681,16 @@ export default function PlanMyDayScreen() {
                         </View>
                       </View>
                     )}
+                    {selectedItem.item.review_count && (
+                      <View style={styles.detailMetric}>
+                        <Text style={styles.detailMetricLabel}>Reviews</Text>
+                        <Text style={styles.detailMetricValue}>{selectedItem.item.review_count}</Text>
+                      </View>
+                    )}
                     {selectedItem.item.price && (
                       <View style={styles.detailMetric}>
                         <Text style={styles.detailMetricLabel}>Price</Text>
                         <Text style={styles.detailMetricValue}>{selectedItem.item.price}</Text>
-                      </View>
-                    )}
-                    {selectedItem.item.neighborhood && (
-                      <View style={styles.detailMetric}>
-                        <Text style={styles.detailMetricLabel}>Area</Text>
-                        <Text style={styles.detailMetricValue}>{selectedItem.item.neighborhood}</Text>
                       </View>
                     )}
                   </View>
@@ -686,16 +710,27 @@ export default function PlanMyDayScreen() {
                     </View>
                   )}
                   
-                  <TouchableOpacity 
-                    style={styles.searchButton}
-                    onPress={() => {
-                      const query = encodeURIComponent(`${selectedItem.item.title} ${city}`);
-                      Linking.openURL(`https://www.google.com/search?q=${query}`);
-                    }}
-                  >
-                    <Ionicons name="search" size={18} color={Colors.background.primary} />
-                    <Text style={styles.searchButtonText}>Search Online</Text>
-                  </TouchableOpacity>
+                  <View style={styles.actionButtonsRow}>
+                    {selectedItem.item.yelp_url && (
+                      <TouchableOpacity 
+                        style={styles.yelpButton}
+                        onPress={() => Linking.openURL(selectedItem.item.yelp_url!)}
+                      >
+                        <Ionicons name="star" size={18} color={Colors.background.primary} />
+                        <Text style={styles.yelpButtonText}>View on Yelp</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity 
+                      style={[styles.searchButton, selectedItem.item.yelp_url && styles.searchButtonSecondary]}
+                      onPress={() => {
+                        const query = encodeURIComponent(`${selectedItem.item.title} ${city}`);
+                        Linking.openURL(`https://www.google.com/search?q=${query}`);
+                      }}
+                    >
+                      <Ionicons name="search" size={18} color={selectedItem.item.yelp_url ? Colors.accent.coral : Colors.background.primary} />
+                      <Text style={[styles.searchButtonText, selectedItem.item.yelp_url && styles.searchButtonTextSecondary]}>Search</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </ScrollView>
             )}
@@ -1317,7 +1352,32 @@ const styles = StyleSheet.create({
     color: Colors.accent.coral,
     lineHeight: 22,
   },
+  detailImagePlaceholder: {
+    backgroundColor: Colors.background.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  yelpButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#D32323',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  yelpButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.background.primary,
+  },
   searchButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1326,9 +1386,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
+  searchButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.accent.coral,
+  },
   searchButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.background.primary,
+  },
+  searchButtonTextSecondary: {
+    color: Colors.accent.coral,
   },
 });
