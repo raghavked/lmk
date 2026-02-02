@@ -299,6 +299,8 @@ export default function DecideScreen() {
 
   // Reset swipe animation when item changes
   useEffect(() => {
+    swipeAnim.stopAnimation();
+    swipeAnim.setOffset({ x: 0, y: 0 });
     swipeAnim.setValue({ x: 0, y: 0 });
     rotateAnim.setValue(0);
     setSwipeDirection(null);
@@ -308,58 +310,81 @@ export default function DecideScreen() {
   const handleSwipeDecision = async (direction: 'left' | 'right') => {
     const decision = direction === 'right' ? 'yes' : 'no';
     
+    // Flatten offset before animating off-screen
+    swipeAnim.flattenOffset();
+    
     // Animate card off screen
     Animated.timing(swipeAnim, {
       toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
-      duration: 250,
+      duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      // Reset animation values
-      swipeAnim.setValue({ x: 0, y: 0 });
-      rotateAnim.setValue(0);
-      setSwipeDirection(null);
-      // Trigger the decision
+      // Trigger the decision - animation reset happens in useEffect
       handleDecision(decision);
     });
   };
 
-  // Pan responder for swipe gestures
+  // Pan responder for swipe gestures - optimized for fluid swiping
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to horizontal swipes
-        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+        // Respond to any horizontal movement
+        return Math.abs(gestureState.dx) > 5;
       },
-      onPanResponderMove: (_, gestureState) => {
-        swipeAnim.setValue({ x: gestureState.dx, y: 0 });
-        // Update swipe direction indicator
-        if (gestureState.dx > 30) {
-          setSwipeDirection('right');
-        } else if (gestureState.dx < -30) {
-          setSwipeDirection('left');
-        } else {
-          setSwipeDirection(null);
+      onPanResponderGrant: () => {
+        // Stop any running animation when touch starts
+        swipeAnim.stopAnimation();
+        swipeAnim.extractOffset();
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: swipeAnim.x }],
+        { 
+          useNativeDriver: false,
+          listener: (_, gestureState: any) => {
+            // Update swipe direction indicator
+            if (gestureState.dx > 40) {
+              setSwipeDirection('right');
+            } else if (gestureState.dx < -40) {
+              setSwipeDirection('left');
+            } else {
+              setSwipeDirection(null);
+            }
+          }
         }
-      },
+      ),
       onPanResponderRelease: (_, gestureState) => {
-        const swipeThreshold = width * 0.25;
+        swipeAnim.flattenOffset();
+        const swipeThreshold = width * 0.2;
+        const velocityThreshold = 0.5;
         
-        if (gestureState.dx > swipeThreshold) {
+        // Check both position and velocity for more responsive swiping
+        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
           // Swipe right = yes
           handleSwipeDecision('right');
-        } else if (gestureState.dx < -swipeThreshold) {
+        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
           // Swipe left = no
           handleSwipeDecision('left');
         } else {
-          // Return to center
+          // Return to center with smooth spring
           setSwipeDirection(null);
           Animated.spring(swipeAnim, {
             toValue: { x: 0, y: 0 },
             useNativeDriver: true,
-            friction: 5,
+            friction: 6,
+            tension: 40,
           }).start();
         }
+      },
+      onPanResponderTerminate: () => {
+        swipeAnim.flattenOffset();
+        setSwipeDirection(null);
+        Animated.spring(swipeAnim, {
+          toValue: { x: 0, y: 0 },
+          useNativeDriver: true,
+          friction: 6,
+          tension: 40,
+        }).start();
       },
     })
   ).current;
@@ -465,11 +490,7 @@ export default function DecideScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.scrollContent} 
-        contentContainerStyle={styles.scrollContentContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.mainContent}>
         {error && !currentItem ? (
           error.includes('Network') ? (
             <NetworkError onRetry={handleReshuffle} />
@@ -589,7 +610,7 @@ export default function DecideScreen() {
             <ActivityIndicator size="large" color={Colors.accent.coral} />
           </View>
         )}
-      </ScrollView>
+      </View>
 
       <Modal visible={showMatchPopup} transparent animationType="fade">
         <View style={styles.matchOverlay}>
@@ -691,6 +712,12 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     flexGrow: 1,
+    paddingBottom: 20,
+  },
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   header: {
