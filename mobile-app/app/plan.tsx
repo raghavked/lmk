@@ -204,7 +204,7 @@ export default function PlanMyDayScreen() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
         
-        const response = await fetch(`${apiUrl}/api/plan-my-day`, {
+        const response = await fetch(`${apiUrl}/api/plan-my-day/`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ export default function PlanMyDayScreen() {
       const controller2 = new AbortController();
       const timeoutId2 = setTimeout(() => controller2.abort(), 30000);
       
-      const response = await fetch(`${apiUrl}/api/plan-my-day`, {
+      const response = await fetch(`${apiUrl}/api/plan-my-day/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
