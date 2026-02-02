@@ -122,14 +122,13 @@ export default function DiscoverScreen() {
     try {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('taste_profile, preferences_completed, walkthrough_seen')
+        .select('taste_profile')
         .eq('id', session.user.id)
         .single();
 
       setProfile(profileData);
 
-      const hasPreferences = profileData?.preferences_completed || 
-        (profileData?.taste_profile && Object.keys(profileData.taste_profile).length > 0);
+      const hasPreferences = profileData?.taste_profile && Object.keys(profileData.taste_profile).length > 0;
 
       // If user already has preferences, skip onboarding and quiz
       if (hasPreferences) {
@@ -138,11 +137,10 @@ export default function DiscoverScreen() {
         return;
       }
 
-      // Check if walkthrough was seen (database flag takes priority, then AsyncStorage fallback)
+      // Check if walkthrough was seen (using AsyncStorage)
       const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
-      const walkthroughSeen = profileData?.walkthrough_seen;
 
-      if (!walkthroughSeen && !localOnboardingCompleted) {
+      if (!localOnboardingCompleted) {
         router.push('/onboarding');
         return;
       }
