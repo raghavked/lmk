@@ -241,6 +241,48 @@ export default function FriendsScreen() {
     }
   };
 
+  const unfriend = async (userId: string, userName: string) => {
+    Alert.alert(
+      'Remove Friend',
+      `Are you sure you want to remove ${userName} as a friend?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const accessToken = await getAccessToken();
+              if (!accessToken) return;
+
+              const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+              const response = await fetch(`${apiUrl}/api/friends`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${accessToken}`,
+                  'X-Auth-Token': accessToken,
+                },
+                body: JSON.stringify({
+                  action: 'unfriend',
+                  friendId: userId,
+                }),
+              });
+
+              if (response.ok) {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                loadFriends();
+              }
+            } catch (err) {
+              console.error('Error removing friend:', err);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const isFriend = (userId: string) => friends.some(f => f.id === userId);
   const hasSentRequest = (userId: string) => sentRequests.includes(userId);
 
@@ -342,6 +384,12 @@ export default function FriendsScreen() {
                   <Text style={styles.avatarText}>{friend.full_name[0]?.toUpperCase()}</Text>
                 </View>
                 <Text style={styles.friendName}>{friend.full_name}</Text>
+                <TouchableOpacity 
+                  style={styles.unfriendBtn} 
+                  onPress={() => unfriend(friend.id, friend.full_name)}
+                >
+                  <Ionicons name="person-remove-outline" size={18} color="#F44336" />
+                </TouchableOpacity>
               </View>
             ))
           )
@@ -516,6 +564,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 6,
+  },
+  unfriendBtn: {
+    padding: 8,
+    marginLeft: 'auto',
   },
   btnText: {
     color: Colors.text.primary,
