@@ -28,22 +28,46 @@ export default function LoginScreen() {
     }
     
     // Ensure profile exists (fallback for users who signed up before profiles were auto-created)
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-      
-      if (!existingProfile) {
-        await supabase.from('profiles').insert({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || '',
-          preferences_completed: false,
-        });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: existingProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+        
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // Profile doesn't exist, create it
+          console.log('Creating profile for user:', user.id);
+          const { error: insertError } = await supabase.from('profiles').insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            preferences_completed: false,
+          });
+          
+          if (insertError) {
+            console.error('Profile creation error on login:', JSON.stringify(insertError));
+          } else {
+            console.log('Profile created successfully on login');
+          }
+        } else if (!existingProfile) {
+          console.log('Profile check returned no data, attempting insert');
+          const { error: insertError } = await supabase.from('profiles').insert({
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || '',
+            preferences_completed: false,
+          });
+          if (insertError && insertError.code !== '23505') {
+            console.error('Profile insert error:', JSON.stringify(insertError));
+          }
+        }
       }
+    } catch (profileError) {
+      console.error('Profile check/create exception:', profileError);
+      // Don't block login - continue anyway
     }
     
     router.replace('/(tabs)/discover');

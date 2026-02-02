@@ -39,17 +39,61 @@ export default function SignupScreen() {
     }
     
     if (data.user) {
-      // Create profile for new user
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email: email,
-        full_name: fullName,
-        preferences_completed: false,
-      });
+      // Create profile for new user - try direct insert first, then API fallback
+      let profileCreated = false;
       
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        // Don't block signup - profile can be created later
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: email,
+            full_name: fullName,
+            preferences_completed: false,
+          });
+        
+        if (profileError) {
+          console.error('Direct profile creation error:', JSON.stringify(profileError));
+          // If it's a duplicate key error, profile already exists
+          if (profileError.code === '23505') {
+            profileCreated = true;
+          }
+        } else {
+          console.log('Profile created successfully via direct insert');
+          profileCreated = true;
+        }
+      } catch (e) {
+        console.error('Direct profile creation exception:', e);
+      }
+
+      // Fallback: Try API endpoint if direct insert failed
+      if (!profileCreated) {
+        try {
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://6e0df1e5-2908-4c73-8a4c-a5e12f6fda83-00-5b7dipj1tt5q.worf.replit.dev';
+          const response = await fetch(`${apiUrl}/api/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              email: email,
+              full_name: fullName,
+            }),
+          });
+          
+          if (response.ok) {
+            console.log('Profile created successfully via API');
+            profileCreated = true;
+          } else {
+            const errorData = await response.json();
+            console.error('API profile creation failed:', errorData);
+          }
+        } catch (apiError) {
+          console.error('API profile creation exception:', apiError);
+        }
+      }
+      
+      if (!profileCreated) {
+        console.warn('Profile creation failed, will retry on first login');
       }
       
       Alert.alert('Success', 'Account created! Please check your email to verify.', [
