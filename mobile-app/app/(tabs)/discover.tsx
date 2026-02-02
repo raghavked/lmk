@@ -578,7 +578,7 @@ export default function DiscoverScreen() {
             ))}
             
             {/* Show More Button */}
-            {recommendations.length > 0 && (
+            {recommendations.length > 0 && hasMore && (
               <TouchableOpacity 
                 style={styles.showMoreButton} 
                 onPress={loadMoreRecommendations}
@@ -593,6 +593,11 @@ export default function DiscoverScreen() {
                   </>
                 )}
               </TouchableOpacity>
+            )}
+            {recommendations.length > 0 && !hasMore && (
+              <View style={styles.endOfListContainer}>
+                <Text style={styles.endOfListText}>You've seen all results</Text>
+              </View>
             )}
           </View>
         )}
