@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+const openaiKey = process.env.OPENAI_API_KEY;
 
-if (!apiKey) {
-  console.warn('Plan My Day: No Anthropic/Claude API key configured');
+if (!openaiKey) {
+  console.warn('Plan My Day: No OpenAI API key configured');
 }
 
-const anthropic = new Anthropic({
-  apiKey: apiKey,
+const openai = new OpenAI({
+  apiKey: openaiKey,
 });
 
 interface PlanMyDayRequest {
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (!apiKey) {
+    if (!openaiKey) {
       return NextResponse.json({ 
         error: 'AI service is not configured. Please contact support.',
         message: 'Sorry, the AI service is temporarily unavailable.',
@@ -109,39 +109,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const response = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
       max_tokens: 512,
-      system: systemPrompt,
-      messages: messages,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages
+      ],
     });
 
-    const assistantContent = response.content[0];
-    if (assistantContent.type !== 'text') {
-      return NextResponse.json({ error: 'Unexpected response type' }, { status: 500 });
-    }
+    const assistantContent = response.choices[0]?.message?.content || '';
 
     let parsedResponse;
     try {
-      const jsonMatch = assistantContent.text.match(/\{[\s\S]*\}/);
+      const jsonMatch = assistantContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         parsedResponse = JSON.parse(jsonMatch[0]);
       } else {
         parsedResponse = {
-          message: assistantContent.text,
+          message: assistantContent,
           categories: []
         };
       }
     } catch (parseError) {
       parsedResponse = {
-        message: assistantContent.text,
+        message: assistantContent,
         categories: []
       };
     }
 
     const updatedHistory = [
       ...messages,
-      { role: 'assistant' as const, content: assistantContent.text }
+      { role: 'assistant' as const, content: assistantContent }
     ];
 
     let planSessionId = session_id;
