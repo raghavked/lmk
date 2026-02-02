@@ -2,7 +2,7 @@
 
 ## Overview
 
-LMK is an AI-powered recommendation engine that provides personalized suggestions across 5 categories: restaurants, movies, TV shows, books, and activities. The app uses Claude AI to generate personalized rankings and explanations based on user taste profiles and social signals.
+LMK is an AI-powered recommendation engine that provides personalized suggestions across 5 categories: restaurants, movies, TV shows, books, and activities. The app uses OpenAI (GPT-4o-mini) to generate personalized rankings and explanations based on user taste profiles and social signals.
 
 ## Beta Launch Status
 
@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **API Routes**: Next.js API routes under `/app/api/`
 - **Main Endpoint**: `/api/recommend` handles all recommendation requests
-- **AI Integration**: AIRanker class in `lib/ai/ranker.ts` uses Claude (Anthropic) or OpenAI for intelligent ranking
+- **AI Integration**: AIRanker class in `lib/ai/ranker.ts` uses OpenAI GPT-4o-mini (primary) or Claude (fallback) for intelligent ranking
 - **External APIs**: Aggregates data from multiple sources then ranks with AI
 
 ### Data Sources
@@ -48,14 +48,16 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **Switched to OpenAI**: All AI features now use OpenAI GPT-4o-mini for faster, more reliable responses. Plan My Day uses 256 max tokens for ~1-2s response times.
+- **Yelp API Caching**: Added 30-minute cache with location rounding and request throttling to prevent rate limit errors.
 - **Mobile App Beta Readiness**: Added global error boundary, skeleton loaders, pull-to-refresh, network error detection, and retry buttons across all screens for improved stability.
 - **Improved Logout**: Sign out now clears all local storage (AsyncStorage) including onboarding, quiz, and decision history data.
 - **Beta Feedback Link**: Profile screen now includes Send Feedback option for beta testers to submit feedback via email.
 - **Enhanced Error Handling**: All API-calling screens (Discover, Decide, Friends, Groups, Profile) now show proper error states with retry buttons.
-- **Faster Recommendation Loading**: AI ranker upgraded from claude-3-haiku to claude-3-5-haiku model with reduced max_tokens (1024 vs 2048) for ~50% faster AI ranking responses.
+- **Faster Recommendation Loading**: AI ranker now uses OpenAI GPT-4o-mini with JSON response format for reliable, fast AI ranking.
 - **Improved Location Services**: Mobile app location detection now uses balanced accuracy mode for faster results with fallback to last known position if current location fails.
-- **Plan My Day Chat Memory**: Plan sessions are now automatically saved to a `plan_sessions` database table. Users can view and resume recent plans from the Plan My Day screen. Sessions include event type, city, day intent, full chat history, and AI-generated categories. Uses claude-3-5-haiku model with reduced max_tokens (1024) for faster response times.
-- **Plan My Day Feature**: AI-powered event planning with Claude integration. Users select event type (Date, Hang Out, Solo, Other), enter city, describe their ideal day, and receive categorized recommendations (Restaurant, Movie, TV Show, Activity, Reading) tailored to their event type. Chat-based interface with iterative refinement support. Back button shows "Discover" for clear navigation.
+- **Plan My Day Chat Memory**: Plan sessions are now automatically saved to a `plan_sessions` database table. Users can view and resume recent plans from the Plan My Day screen. Sessions include event type, city, day intent, full chat history, and AI-generated categories.
+- **Plan My Day Feature**: AI-powered event planning with OpenAI GPT-4o-mini. Users select event type (Date, Hang Out, Solo, Other), enter city, describe their ideal day, and receive categorized recommendations tailored to their event type. Chat-based interface with iterative refinement support.
 - **YouTube Category Removed**: YouTube recommendations have been completely removed from the app (category, API, and UI)
 - **AI Personalization from Ratings**: AI ranker now fetches user's past 50 ratings (with item titles, categories, scores, and reviews) to deeply personalize recommendations
 - **Loved/Disliked Item Grouping**: Ratings are grouped by score - items rated 4-5 stars are shown as "loved" and 1-2 stars as "disliked" in AI prompts
