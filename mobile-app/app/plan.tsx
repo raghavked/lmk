@@ -200,6 +200,10 @@ export default function PlanMyDayScreen() {
         const { data: { session } } = await supabase.auth.getSession();
         const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
         
+        console.log('[Plan] Starting API request to:', apiUrl);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
         const response = await fetch(`${apiUrl}/api/plan-my-day`, {
           method: 'POST',
           headers: { 
@@ -212,8 +216,12 @@ export default function PlanMyDayScreen() {
             day_intent: userMessage,
             chat_history: [],
             session_id: sessionId
-          })
+          }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        console.log('[Plan] Response received, status:', response.status);
 
         const data = await response.json();
         
@@ -254,6 +262,10 @@ export default function PlanMyDayScreen() {
         .filter(m => !m.categories)
         .map(m => ({ role: m.role, content: m.content }));
 
+      console.log('[Plan] Sending follow-up message');
+      const controller2 = new AbortController();
+      const timeoutId2 = setTimeout(() => controller2.abort(), 30000);
+      
       const response = await fetch(`${apiUrl}/api/plan-my-day`, {
         method: 'POST',
         headers: { 
@@ -267,8 +279,12 @@ export default function PlanMyDayScreen() {
           chat_history: chatHistory,
           user_message: userMessage,
           session_id: sessionId
-        })
+        }),
+        signal: controller2.signal
       });
+      
+      clearTimeout(timeoutId2);
+      console.log('[Plan] Follow-up response received');
 
       const data = await response.json();
       

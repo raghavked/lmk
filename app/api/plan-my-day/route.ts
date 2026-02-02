@@ -41,6 +41,9 @@ function getInitialPrompt(eventType: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[Plan My Day] POST request received');
+  const startTime = Date.now();
+  
   try {
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
@@ -107,6 +110,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[Plan My Day] Calling OpenAI, elapsed:', Date.now() - startTime, 'ms');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 256,
@@ -116,6 +120,7 @@ export async function POST(request: NextRequest) {
         ...messages
       ],
     });
+    console.log('[Plan My Day] OpenAI responded, elapsed:', Date.now() - startTime, 'ms');
 
     const assistantContent = response.choices[0]?.message?.content || '';
 
