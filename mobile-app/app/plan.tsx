@@ -10,13 +10,40 @@ import {
   Platform,
   ActivityIndicator,
   Dimensions,
-  Image
+  Image,
+  Modal,
+  Linking
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import { supabase } from '../lib/supabase';
 import * as Haptics from 'expo-haptics';
+
+const getPlaceholderImage = (category: string, title: string): string => {
+  const searchTerm = encodeURIComponent(title.split(' ').slice(0, 2).join(' '));
+  const categoryTerm = category.toLowerCase();
+  
+  if (categoryTerm.includes('dinner') || categoryTerm.includes('restaurant') || categoryTerm.includes('lunch')) {
+    return `https://source.unsplash.com/400x300/?restaurant,food,${searchTerm}`;
+  }
+  if (categoryTerm.includes('drink') || categoryTerm.includes('bar') || categoryTerm.includes('cocktail')) {
+    return `https://source.unsplash.com/400x300/?bar,cocktail,drinks`;
+  }
+  if (categoryTerm.includes('coffee') || categoryTerm.includes('cafe')) {
+    return `https://source.unsplash.com/400x300/?coffee,cafe`;
+  }
+  if (categoryTerm.includes('dessert')) {
+    return `https://source.unsplash.com/400x300/?dessert,bakery,sweet`;
+  }
+  if (categoryTerm.includes('entertainment') || categoryTerm.includes('show')) {
+    return `https://source.unsplash.com/400x300/?entertainment,theater,show`;
+  }
+  if (categoryTerm.includes('activity') || categoryTerm.includes('park')) {
+    return `https://source.unsplash.com/400x300/?outdoor,activity,park`;
+  }
+  return `https://source.unsplash.com/400x300/?${searchTerm}`;
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.75;
@@ -92,6 +119,7 @@ export default function PlanMyDayScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<{ item: PlanItem; category: string } | null>(null);
 
   useEffect(() => {
     loadSavedPlans();
@@ -463,17 +491,17 @@ export default function PlanMyDayScreen() {
                             <TouchableOpacity 
                               key={itemIdx} 
                               style={styles.fullCard}
-                              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setSelectedItem({ item, category: cat.type });
+                              }}
                               activeOpacity={0.9}
                             >
                               <View style={styles.fullCardImageContainer}>
-                                <View style={styles.fullCardImagePlaceholder}>
-                                  <Ionicons 
-                                    name={getCategoryIcon(cat.type)} 
-                                    size={48} 
-                                    color={Colors.accent.coral} 
-                                  />
-                                </View>
+                                <Image 
+                                  source={{ uri: getPlaceholderImage(cat.type, item.title) }}
+                                  style={styles.fullCardImage}
+                                />
                                 <View style={styles.fullCardOverlay} />
                                 <View style={styles.fullCardCategoryBadge}>
                                   <Text style={styles.fullCardCategoryText}>{cat.type}</Text>
@@ -575,6 +603,105 @@ export default function PlanMyDayScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <Modal visible={!!selectedItem} transparent animationType="slide">
+        <View style={styles.detailModalContainer}>
+          <View style={styles.detailModal}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedItem(null)}>
+              <Ionicons name="close" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+            {selectedItem && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Image 
+                  source={{ uri: getPlaceholderImage(selectedItem.category, selectedItem.item.title) }} 
+                  style={styles.detailImage} 
+                />
+                <View style={styles.detailContent}>
+                  <View style={styles.detailCategoryBadge}>
+                    <Text style={styles.detailCategoryText}>{selectedItem.category}</Text>
+                  </View>
+                  
+                  <Text style={styles.detailTitle}>{selectedItem.item.title}</Text>
+                  
+                  {(selectedItem.item.cuisine || selectedItem.item.vibe) && (
+                    <Text style={styles.detailTagline}>
+                      {[selectedItem.item.cuisine, selectedItem.item.vibe].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                  
+                  {(selectedItem.item.address || selectedItem.item.neighborhood) && (
+                    <TouchableOpacity 
+                      style={styles.detailLocation}
+                      onPress={() => {
+                        const query = encodeURIComponent(
+                          `${selectedItem.item.title} ${selectedItem.item.address || selectedItem.item.neighborhood} ${city}`
+                        );
+                        Linking.openURL(`https://maps.google.com/?q=${query}`);
+                      }}
+                    >
+                      <Ionicons name="location" size={18} color={Colors.accent.coral} />
+                      <Text style={styles.detailLocationText}>
+                        {selectedItem.item.address || selectedItem.item.neighborhood}
+                      </Text>
+                      <Ionicons name="open-outline" size={16} color={Colors.text.secondary} />
+                    </TouchableOpacity>
+                  )}
+                  
+                  <View style={styles.detailMetrics}>
+                    {selectedItem.item.rating && (
+                      <View style={styles.detailMetric}>
+                        <Text style={styles.detailMetricLabel}>Rating</Text>
+                        <View style={styles.detailMetricValueRow}>
+                          <Ionicons name="star" size={14} color="#FFD700" />
+                          <Text style={styles.detailMetricValue}>{selectedItem.item.rating}/5</Text>
+                        </View>
+                      </View>
+                    )}
+                    {selectedItem.item.price && (
+                      <View style={styles.detailMetric}>
+                        <Text style={styles.detailMetricLabel}>Price</Text>
+                        <Text style={styles.detailMetricValue}>{selectedItem.item.price}</Text>
+                      </View>
+                    )}
+                    {selectedItem.item.neighborhood && (
+                      <View style={styles.detailMetric}>
+                        <Text style={styles.detailMetricLabel}>Area</Text>
+                        <Text style={styles.detailMetricValue}>{selectedItem.item.neighborhood}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>About</Text>
+                    <Text style={styles.detailDescription}>{selectedItem.item.description}</Text>
+                  </View>
+                  
+                  {selectedItem.item.why_perfect && (
+                    <View style={styles.detailWhyPerfect}>
+                      <View style={styles.detailWhyPerfectHeader}>
+                        <Ionicons name="sparkles" size={18} color={Colors.accent.coral} />
+                        <Text style={styles.detailWhyPerfectTitle}>Why It's Perfect</Text>
+                      </View>
+                      <Text style={styles.detailWhyPerfectText}>{selectedItem.item.why_perfect}</Text>
+                    </View>
+                  )}
+                  
+                  <TouchableOpacity 
+                    style={styles.searchButton}
+                    onPress={() => {
+                      const query = encodeURIComponent(`${selectedItem.item.title} ${city}`);
+                      Linking.openURL(`https://www.google.com/search?q=${query}`);
+                    }}
+                  >
+                    <Ionicons name="search" size={18} color={Colors.background.primary} />
+                    <Text style={styles.searchButtonText}>Search Online</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -1050,5 +1177,158 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  fullCardImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  detailModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  detailModal: {
+    backgroundColor: Colors.background.primary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    minHeight: '60%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    backgroundColor: Colors.background.primary + 'CC',
+    borderRadius: 20,
+    padding: 8,
+  },
+  detailImage: {
+    width: '100%',
+    height: 200,
+    resizeMode: 'cover',
+  },
+  detailContent: {
+    padding: 20,
+  },
+  detailCategoryBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.accent.coral + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  detailCategoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.accent.coral,
+    textTransform: 'uppercase',
+  },
+  detailTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  detailTagline: {
+    fontSize: 15,
+    color: Colors.accent.coral,
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  detailLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.background.secondary,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  detailLocationText: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.text.primary,
+  },
+  detailMetrics: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 16,
+  },
+  detailMetric: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  detailMetricLabel: {
+    fontSize: 11,
+    color: Colors.text.muted,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  detailMetricValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  detailMetricValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailSection: {
+    marginBottom: 20,
+  },
+  detailSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  detailDescription: {
+    fontSize: 15,
+    color: Colors.text.secondary,
+    lineHeight: 24,
+  },
+  detailWhyPerfect: {
+    backgroundColor: Colors.accent.coral + '15',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  detailWhyPerfectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  detailWhyPerfectTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.accent.coral,
+  },
+  detailWhyPerfectText: {
+    fontSize: 14,
+    color: Colors.accent.coral,
+    lineHeight: 22,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.accent.coral,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  searchButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.background.primary,
   },
 });
