@@ -111,16 +111,53 @@ CREATE TABLE IF NOT EXISTS plan_sessions (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Performance indexes for scaling
+-- 3. Performance indexes for scaling (comprehensive for multi-user)
+-- Profiles indexes
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
+
+-- Ratings indexes
 CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_category ON ratings(category);
+CREATE INDEX IF NOT EXISTS idx_ratings_created_at ON ratings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
+
+-- Friends indexes
 CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
 CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
+CREATE INDEX IF NOT EXISTS idx_friends_user_status ON friends(user_id, status);
+
+-- Groups indexes
+CREATE INDEX IF NOT EXISTS idx_groups_creator_id ON groups(creator_id);
+CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups(created_at DESC);
+
+-- Group members indexes
 CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_group ON group_members(user_id, group_id);
+
+-- Group messages indexes
 CREATE INDEX IF NOT EXISTS idx_group_messages_group_id ON group_messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_messages_sender_id ON group_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_group_messages_created_at ON group_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_group_messages_group_created ON group_messages(group_id, created_at DESC);
+
+-- Group invites indexes
+CREATE INDEX IF NOT EXISTS idx_group_invites_user_id ON group_invites(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON group_invites(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_invites_status ON group_invites(status);
+CREATE INDEX IF NOT EXISTS idx_group_invites_user_status ON group_invites(user_id, status);
+
+-- Polls indexes
+CREATE INDEX IF NOT EXISTS idx_polls_group_id ON polls(group_id);
+CREATE INDEX IF NOT EXISTS idx_polls_created_by ON polls(created_by);
+
+-- Plan sessions indexes
 CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_id ON plan_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_plan_sessions_created_at ON plan_sessions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_updated_at ON plan_sessions(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_updated ON plan_sessions(user_id, updated_at DESC);
 
 -- 4. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -129,6 +166,8 @@ ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
 ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_invites ENABLE ROW LEVEL SECURITY;
+ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE plan_sessions ENABLE ROW LEVEL SECURITY;
 
 -- 5. Drop existing policies (prevents duplicates)
@@ -176,6 +215,22 @@ CREATE POLICY "Users can leave groups" ON group_members FOR DELETE USING (auth.u
 
 CREATE POLICY "Users can view messages" ON group_messages FOR SELECT USING (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid()));
 CREATE POLICY "Users can send messages" ON group_messages FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid()));
+
+-- Group invites policies
+DROP POLICY IF EXISTS "Users can view invites" ON group_invites;
+DROP POLICY IF EXISTS "Users can create invites" ON group_invites;
+DROP POLICY IF EXISTS "Users can update invites" ON group_invites;
+DROP POLICY IF EXISTS "Users can delete invites" ON group_invites;
+CREATE POLICY "Users can view invites" ON group_invites FOR SELECT USING (auth.uid() = user_id OR auth.uid() = invited_by);
+CREATE POLICY "Users can create invites" ON group_invites FOR INSERT WITH CHECK (auth.uid() = invited_by);
+CREATE POLICY "Users can update invites" ON group_invites FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete invites" ON group_invites FOR DELETE USING (auth.uid() = user_id OR auth.uid() = invited_by);
+
+-- Polls policies
+DROP POLICY IF EXISTS "Users can view polls" ON polls;
+DROP POLICY IF EXISTS "Users can create polls" ON polls;
+CREATE POLICY "Users can view polls" ON polls FOR SELECT USING (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = polls.group_id AND group_members.user_id = auth.uid()));
+CREATE POLICY "Users can create polls" ON polls FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = polls.group_id AND group_members.user_id = auth.uid()));
 
 DROP POLICY IF EXISTS "Users can view own plans" ON plan_sessions;
 DROP POLICY IF EXISTS "Users can create plans" ON plan_sessions;
