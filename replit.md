@@ -11,6 +11,19 @@ The app is ready for beta launch with multiple users. Key scaling features inclu
 - **Rate Limiting**: 20 AI requests per user per minute to prevent abuse
 - **User-Aware Caching**: AI responses cached by user preference profile for cost efficiency
 - **Fallback Ranking**: Graceful degradation if AI limits exceeded
+- **Database Indexes**: 38+ performance indexes for fast queries across all tables
+- **Row Level Security**: All tables have RLS policies for secure multi-user access
+
+### Database Tables (9 total)
+- `profiles` - User profiles with preferences and taste profiles
+- `ratings` - User ratings and reviews for recommendations
+- `friends` - Friend connections and requests (pending/accepted)
+- `groups` - User-created groups for social recommendations
+- `group_members` - Group membership tracking
+- `group_messages` - Group chat messages
+- `group_invites` - Pending group invitations
+- `polls` - Group polls for decision making
+- `plan_sessions` - Plan My Day chat history and saved plans
 
 ## User Preferences
 
