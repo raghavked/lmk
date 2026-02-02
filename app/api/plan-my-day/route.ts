@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
 
     const updatedHistory = [
       ...messages,
-      { role: 'assistant' as const, content: assistantContent }
+      { role: 'assistant' as const, content: parsedResponse.message || assistantContent }
     ];
 
     let planSessionId = session_id;

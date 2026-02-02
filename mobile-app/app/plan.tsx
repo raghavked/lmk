@@ -186,12 +186,30 @@ export default function PlanMyDayScreen() {
         
         // Parse chat history and preserve categories from each message
         const chatMessages: ChatMessage[] = (plan.chat_history || []).map((msg: any) => {
-          const parsed: ChatMessage = { role: msg.role, content: msg.content };
-          // Preserve categories if they were saved in the message
-          if (msg.categories && msg.categories.length > 0) {
-            parsed.categories = msg.categories;
+          let content = msg.content;
+          let categories = msg.categories;
+          
+          // Handle old saved plans that have raw JSON as content
+          if (typeof content === 'string' && content.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(content);
+              if (parsed.message) {
+                content = parsed.message;
+              }
+              if (parsed.categories && parsed.categories.length > 0) {
+                categories = parsed.categories;
+              }
+            } catch (e) {
+              // Not valid JSON, keep original content
+            }
           }
-          return parsed;
+          
+          const parsedMsg: ChatMessage = { role: msg.role, content };
+          // Preserve categories if they were saved in the message
+          if (categories && categories.length > 0) {
+            parsedMsg.categories = categories;
+          }
+          return parsedMsg;
         });
         
         // If plan has categories at the top level and no message has them yet, add to last message
