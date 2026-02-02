@@ -313,19 +313,8 @@ export default function PlanMyDayScreen() {
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={20} color={Colors.text.primary} />
-          <Text style={styles.backButtonText}>Discover</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Plan My Day</Text>
-        <TouchableOpacity onPress={resetFlow} style={styles.headerButton}>
-          <Ionicons name="refresh" size={22} color={Colors.text.secondary} />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView 
         ref={scrollViewRef}
         style={styles.content}
@@ -376,20 +365,26 @@ export default function PlanMyDayScreen() {
           </View>
         ) : (
           <View style={styles.chatContainer}>
-            {selectedEvent && (
-              <View style={styles.contextTags}>
-                <View style={[styles.tag, { backgroundColor: selectedEvent.color + '20' }]}>
-                  <Ionicons name={selectedEvent.icon as any} size={14} color={selectedEvent.color} />
-                  <Text style={[styles.tagText, { color: selectedEvent.color }]}>{selectedEvent.label}</Text>
-                </View>
-                {city && (
-                  <View style={styles.tag}>
-                    <Ionicons name="location" size={14} color={Colors.text.secondary} />
-                    <Text style={styles.tagText}>{city}</Text>
+            <View style={styles.chatHeader}>
+              {selectedEvent && (
+                <View style={styles.contextTags}>
+                  <View style={[styles.tag, { backgroundColor: selectedEvent.color + '20' }]}>
+                    <Ionicons name={selectedEvent.icon as any} size={14} color={selectedEvent.color} />
+                    <Text style={[styles.tagText, { color: selectedEvent.color }]}>{selectedEvent.label}</Text>
                   </View>
-                )}
-              </View>
-            )}
+                  {city && (
+                    <View style={styles.tag}>
+                      <Ionicons name="location" size={14} color={Colors.text.secondary} />
+                      <Text style={styles.tagText}>{city}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              <TouchableOpacity onPress={resetFlow} style={styles.newPlanButton}>
+                <Ionicons name="add-circle-outline" size={18} color={Colors.accent.coral} />
+                <Text style={styles.newPlanText}>New</Text>
+              </TouchableOpacity>
+            </View>
 
             {messages.map((msg, idx) => (
               <View key={idx} style={[styles.messageContainer, msg.role === 'user' && styles.userMessageContainer]}>
@@ -464,43 +459,36 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background.primary,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerButton: {
-    padding: 8,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 16,
-    color: Colors.text.primary,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text.primary,
-  },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
+    paddingTop: 60,
     paddingBottom: 32,
   },
   eventSelection: {
-    paddingTop: 32,
+    paddingTop: 16,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  newPlanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 16,
+  },
+  newPlanText: {
+    fontSize: 14,
+    color: Colors.accent.coral,
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,
