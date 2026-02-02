@@ -31,13 +31,19 @@ interface ChatMessage {
   categories?: Category[];
 }
 
+interface PlanItem {
+  title: string;
+  description: string;
+  event_relevance?: string;
+  neighborhood?: string;
+  rating?: number;
+  price?: string;
+  why_perfect?: string;
+}
+
 interface Category {
   type: string;
-  items: {
-    title: string;
-    description: string;
-    event_relevance: string;
-  }[];
+  items: PlanItem[];
 }
 
 interface SavedPlan {
@@ -58,10 +64,14 @@ const eventTypes = [
 
 const getCategoryIcon = (type: string): any => {
   const lower = type.toLowerCase();
-  if (lower.includes('restaurant') || lower.includes('food') || lower.includes('dining')) return 'restaurant';
-  if (lower.includes('movie') || lower.includes('film')) return 'film';
-  if (lower.includes('tv') || lower.includes('show')) return 'tv';
-  if (lower.includes('activity') || lower.includes('activities')) return 'walk';
+  if (lower.includes('dinner') || lower.includes('restaurant') || lower.includes('food') || lower.includes('dining') || lower.includes('lunch')) return 'restaurant';
+  if (lower.includes('drink') || lower.includes('bar') || lower.includes('cocktail')) return 'wine';
+  if (lower.includes('coffee') || lower.includes('cafe')) return 'cafe';
+  if (lower.includes('dessert') || lower.includes('sweet')) return 'ice-cream';
+  if (lower.includes('entertainment') || lower.includes('show') || lower.includes('concert')) return 'ticket';
+  if (lower.includes('movie') || lower.includes('film') || lower.includes('cinema')) return 'film';
+  if (lower.includes('activity') || lower.includes('activities') || lower.includes('park') || lower.includes('walk')) return 'walk';
+  if (lower.includes('tv')) return 'tv';
   if (lower.includes('read') || lower.includes('book')) return 'book';
   return 'sparkles';
 };
@@ -449,31 +459,54 @@ export default function PlanMyDayScreen() {
                           {cat.items.map((item, itemIdx) => (
                             <TouchableOpacity 
                               key={itemIdx} 
-                              style={styles.swipeCard}
+                              style={styles.objectCard}
                               onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
                               activeOpacity={0.9}
                             >
-                              <View style={styles.swipeCardGradient}>
-                                <Ionicons 
-                                  name={getCategoryIcon(cat.type)} 
-                                  size={32} 
-                                  color={Colors.accent.coral + '40'} 
-                                  style={styles.cardBgIcon}
-                                />
-                              </View>
-                              <View style={styles.swipeCardContent}>
-                                <Text style={styles.swipeCardTitle} numberOfLines={2}>{item.title}</Text>
-                                <Text style={styles.swipeCardDescription} numberOfLines={3}>{item.description}</Text>
-                                <View style={styles.swipeCardRelevanceBox}>
-                                  <Ionicons name="sparkles" size={12} color={Colors.accent.coral} />
-                                  <Text style={styles.swipeCardRelevance} numberOfLines={2}>{item.event_relevance}</Text>
+                              <View style={styles.objectCardHeader}>
+                                <View style={styles.objectCardIconBox}>
+                                  <Ionicons 
+                                    name={getCategoryIcon(cat.type)} 
+                                    size={24} 
+                                    color={Colors.accent.coral} 
+                                  />
+                                </View>
+                                <View style={styles.objectCardTitleBox}>
+                                  <Text style={styles.objectCardTitle} numberOfLines={2}>{item.title}</Text>
+                                  {item.neighborhood && (
+                                    <View style={styles.objectCardLocation}>
+                                      <Ionicons name="location-outline" size={12} color={Colors.text.secondary} />
+                                      <Text style={styles.objectCardNeighborhood}>{item.neighborhood}</Text>
+                                    </View>
+                                  )}
                                 </View>
                               </View>
-                              <View style={styles.swipeCardFooter}>
-                                <View style={styles.categoryBadge}>
+                              
+                              <Text style={styles.objectCardDescription} numberOfLines={2}>{item.description}</Text>
+                              
+                              <View style={styles.objectCardMetrics}>
+                                {item.rating && (
+                                  <View style={styles.metricBadge}>
+                                    <Ionicons name="star" size={12} color="#FFD700" />
+                                    <Text style={styles.metricText}>{item.rating}</Text>
+                                  </View>
+                                )}
+                                {item.price && (
+                                  <View style={styles.metricBadge}>
+                                    <Text style={styles.metricText}>{item.price}</Text>
+                                  </View>
+                                )}
+                                <View style={[styles.metricBadge, styles.categoryBadge]}>
                                   <Text style={styles.categoryBadgeText}>{cat.type}</Text>
                                 </View>
                               </View>
+                              
+                              {item.why_perfect && (
+                                <View style={styles.whyPerfectBox}>
+                                  <Ionicons name="sparkles" size={12} color={Colors.accent.coral} />
+                                  <Text style={styles.whyPerfectText} numberOfLines={2}>{item.why_perfect}</Text>
+                                </View>
+                              )}
                             </TouchableOpacity>
                           ))}
                         </ScrollView>
@@ -813,5 +846,87 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  objectCard: {
+    width: CARD_WIDTH,
+    marginHorizontal: CARD_MARGIN,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  objectCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 10,
+  },
+  objectCardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.accent.coral + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  objectCardTitleBox: {
+    flex: 1,
+  },
+  objectCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    lineHeight: 22,
+  },
+  objectCardLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  objectCardNeighborhood: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+  },
+  objectCardDescription: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  objectCardMetrics: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  metricBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.tertiary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    gap: 4,
+  },
+  metricText: {
+    fontSize: 12,
+    color: Colors.text.primary,
+    fontWeight: '600',
+  },
+  whyPerfectBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: Colors.accent.coral + '15',
+    padding: 10,
+    borderRadius: 10,
+  },
+  whyPerfectText: {
+    fontSize: 13,
+    color: Colors.accent.coral,
+    flex: 1,
+    lineHeight: 18,
   },
 });

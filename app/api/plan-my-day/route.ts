@@ -24,14 +24,14 @@ interface PlanMyDayRequest {
 }
 
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
-  return `You are a local expert planning a ${eventType} in ${city}. The user wants: ${dayIntent}
+  return `You are a local expert planning a ${eventType} in ${city}. User wants: ${dayIntent}
 
-Respond with JSON only (no markdown). Include 2-3 categories relevant to their request. Each category should have 2-3 specific real venue/activity recommendations.
+Reply JSON only. Give 2-3 categories with exactly 3 real venue recommendations each.
 
 Format:
-{"message":"Your friendly 1-2 sentence summary of the plan","categories":[{"type":"Dinner","items":[{"title":"Venue Name","description":"Brief description with cuisine/vibe"}]},{"type":"Activity","items":[{"title":"Activity Name","description":"What to do there"}]}]}
+{"message":"1 sentence summary","categories":[{"type":"Dinner","items":[{"title":"Real Venue Name","description":"Cuisine type and ambiance in 10 words","price":"$$","rating":4.5,"neighborhood":"Area Name","why_perfect":"Why this fits the ${eventType}"}]}]}
 
-Categories to consider: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert, Walk/Park. Pick what fits best.`;
+Categories: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert. Use real venues in ${city}.`;
 }
 
 function getInitialPrompt(eventType: string): string {
