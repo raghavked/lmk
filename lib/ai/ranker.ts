@@ -170,10 +170,37 @@ export class AIRanker {
       try {
         parsed = JSON.parse(jsonString);
       } catch (parseErr) {
-        const fixedJson = jsonString
+        // Try multiple JSON repair strategies
+        let fixedJson = jsonString;
+        
+        // Strategy 1: Fix unquoted keys
+        fixedJson = fixedJson
           .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
           .replace(/:\s*'([^']*)'/g, ': "$1"');
-        parsed = JSON.parse(fixedJson);
+        
+        try {
+          parsed = JSON.parse(fixedJson);
+        } catch (e) {
+          // Strategy 2: Find the rankings array and extract it
+          const rankingsMatch = jsonString.match(/"rankings"\s*:\s*\[([\s\S]*?)\]/);
+          if (rankingsMatch) {
+            try {
+              // Try to parse just the rankings array
+              const rankingsArrayStr = '[' + rankingsMatch[1] + ']';
+              const cleanedRankings = rankingsArrayStr
+                .replace(/,\s*([\]}])/g, '$1')
+                .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+              parsed = { rankings: JSON.parse(cleanedRankings) };
+            } catch (e2) {
+              // Strategy 3: Use fallback
+              console.warn('[AIRanker] All JSON parse strategies failed, using fallback');
+              return this.getFallbackRankings(objects, context);
+            }
+          } else {
+            console.warn('[AIRanker] No rankings array found, using fallback');
+            return this.getFallbackRankings(objects, context);
+          }
+        }
       }
       const rankings = parsed.rankings || [];
       
