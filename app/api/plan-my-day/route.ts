@@ -24,7 +24,14 @@ interface PlanMyDayRequest {
 }
 
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
-  return `Plan ${eventType} in ${city}. Goal: ${dayIntent}. Reply JSON only: {"message":"Brief reply","categories":[{"type":"Restaurant","items":[{"title":"Name","description":"10 words"}]}]}`;
+  return `You are a local expert planning a ${eventType} in ${city}. The user wants: ${dayIntent}
+
+Respond with JSON only (no markdown). Include 2-3 categories relevant to their request. Each category should have 2-3 specific real venue/activity recommendations.
+
+Format:
+{"message":"Your friendly 1-2 sentence summary of the plan","categories":[{"type":"Dinner","items":[{"title":"Venue Name","description":"Brief description with cuisine/vibe"}]},{"type":"Activity","items":[{"title":"Activity Name","description":"What to do there"}]}]}
+
+Categories to consider: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert, Walk/Park. Pick what fits best.`;
 }
 
 function getInitialPrompt(eventType: string): string {
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
     console.log('[Plan My Day] Calling OpenAI, elapsed:', Date.now() - startTime, 'ms');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 256,
+      max_tokens: 800,
       temperature: 0.7,
       messages: [
         { role: 'system', content: systemPrompt },
