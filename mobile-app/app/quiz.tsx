@@ -226,6 +226,7 @@ export default function QuizScreen() {
             id: session.user.id,
             email: session.user.email,
             taste_profile: preferences,
+            preferences_completed: true,
           });
         if (insertError) throw insertError;
       } else if (fetchError) {
@@ -236,6 +237,7 @@ export default function QuizScreen() {
           .from('profiles')
           .update({ 
             taste_profile: preferences,
+            preferences_completed: true,
           })
           .eq('id', session.user.id);
         if (updateError) throw updateError;
