@@ -2,7 +2,7 @@
 
 ## Overview
 
-LMK is an AI-powered recommendation engine that provides personalized suggestions across 5 categories: restaurants, movies, TV shows, books, and activities. The app uses OpenAI (GPT-4o-mini) to generate personalized rankings and explanations based on user taste profiles and social signals.
+LMK is an AI-powered recommendation engine that provides personalized suggestions across 5 categories: restaurants, movies, TV shows, books, and activities. The app uses Claude (claude-3-haiku) for AI ranking and OpenAI (GPT-4o-mini) for Plan My Day, generating personalized rankings and explanations based on user taste profiles and social signals.
 
 ## Beta Launch Status
 
@@ -28,7 +28,7 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **API Routes**: Next.js API routes under `/app/api/`
 - **Main Endpoint**: `/api/recommend` handles all recommendation requests
-- **AI Integration**: AIRanker class in `lib/ai/ranker.ts` uses OpenAI GPT-4o-mini (primary) or Claude (fallback) for intelligent ranking
+- **AI Integration**: AIRanker class in `lib/ai/ranker.ts` uses Claude (primary) for intelligent ranking, OpenAI for Plan My Day
 - **External APIs**: Aggregates data from multiple sources then ranks with AI
 
 ### Data Sources
