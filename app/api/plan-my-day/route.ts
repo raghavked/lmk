@@ -246,17 +246,25 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
     
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    // Get token from Authorization header or X-Auth-Token
+    let token: string | null = null;
     const authHeader = request.headers.get('authorization');
-    let userId = session?.user?.id;
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+    if (!token) {
+      token = request.headers.get('x-auth-token');
+    }
     
-    if (!userId && authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const { data: { user } } = await supabase.auth.getUser(token);
+    let userId: string | undefined;
+    if (token) {
+      const { data: { user } } = await adminClient.auth.getUser(token);
       userId = user?.id;
     }
 
@@ -266,12 +274,6 @@ export async function GET(request: NextRequest) {
 
     const requestUrl = new URL(request.url);
     const planId = requestUrl.searchParams.get('id');
-
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
 
     if (planId) {
       const { data: plan, error } = await adminClient

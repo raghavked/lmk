@@ -35,22 +35,9 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    AsyncStorage.setItem('lmk_onboarding_completed', 'true');
-    
-    const saveWalkthroughSeen = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          await supabase
-            .from('profiles')
-            .update({ walkthrough_seen: true })
-            .eq('id', session.user.id);
-        }
-      } catch (error) {
-        console.log('Could not save walkthrough status to profile');
-      }
-    };
-    saveWalkthroughSeen();
+    AsyncStorage.setItem('lmk_onboarding_completed', 'true').catch(() => {
+      console.log('Could not save walkthrough status');
+    });
   }, []);
 
   const handleNext = async () => {

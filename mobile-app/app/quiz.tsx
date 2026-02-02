@@ -25,7 +25,7 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     id: 'dining_atmosphere',
     category: 'Restaurants',
     question: 'What dining atmosphere do you prefer?',
-    type: 'single-select',
+    type: 'multiple-select',
     options: ['Casual & Relaxed', 'Trendy & Modern', 'Fine Dining', 'Cozy & Intimate', 'Lively & Social', 'Quiet & Peaceful'],
   },
   {
@@ -226,7 +226,6 @@ export default function QuizScreen() {
             id: session.user.id,
             email: session.user.email,
             taste_profile: preferences,
-            preferences_completed: true,
           });
         if (insertError) throw insertError;
       } else if (fetchError) {
@@ -237,7 +236,6 @@ export default function QuizScreen() {
           .from('profiles')
           .update({ 
             taste_profile: preferences,
-            preferences_completed: true,
           })
           .eq('id', session.user.id);
         if (updateError) throw updateError;
