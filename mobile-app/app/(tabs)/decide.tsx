@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, 
-  Dimensions, Modal, ScrollView, Alert 
+  Dimensions, Modal, ScrollView, Alert, PanResponder, Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -97,6 +97,11 @@ export default function DecideScreen() {
   const [showMatchPopup, setShowMatchPopup] = useState(false);
   const [matchedItem, setMatchedItem] = useState<DecideItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Swipe animation values
+  const swipeAnim = useRef(new Animated.ValueXY()).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   useEffect(() => {
     getLocation();
@@ -292,6 +297,79 @@ export default function DecideScreen() {
     loadNextItem(newSeenIds);
   };
 
+  // Reset swipe animation when item changes
+  useEffect(() => {
+    swipeAnim.setValue({ x: 0, y: 0 });
+    rotateAnim.setValue(0);
+    setSwipeDirection(null);
+  }, [currentItem?.id]);
+
+  // Swipe gesture handler
+  const handleSwipeDecision = async (direction: 'left' | 'right') => {
+    const decision = direction === 'right' ? 'yes' : 'no';
+    
+    // Animate card off screen
+    Animated.timing(swipeAnim, {
+      toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      // Reset animation values
+      swipeAnim.setValue({ x: 0, y: 0 });
+      rotateAnim.setValue(0);
+      setSwipeDirection(null);
+      // Trigger the decision
+      handleDecision(decision);
+    });
+  };
+
+  // Pan responder for swipe gestures
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to horizontal swipes
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        swipeAnim.setValue({ x: gestureState.dx, y: 0 });
+        // Update swipe direction indicator
+        if (gestureState.dx > 30) {
+          setSwipeDirection('right');
+        } else if (gestureState.dx < -30) {
+          setSwipeDirection('left');
+        } else {
+          setSwipeDirection(null);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const swipeThreshold = width * 0.25;
+        
+        if (gestureState.dx > swipeThreshold) {
+          // Swipe right = yes
+          handleSwipeDecision('right');
+        } else if (gestureState.dx < -swipeThreshold) {
+          // Swipe left = no
+          handleSwipeDecision('left');
+        } else {
+          // Return to center
+          setSwipeDirection(null);
+          Animated.spring(swipeAnim, {
+            toValue: { x: 0, y: 0 },
+            useNativeDriver: true,
+            friction: 5,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // Calculate card rotation based on swipe position
+  const cardRotation = swipeAnim.x.interpolate({
+    inputRange: [-width, 0, width],
+    outputRange: ['-15deg', '0deg', '15deg'],
+  });
+
   const handleReshuffle = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
@@ -407,7 +485,32 @@ export default function DecideScreen() {
           )
         ) : currentItem ? (
           <View style={styles.cardWrapper}>
-            <View style={styles.decideCard}>
+            <Animated.View 
+              {...panResponder.panHandlers}
+              style={[
+                styles.decideCard,
+                {
+                  transform: [
+                    { translateX: swipeAnim.x },
+                    { rotate: cardRotation },
+                  ],
+                },
+              ]}
+            >
+              {/* Swipe direction indicators */}
+              {swipeDirection === 'right' && (
+                <View style={[styles.swipeIndicator, styles.swipeIndicatorRight]}>
+                  <Ionicons name="checkmark-circle" size={48} color="#4CAF50" />
+                  <Text style={styles.swipeIndicatorText}>YES</Text>
+                </View>
+              )}
+              {swipeDirection === 'left' && (
+                <View style={[styles.swipeIndicator, styles.swipeIndicatorLeft]}>
+                  <Ionicons name="close-circle" size={48} color="#F44336" />
+                  <Text style={styles.swipeIndicatorText}>NO</Text>
+                </View>
+              )}
+              
             {currentItem.image_url && (
               <View style={styles.cardImageContainer}>
                 <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
@@ -463,7 +566,7 @@ export default function DecideScreen() {
                 </Text>
               )}
             </View>
-          </View>
+          </Animated.View>
           
           <View style={styles.decisionButtons}>
             <TouchableOpacity 
@@ -718,6 +821,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
+    position: 'relative',
+  },
+  swipeIndicator: {
+    position: 'absolute',
+    top: '40%',
+    zIndex: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+  },
+  swipeIndicatorRight: {
+    right: 20,
+    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  swipeIndicatorLeft: {
+    left: 20,
+    backgroundColor: 'rgba(244, 67, 54, 0.2)',
+    borderWidth: 2,
+    borderColor: '#F44336',
+  },
+  swipeIndicatorText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
   cardImageContainer: {
     position: 'relative',
