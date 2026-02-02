@@ -24,9 +24,7 @@ interface PlanMyDayRequest {
 }
 
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
-  return `Event planner for ${eventType} in ${city}. Intent: ${dayIntent}
-Give 2 categories, 2 items each. JSON only:
-{"message":"1 sentence","categories":[{"type":"Restaurant|Movie|Activity","items":[{"title":"Name","description":"15 words max","event_relevance":"Why it fits"}]}]}`;
+  return `Plan ${eventType} in ${city}. Goal: ${dayIntent}. Reply JSON only: {"message":"Brief reply","categories":[{"type":"Restaurant","items":[{"title":"Name","description":"10 words"}]}]}`;
 }
 
 function getInitialPrompt(eventType: string): string {
@@ -111,7 +109,8 @@ export async function POST(request: NextRequest) {
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
-      max_tokens: 512,
+      max_tokens: 256,
+      temperature: 0.7,
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages
