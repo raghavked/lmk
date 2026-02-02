@@ -124,6 +124,7 @@ export default function PlanMyDayScreen() {
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedItem, setSelectedItem] = useState<{ item: PlanItem; category: string } | null>(null);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
 
   useEffect(() => {
     loadSavedPlans();
@@ -398,6 +399,20 @@ export default function PlanMyDayScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
+        {/* History button - always visible at top */}
+        {savedPlans.length > 0 && (
+          <TouchableOpacity 
+            style={styles.historyButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowHistoryModal(true);
+            }}
+          >
+            <Ionicons name="time-outline" size={18} color={Colors.accent.coral} />
+            <Text style={styles.historyButtonText}>My Plans ({savedPlans.length})</Text>
+          </TouchableOpacity>
+        )}
+
         {stage === 'event_select' ? (
           <View style={styles.eventSelection}>
             <Text style={styles.title}>What are you planning?</Text>
@@ -734,6 +749,91 @@ export default function PlanMyDayScreen() {
                 </View>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* History Modal */}
+      <Modal
+        visible={showHistoryModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowHistoryModal(false)}
+      >
+        <View style={styles.historyModalOverlay}>
+          <View style={styles.historyModal}>
+            <View style={styles.historyModalHeader}>
+              <Text style={styles.historyModalTitle}>My Plans</Text>
+              <TouchableOpacity 
+                onPress={() => setShowHistoryModal(false)}
+                style={styles.historyCloseButton}
+              >
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView 
+              style={styles.historyList}
+              showsVerticalScrollIndicator={false}
+            >
+              {loadingPlans ? (
+                <ActivityIndicator size="large" color={Colors.accent.coral} style={{ marginTop: 40 }} />
+              ) : savedPlans.length === 0 ? (
+                <View style={styles.emptyHistory}>
+                  <Ionicons name="calendar-outline" size={48} color={Colors.text.muted} />
+                  <Text style={styles.emptyHistoryText}>No plans yet</Text>
+                  <Text style={styles.emptyHistorySubtext}>Your saved plans will appear here</Text>
+                </View>
+              ) : (
+                savedPlans.map((plan) => {
+                  const eventConfig = eventTypes.find(e => e.id === plan.event_type);
+                  return (
+                    <TouchableOpacity
+                      key={plan.id}
+                      onPress={() => {
+                        setShowHistoryModal(false);
+                        loadPlan(plan.id);
+                      }}
+                      style={[
+                        styles.historyCard,
+                        sessionId === plan.id && styles.historyCardActive
+                      ]}
+                    >
+                      <View style={styles.historyCardIcon}>
+                        <Ionicons 
+                          name={(eventConfig?.icon || 'sparkles') as any} 
+                          size={24} 
+                          color={eventConfig?.color || Colors.accent.coral} 
+                        />
+                      </View>
+                      <View style={styles.historyCardContent}>
+                        <Text style={styles.historyCardTitle} numberOfLines={1}>
+                          {plan.title || `${plan.event_type} in ${plan.city}`}
+                        </Text>
+                        <View style={styles.historyCardMeta}>
+                          <Ionicons name="location-outline" size={12} color={Colors.text.muted} />
+                          <Text style={styles.historyCardCity}>{plan.city}</Text>
+                          <Text style={styles.historyCardDot}>•</Text>
+                          <Text style={styles.historyCardDate}>{formatDate(plan.updated_at)}</Text>
+                        </View>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors.text.muted} />
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+            </ScrollView>
+            
+            <TouchableOpacity 
+              style={styles.newPlanModalButton}
+              onPress={() => {
+                setShowHistoryModal(false);
+                resetFlow();
+              }}
+            >
+              <Ionicons name="add-circle" size={20} color={Colors.background.primary} />
+              <Text style={styles.newPlanModalButtonText}>Start New Plan</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -1398,5 +1498,136 @@ const styles = StyleSheet.create({
   },
   searchButtonTextSecondary: {
     color: Colors.accent.coral,
+  },
+  // History button styles
+  historyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  historyButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.accent.coral,
+  },
+  // History modal styles
+  historyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  historyModal: {
+    backgroundColor: Colors.background.primary,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  historyModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.background.secondary,
+  },
+  historyModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text.primary,
+  },
+  historyCloseButton: {
+    padding: 4,
+  },
+  historyList: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    maxHeight: 400,
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyHistoryText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.secondary,
+    marginTop: 16,
+  },
+  emptyHistorySubtext: {
+    fontSize: 14,
+    color: Colors.text.muted,
+    marginTop: 4,
+  },
+  historyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  historyCardActive: {
+    borderWidth: 1,
+    borderColor: Colors.accent.coral,
+  },
+  historyCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.background.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  historyCardContent: {
+    flex: 1,
+  },
+  historyCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  historyCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historyCardCity: {
+    fontSize: 13,
+    color: Colors.text.muted,
+  },
+  historyCardDot: {
+    fontSize: 13,
+    color: Colors.text.muted,
+    marginHorizontal: 4,
+  },
+  historyCardDate: {
+    fontSize: 13,
+    color: Colors.text.muted,
+  },
+  newPlanModalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.accent.coral,
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  newPlanModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.background.primary,
   },
 });
