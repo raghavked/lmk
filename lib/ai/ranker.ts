@@ -136,7 +136,9 @@ export class AIRanker {
     try {
       let content: string | null = null;
       
-      if (claudeApiKey) {
+      if (openAIApiKey) {
+        content = await this.callOpenAIAPI(systemPrompt, prompt, openAIApiKey);
+      } else if (claudeApiKey) {
         content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
       } else {
         return this.getFallbackRankings(objects, context);
