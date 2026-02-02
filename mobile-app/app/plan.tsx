@@ -39,6 +39,9 @@ interface PlanItem {
   rating?: number;
   price?: string;
   why_perfect?: string;
+  address?: string;
+  cuisine?: string;
+  vibe?: string;
 }
 
 interface Category {
@@ -459,54 +462,75 @@ export default function PlanMyDayScreen() {
                           {cat.items.map((item, itemIdx) => (
                             <TouchableOpacity 
                               key={itemIdx} 
-                              style={styles.objectCard}
+                              style={styles.fullCard}
                               onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
                               activeOpacity={0.9}
                             >
-                              <View style={styles.objectCardHeader}>
-                                <View style={styles.objectCardIconBox}>
+                              <View style={styles.fullCardImageContainer}>
+                                <View style={styles.fullCardImagePlaceholder}>
                                   <Ionicons 
                                     name={getCategoryIcon(cat.type)} 
-                                    size={24} 
+                                    size={48} 
                                     color={Colors.accent.coral} 
                                   />
                                 </View>
-                                <View style={styles.objectCardTitleBox}>
-                                  <Text style={styles.objectCardTitle} numberOfLines={2}>{item.title}</Text>
+                                <View style={styles.fullCardOverlay} />
+                                <View style={styles.fullCardCategoryBadge}>
+                                  <Text style={styles.fullCardCategoryText}>{cat.type}</Text>
+                                </View>
+                              </View>
+                              
+                              <View style={styles.fullCardContent}>
+                                <Text style={styles.fullCardTitle} numberOfLines={2}>{item.title}</Text>
+                                
+                                {(item.cuisine || item.vibe) && (
+                                  <Text style={styles.fullCardTagline} numberOfLines={1}>
+                                    {[item.cuisine, item.vibe].filter(Boolean).join(' · ')}
+                                  </Text>
+                                )}
+                                
+                                {(item.neighborhood || item.address) && (
+                                  <View style={styles.fullCardLocationRow}>
+                                    <Ionicons name="location" size={14} color={Colors.accent.coral} />
+                                    <Text style={styles.fullCardLocationText} numberOfLines={1}>
+                                      {item.address || item.neighborhood}
+                                    </Text>
+                                  </View>
+                                )}
+                                
+                                <Text style={styles.fullCardDescription} numberOfLines={3}>{item.description}</Text>
+                                
+                                <View style={styles.fullCardMetricsRow}>
+                                  {item.rating && (
+                                    <View style={styles.fullCardMetric}>
+                                      <Text style={styles.fullCardMetricLabel}>Rating</Text>
+                                      <View style={styles.fullCardMetricValueRow}>
+                                        <Ionicons name="star" size={12} color="#FFD700" />
+                                        <Text style={styles.fullCardMetricValue}>{item.rating}/5</Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                  {item.price && (
+                                    <View style={styles.fullCardMetric}>
+                                      <Text style={styles.fullCardMetricLabel}>Price</Text>
+                                      <Text style={styles.fullCardMetricValue}>{item.price}</Text>
+                                    </View>
+                                  )}
                                   {item.neighborhood && (
-                                    <View style={styles.objectCardLocation}>
-                                      <Ionicons name="location-outline" size={12} color={Colors.text.secondary} />
-                                      <Text style={styles.objectCardNeighborhood}>{item.neighborhood}</Text>
+                                    <View style={styles.fullCardMetric}>
+                                      <Text style={styles.fullCardMetricLabel}>Area</Text>
+                                      <Text style={styles.fullCardMetricValue} numberOfLines={1}>{item.neighborhood}</Text>
                                     </View>
                                   )}
                                 </View>
-                              </View>
-                              
-                              <Text style={styles.objectCardDescription} numberOfLines={2}>{item.description}</Text>
-                              
-                              <View style={styles.objectCardMetrics}>
-                                {item.rating && (
-                                  <View style={styles.metricBadge}>
-                                    <Ionicons name="star" size={12} color="#FFD700" />
-                                    <Text style={styles.metricText}>{item.rating}</Text>
+                                
+                                {item.why_perfect && (
+                                  <View style={styles.whyPerfectBox}>
+                                    <Ionicons name="sparkles" size={14} color={Colors.accent.coral} />
+                                    <Text style={styles.whyPerfectText}>{item.why_perfect}</Text>
                                   </View>
                                 )}
-                                {item.price && (
-                                  <View style={styles.metricBadge}>
-                                    <Text style={styles.metricText}>{item.price}</Text>
-                                  </View>
-                                )}
-                                <View style={[styles.metricBadge, styles.categoryBadge]}>
-                                  <Text style={styles.categoryBadgeText}>{cat.type}</Text>
-                                </View>
                               </View>
-                              
-                              {item.why_perfect && (
-                                <View style={styles.whyPerfectBox}>
-                                  <Ionicons name="sparkles" size={12} color={Colors.accent.coral} />
-                                  <Text style={styles.whyPerfectText} numberOfLines={2}>{item.why_perfect}</Text>
-                                </View>
-                              )}
                             </TouchableOpacity>
                           ))}
                         </ScrollView>
@@ -918,15 +942,113 @@ const styles = StyleSheet.create({
   whyPerfectBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 6,
+    gap: 8,
     backgroundColor: Colors.accent.coral + '15',
-    padding: 10,
+    padding: 12,
     borderRadius: 10,
+    marginTop: 8,
   },
   whyPerfectText: {
     fontSize: 13,
     color: Colors.accent.coral,
     flex: 1,
     lineHeight: 18,
+  },
+  fullCard: {
+    width: CARD_WIDTH,
+    marginHorizontal: CARD_MARGIN,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  fullCardImageContainer: {
+    height: 120,
+    position: 'relative',
+  },
+  fullCardImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.background.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fullCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  fullCardCategoryBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: Colors.background.primary + 'E6',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  fullCardCategoryText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    textTransform: 'uppercase',
+  },
+  fullCardContent: {
+    padding: 14,
+  },
+  fullCardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  fullCardTagline: {
+    fontSize: 13,
+    color: Colors.accent.coral,
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  fullCardLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+  },
+  fullCardLocationText: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    flex: 1,
+  },
+  fullCardDescription: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  fullCardMetricsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  fullCardMetric: {
+    flex: 1,
+  },
+  fullCardMetricLabel: {
+    fontSize: 10,
+    color: Colors.text.muted,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  fullCardMetricValue: {
+    fontSize: 13,
+    color: Colors.text.primary,
+    fontWeight: '600',
+  },
+  fullCardMetricValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

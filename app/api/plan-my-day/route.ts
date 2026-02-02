@@ -29,9 +29,9 @@ function getSystemPrompt(eventType: string, city: string, dayIntent: string): st
 Reply JSON only. Give 2-3 categories with exactly 3 real venue recommendations each.
 
 Format:
-{"message":"1 sentence summary","categories":[{"type":"Dinner","items":[{"title":"Real Venue Name","description":"Cuisine type and ambiance in 10 words","price":"$$","rating":4.5,"neighborhood":"Area Name","why_perfect":"Why this fits the ${eventType}"}]}]}
+{"message":"1 sentence friendly summary","categories":[{"type":"Dinner","items":[{"title":"Real Venue Name","description":"Full 2-3 sentence description of the venue, cuisine, ambiance, and what makes it special","price":"$$","rating":4.5,"neighborhood":"Area Name","address":"123 Main St","cuisine":"Italian","vibe":"Romantic and cozy","why_perfect":"Why this is perfect for ${eventType}"}]}]}
 
-Categories: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert. Use real venues in ${city}.`;
+Categories: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert. Use real venues in ${city} with accurate details.`;
 }
 
 function getInitialPrompt(eventType: string): string {
