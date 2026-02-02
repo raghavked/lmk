@@ -24,14 +24,9 @@ interface PlanMyDayRequest {
 }
 
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
-  return `You are a concise event planner. Context: ${eventType} in ${city}. User wants: ${dayIntent}
-
-Pick 2-3 relevant categories (Restaurant, Movie, TV Show, Activity, Reading). Give 3 items per category max.
-
-Tone: ${eventType === 'date' ? 'warm' : eventType === 'hangout' ? 'fun' : eventType === 'solo' ? 'calm' : 'neutral'}
-
-RESPOND ONLY WITH VALID JSON:
-{"message":"Brief response","categories":[{"type":"Category","items":[{"title":"Name","description":"Short desc","event_relevance":"Why it fits"}]}]}`;
+  return `Event planner for ${eventType} in ${city}. Intent: ${dayIntent}
+Give 2 categories, 2 items each. JSON only:
+{"message":"1 sentence","categories":[{"type":"Restaurant|Movie|Activity","items":[{"title":"Name","description":"15 words max","event_relevance":"Why it fits"}]}]}`;
 }
 
 function getInitialPrompt(eventType: string): string {
@@ -116,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     const response = await anthropic.messages.create({
       model: 'claude-3-haiku-20240307',
-      max_tokens: 800,
+      max_tokens: 512,
       system: systemPrompt,
       messages: messages,
     });
