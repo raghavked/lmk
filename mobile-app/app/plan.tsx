@@ -141,15 +141,20 @@ export default function PlanMyDayScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       
-      const response = await fetch(`${apiUrl}/api/plan-my-day`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      console.log('[Plan] Loading saved plans...');
+      const response = await fetch(`${apiUrl}/api/plan-my-day/`, {
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'X-Auth-Token': session?.access_token || ''
+        }
       });
       const data = await response.json();
+      console.log('[Plan] Loaded plans:', data.plans?.length || 0);
       if (data.plans) {
         setSavedPlans(data.plans);
       }
     } catch (error) {
-      console.log('Could not load saved plans');
+      console.log('[Plan] Could not load saved plans:', error);
     } finally {
       setLoadingPlans(false);
     }
@@ -163,10 +168,15 @@ export default function PlanMyDayScreen() {
       const { data: { session } } = await supabase.auth.getSession();
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       
-      const response = await fetch(`${apiUrl}/api/plan-my-day?id=${planId}`, {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
+      console.log('[Plan] Loading plan:', planId);
+      const response = await fetch(`${apiUrl}/api/plan-my-day/?id=${planId}`, {
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'X-Auth-Token': session?.access_token || ''
+        }
       });
       const plan = await response.json();
+      console.log('[Plan] Loaded plan:', plan.id, plan.title);
       
       if (plan.id) {
         setSessionId(plan.id);
@@ -187,7 +197,7 @@ export default function PlanMyDayScreen() {
         setStage('chat');
       }
     } catch (error) {
-      console.log('Could not load plan');
+      console.log('[Plan] Could not load plan:', error);
     } finally {
       setLoading(false);
     }
