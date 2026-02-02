@@ -34,12 +34,24 @@ export default function SignupScreen() {
 
     if (error) {
       Alert.alert('Error', error.message);
-    } else if (data.user) {
-      await supabase.from('profiles').upsert({
+      setLoading(false);
+      return;
+    }
+    
+    if (data.user) {
+      // Create profile for new user
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         email: email,
         full_name: fullName,
+        preferences_completed: false,
       });
+      
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Don't block signup - profile can be created later
+      }
+      
       Alert.alert('Success', 'Account created! Please check your email to verify.', [
         { text: 'OK', onPress: () => router.replace('/auth/login') }
       ]);
