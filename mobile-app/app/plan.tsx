@@ -184,14 +184,24 @@ export default function PlanMyDayScreen() {
         setCity(plan.city);
         setDayIntent(plan.day_intent || '');
         
+        // Parse chat history and preserve categories from each message
         const chatMessages: ChatMessage[] = (plan.chat_history || []).map((msg: any) => {
           const parsed: ChatMessage = { role: msg.role, content: msg.content };
+          // Preserve categories if they were saved in the message
+          if (msg.categories && msg.categories.length > 0) {
+            parsed.categories = msg.categories;
+          }
           return parsed;
         });
         
-        if (plan.categories && plan.categories.length > 0 && chatMessages.length > 0) {
+        // If plan has categories at the top level and no message has them yet, add to last message
+        const anyMessageHasCategories = chatMessages.some(m => m.categories && m.categories.length > 0);
+        if (!anyMessageHasCategories && plan.categories && plan.categories.length > 0 && chatMessages.length > 0) {
           chatMessages[chatMessages.length - 1].categories = plan.categories;
         }
+        
+        console.log('[Plan] Loaded chat messages:', chatMessages.length, 'with categories:', 
+          chatMessages.filter(m => m.categories?.length).length);
         
         setMessages(chatMessages);
         setStage('chat');
