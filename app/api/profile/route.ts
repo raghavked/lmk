@@ -2,6 +2,64 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
+// POST - Create profile (uses service role key for reliability)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { user_id, email, full_name } = body;
+
+    if (!user_id || !email) {
+      return NextResponse.json({ error: 'user_id and email are required' }, { status: 400 });
+    }
+
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    
+    if (!serviceRoleKey || !supabaseUrl) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const { createClient } = await import('@supabase/supabase-js');
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    // Check if profile already exists
+    const { data: existingProfile } = await adminClient
+      .from('profiles')
+      .select('id')
+      .eq('id', user_id)
+      .single();
+
+    if (existingProfile) {
+      return NextResponse.json({ profile: existingProfile, message: 'Profile already exists' });
+    }
+
+    // Create new profile
+    const { data: profile, error } = await adminClient
+      .from('profiles')
+      .insert({
+        id: user_id,
+        email: email,
+        full_name: full_name || '',
+        preferences_completed: false,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Profile creation error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    console.log('Profile created via API for user:', user_id);
+    return NextResponse.json({ profile, message: 'Profile created successfully' });
+  } catch (error) {
+    console.error('Profile POST error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const cookieStore = await cookies();
