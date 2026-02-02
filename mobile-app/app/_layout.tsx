@@ -61,6 +61,13 @@ function RootLayoutNav() {
             presentation: 'modal',
           }} 
         />
+        <Stack.Screen 
+          name="plan" 
+          options={{ 
+            title: 'Plan My Day',
+            headerBackTitle: 'Discover',
+          }} 
+        />
       </Stack>
     </>
   );
