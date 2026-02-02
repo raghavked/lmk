@@ -3,8 +3,10 @@ import OpenAI from 'openai';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import axios from 'axios';
 
 const openaiKey = process.env.OPENAI_API_KEY;
+const yelpApiKey = process.env.YELP_API_KEY;
 
 if (!openaiKey) {
   console.warn('Plan My Day: No OpenAI API key configured');
@@ -23,15 +25,107 @@ interface PlanMyDayRequest {
   session_id?: string;
 }
 
+interface YelpBusiness {
+  id: string;
+  name: string;
+  image_url: string;
+  url: string;
+  review_count: number;
+  rating: number;
+  price?: string;
+  location: {
+    address1: string;
+    city: string;
+    state: string;
+    display_address: string[];
+  };
+  categories: { alias: string; title: string }[];
+  distance?: number;
+}
+
+async function searchYelp(query: string, city: string, category?: string): Promise<YelpBusiness | null> {
+  if (!yelpApiKey) return null;
+  
+  try {
+    const params: any = {
+      term: query,
+      location: city,
+      limit: 1,
+    };
+    
+    if (category) {
+      const categoryMap: Record<string, string> = {
+        'Dinner': 'restaurants',
+        'Lunch': 'restaurants',
+        'Drinks': 'bars',
+        'Coffee': 'coffee',
+        'Dessert': 'desserts,bakeries',
+        'Activity': 'active,arts',
+        'Entertainment': 'nightlife,arts',
+      };
+      if (categoryMap[category]) {
+        params.categories = categoryMap[category];
+      }
+    }
+    
+    const response = await axios.get('https://api.yelp.com/v3/businesses/search', {
+      headers: { 'Authorization': `Bearer ${yelpApiKey}` },
+      params,
+    });
+    
+    return response.data.businesses?.[0] || null;
+  } catch (error) {
+    console.log('[Plan My Day] Yelp search failed for:', query);
+    return null;
+  }
+}
+
+async function enrichWithYelpData(categories: any[], city: string, eventType: string): Promise<any[]> {
+  const enrichedCategories = await Promise.all(
+    categories.map(async (cat) => {
+      const enrichedItems = await Promise.all(
+        cat.items.map(async (item: any) => {
+          const yelpData = await searchYelp(item.title, city, cat.type);
+          
+          if (yelpData) {
+            return {
+              title: yelpData.name,
+              description: item.description || `${yelpData.categories.map(c => c.title).join(', ')}. ${yelpData.review_count} reviews on Yelp.`,
+              image_url: yelpData.image_url,
+              rating: yelpData.rating,
+              price: yelpData.price || item.price,
+              address: yelpData.location.address1,
+              neighborhood: yelpData.location.city,
+              cuisine: yelpData.categories.map(c => c.title).join(', '),
+              vibe: item.vibe,
+              why_perfect: item.why_perfect || `Great for your ${eventType}!`,
+              review_count: yelpData.review_count,
+              yelp_url: yelpData.url,
+              yelp_id: yelpData.id,
+            };
+          }
+          
+          return item;
+        })
+      );
+      
+      return { ...cat, items: enrichedItems };
+    })
+  );
+  
+  return enrichedCategories;
+}
+
 function getSystemPrompt(eventType: string, city: string, dayIntent: string): string {
   return `You are a local expert planning a ${eventType} in ${city}. User wants: ${dayIntent}
 
-Reply JSON only. Give 2-3 categories with exactly 3 real venue recommendations each.
+Reply JSON only. Give 2-3 categories with exactly 3 REAL venue/business names that exist in ${city}.
 
 Format:
-{"message":"1 sentence friendly summary","categories":[{"type":"Dinner","items":[{"title":"Real Venue Name","description":"Full 2-3 sentence description of the venue, cuisine, ambiance, and what makes it special","price":"$$","rating":4.5,"neighborhood":"Area Name","address":"123 Main St","cuisine":"Italian","vibe":"Romantic and cozy","why_perfect":"Why this is perfect for ${eventType}"}]}]}
+{"message":"1 sentence friendly summary","categories":[{"type":"Dinner","items":[{"title":"Exact Real Business Name","vibe":"Romantic and cozy","why_perfect":"Why this fits the ${eventType}"}]}]}
 
-Categories: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert. Use real venues in ${city} with accurate details.`;
+IMPORTANT: Use REAL business names that actually exist in ${city}. The names will be looked up in Yelp to get photos and details.
+Categories: Dinner, Lunch, Drinks, Coffee, Activity, Entertainment, Dessert.`;
 }
 
 function getInitialPrompt(eventType: string): string {
@@ -147,6 +241,13 @@ export async function POST(request: NextRequest) {
         message: assistantContent,
         categories: []
       };
+    }
+
+    // Enrich venue data with Yelp API (real images, ratings, addresses)
+    if (parsedResponse.categories && parsedResponse.categories.length > 0) {
+      console.log('[Plan My Day] Enriching with Yelp data, elapsed:', Date.now() - startTime, 'ms');
+      parsedResponse.categories = await enrichWithYelpData(parsedResponse.categories, city, event_type);
+      console.log('[Plan My Day] Yelp enrichment complete, elapsed:', Date.now() - startTime, 'ms');
     }
 
     const updatedHistory = [
