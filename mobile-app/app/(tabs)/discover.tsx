@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, 
-  RefreshControl, Image, Modal, TextInput, Dimensions, Linking, Alert 
+  RefreshControl, Image, Modal, TextInput, Dimensions, Linking, Alert,
+  PanResponder, Animated
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, router } from 'expo-router';
@@ -108,6 +109,38 @@ export default function DiscoverScreen() {
 
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+
+  // Pan responder for swipe up to close modal
+  const modalPanY = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to vertical swipes
+        return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow upward swipes (negative dy)
+        if (gestureState.dy < 0) {
+          modalPanY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // If swiped up more than 100px, close the modal
+        if (gestureState.dy < -100 || (gestureState.dy < -50 && gestureState.vy < -0.5)) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setSelectedItem(null);
+          modalPanY.setValue(0);
+        } else {
+          // Bounce back
+          Animated.spring(modalPanY, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
     checkOnboardingAndPreferences();
@@ -628,14 +661,18 @@ export default function DiscoverScreen() {
         </TouchableOpacity>
       </Modal>
 
-      <Modal visible={!!selectedItem} transparent animationType="slide">
+      <Modal visible={!!selectedItem} transparent animationType="slide" onRequestClose={() => setSelectedItem(null)}>
         <View style={styles.detailModalContainer}>
-          <View style={styles.detailModal}>
+          <Animated.View 
+            style={[styles.detailModal, { transform: [{ translateY: modalPanY }] }]}
+            {...panResponder.panHandlers}
+          >
+            <View style={styles.swipeIndicator} />
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedItem(null)}>
               <Ionicons name="close" size={24} color={Colors.text.primary} />
             </TouchableOpacity>
             {selectedItem && (
-              <ScrollView showsVerticalScrollIndicator={false}>
+              <ScrollView showsVerticalScrollIndicator={false} scrollEventThrottle={16}>
                 {selectedItem.image_url && (
                   <Image source={{ uri: selectedItem.image_url }} style={styles.detailImage} />
                 )}
@@ -711,7 +748,7 @@ export default function DiscoverScreen() {
                 </View>
               </ScrollView>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -1111,6 +1148,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
+  },
+  swipeIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.text.secondary,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
   },
   closeButton: {
     position: 'absolute',
