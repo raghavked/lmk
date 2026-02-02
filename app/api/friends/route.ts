@@ -147,6 +147,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'Friend request rejected' });
     }
 
+    if (action === 'unfriend') {
+      // Delete friendship from both directions
+      const { error: error1 } = await supabaseAdmin
+        .from('friends')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('friend_id', friendId);
+
+      const { error: error2 } = await supabaseAdmin
+        .from('friends')
+        .delete()
+        .eq('user_id', friendId)
+        .eq('friend_id', user.id);
+
+      if (error1 && error2) throw error1;
+      return NextResponse.json({ success: true, message: 'Friend removed' });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
     console.error('Error with friend action:', error);

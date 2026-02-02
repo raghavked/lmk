@@ -24,6 +24,19 @@ interface Message {
   poll_id?: string;
 }
 
+interface GroupInvite {
+  id: string;
+  group_id: string;
+  invited_by: string;
+  created_at: string;
+  groups?: { name: string; description: string };
+}
+
+interface Friend {
+  id: string;
+  full_name: string;
+}
+
 const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'reading', 'activities'];
 
 export default function GroupsScreen() {
@@ -31,11 +44,14 @@ export default function GroupsScreen() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [invites, setInvites] = useState<GroupInvite[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
+  const [showInviteFriend, setShowInviteFriend] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newMessage, setNewMessage] = useState('');
@@ -96,6 +112,7 @@ export default function GroupsScreen() {
       if (response.ok) {
         const data = await response.json();
         setGroups(data.groups || []);
+        setInvites(data.invites || []);
         if (data.groups && data.groups.length > 0 && !selectedGroup) {
           setSelectedGroup(data.groups[0]);
         }
@@ -236,6 +253,125 @@ export default function GroupsScreen() {
     }
   };
 
+  const loadFriends = async () => {
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFriends(data.friends || []);
+      }
+    } catch (err) {
+      console.error('Error loading friends:', err);
+    }
+  };
+
+  const handleInviteFriend = async (friendId: string) => {
+    if (!selectedGroup) return;
+
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/groups`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+        body: JSON.stringify({
+          action: 'invite',
+          groupId: selectedGroup.id,
+          userId: friendId,
+        }),
+      });
+
+      if (response.ok) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Success', 'Invite sent!');
+        setShowInviteFriend(false);
+      } else {
+        const data = await response.json();
+        Alert.alert('Error', data.error || 'Could not send invite');
+      }
+    } catch (err) {
+      console.error('Error inviting friend:', err);
+      Alert.alert('Error', 'Something went wrong');
+    }
+  };
+
+  const handleAcceptInvite = async (inviteId: string) => {
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/groups`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+        body: JSON.stringify({
+          action: 'accept_invite',
+          inviteId,
+        }),
+      });
+
+      if (response.ok) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('Success', 'You joined the group!');
+        loadGroups();
+      }
+    } catch (err) {
+      console.error('Error accepting invite:', err);
+    }
+  };
+
+  const handleRejectInvite = async (inviteId: string) => {
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/groups`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+        body: JSON.stringify({
+          action: 'reject_invite',
+          inviteId,
+        }),
+      });
+
+      if (response.ok) {
+        loadGroups();
+      }
+    } catch (err) {
+      console.error('Error rejecting invite:', err);
+    }
+  };
+
   const categoryLabels: Record<string, string> = {
     restaurants: '🍽️ Restaurants',
     movies: '🎬 Movies',
@@ -286,7 +422,35 @@ export default function GroupsScreen() {
         </TouchableOpacity>
       </View>
 
-      {groups.length === 0 ? (
+      {invites.length > 0 && (
+        <View style={styles.invitesSection}>
+          <Text style={styles.invitesTitle}>Pending Invites</Text>
+          {invites.map((invite) => (
+            <View key={invite.id} style={styles.inviteCard}>
+              <View style={styles.inviteInfo}>
+                <Text style={styles.inviteGroupName}>{invite.groups?.name || 'Group'}</Text>
+                <Text style={styles.inviteDesc}>{invite.groups?.description || 'You\'ve been invited!'}</Text>
+              </View>
+              <View style={styles.inviteActions}>
+                <TouchableOpacity 
+                  style={styles.acceptBtn} 
+                  onPress={() => handleAcceptInvite(invite.id)}
+                >
+                  <Text style={styles.acceptBtnText}>Join</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.declineBtn} 
+                  onPress={() => handleRejectInvite(invite.id)}
+                >
+                  <Ionicons name="close" size={18} color="#F44336" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {groups.length === 0 && invites.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No groups yet</Text>
           <TouchableOpacity style={styles.createBtn} onPress={() => setShowCreateGroup(true)}>
@@ -313,9 +477,20 @@ export default function GroupsScreen() {
             <>
               <View style={styles.groupHeader}>
                 <Text style={styles.groupName}>{selectedGroup.name}</Text>
-                <TouchableOpacity style={styles.pollBtn} onPress={() => setShowCreatePoll(true)}>
-                  <Text style={styles.pollBtnText}>📊 Poll</Text>
-                </TouchableOpacity>
+                <View style={styles.groupHeaderActions}>
+                  <TouchableOpacity 
+                    style={styles.inviteBtn} 
+                    onPress={() => {
+                      loadFriends();
+                      setShowInviteFriend(true);
+                    }}
+                  >
+                    <Ionicons name="person-add-outline" size={16} color={Colors.accent.coral} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.pollBtn} onPress={() => setShowCreatePoll(true)}>
+                    <Text style={styles.pollBtnText}>📊 Poll</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <ScrollView style={styles.messagesContainer}>
@@ -414,6 +589,37 @@ export default function GroupsScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={showInviteFriend} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Invite Friend</Text>
+            <Text style={styles.modalSubtitle}>Select a friend to invite to {selectedGroup?.name}</Text>
+            <ScrollView style={styles.friendsList}>
+              {friends.length === 0 ? (
+                <Text style={styles.noFriendsText}>No friends to invite. Add some friends first!</Text>
+              ) : (
+                friends.map((friend) => (
+                  <TouchableOpacity 
+                    key={friend.id} 
+                    style={styles.friendItem}
+                    onPress={() => handleInviteFriend(friend.id)}
+                  >
+                    <View style={styles.friendAvatar}>
+                      <Text style={styles.friendAvatarText}>{friend.full_name[0]?.toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.friendItemName}>{friend.full_name}</Text>
+                    <Ionicons name="add-circle-outline" size={24} color={Colors.accent.coral} />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity style={styles.closeModalBtn} onPress={() => setShowInviteFriend(false)}>
+              <Text style={styles.closeModalBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -506,6 +712,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text.primary,
   },
+  groupHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inviteBtn: {
+    padding: 8,
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: 6,
+  },
   pollBtn: {
     backgroundColor: Colors.background.secondary,
     paddingHorizontal: 12,
@@ -514,6 +730,57 @@ const styles = StyleSheet.create({
   },
   pollBtnText: {
     color: Colors.text.primary,
+  },
+  invitesSection: {
+    padding: 16,
+    backgroundColor: Colors.background.secondary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  invitesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.accent.coral,
+    marginBottom: 12,
+  },
+  inviteCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  inviteInfo: {
+    flex: 1,
+  },
+  inviteGroupName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  inviteDesc: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  inviteActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  acceptBtn: {
+    backgroundColor: Colors.accent.coral,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  acceptBtnText: {
+    color: Colors.background.primary,
+    fontWeight: '600',
+  },
+  declineBtn: {
+    padding: 8,
   },
   messagesContainer: {
     flex: 1,
@@ -635,5 +902,53 @@ const styles = StyleSheet.create({
   confirmBtnText: {
     color: Colors.background.primary,
     fontWeight: '600',
+  },
+  modalSubtitle: {
+    color: Colors.text.secondary,
+    marginBottom: 16,
+    fontSize: 14,
+  },
+  friendsList: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  noFriendsText: {
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    padding: 20,
+  },
+  friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  friendAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.accent.coral,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  friendAvatarText: {
+    color: Colors.background.primary,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  friendItemName: {
+    flex: 1,
+    color: Colors.text.primary,
+    fontSize: 16,
+  },
+  closeModalBtn: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  closeModalBtnText: {
+    color: Colors.text.secondary,
+    fontSize: 16,
   },
 });
