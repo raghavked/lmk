@@ -410,18 +410,19 @@ export default function PlanMyDayScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* History button - always visible at top */}
-        {savedPlans.length > 0 && (
-          <TouchableOpacity 
-            style={styles.historyButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setShowHistoryModal(true);
-            }}
-          >
-            <Ionicons name="time-outline" size={18} color={Colors.accent.coral} />
-            <Text style={styles.historyButtonText}>My Plans ({savedPlans.length})</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity 
+          style={styles.historyButton}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowHistoryModal(true);
+            loadSavedPlans();
+          }}
+        >
+          <Ionicons name="time-outline" size={18} color={Colors.accent.coral} />
+          <Text style={styles.historyButtonText}>
+            {loadingPlans ? 'Loading...' : savedPlans.length > 0 ? `My Plans (${savedPlans.length})` : 'My Plans'}
+          </Text>
+        </TouchableOpacity>
 
         {stage === 'event_select' ? (
           <View style={styles.eventSelection}>
