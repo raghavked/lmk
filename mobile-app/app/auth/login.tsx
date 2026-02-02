@@ -23,9 +23,30 @@ export default function LoginScreen() {
 
     if (error) {
       Alert.alert('Error', error.message);
-    } else {
-      router.replace('/(tabs)/discover');
+      setLoading(false);
+      return;
     }
+    
+    // Ensure profile exists (fallback for users who signed up before profiles were auto-created)
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (!existingProfile) {
+        await supabase.from('profiles').insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          preferences_completed: false,
+        });
+      }
+    }
+    
+    router.replace('/(tabs)/discover');
     setLoading(false);
   };
 
