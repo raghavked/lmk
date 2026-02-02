@@ -1,0 +1,612 @@
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+[Recommend API] Fetching additional items from expanded radius (20 mi)...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=32180, userLat=38.54773303367617, userLng=-121.76377976470695
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:222:30)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+[Recommend API] Fetching additional items from expanded radius (20 mi)...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=32180, userLat=38.54773303367617, userLng=-121.76377976470695
+[Recommend API] Fetching additional items from expanded radius (20 mi)...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=32180, userLat=38.54773303367617, userLng=-121.76377976470695
+[Recommend API] Fetching additional items from expanded radius (20 mi)...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=32180, userLat=38.54773303367617, userLng=-121.76377976470695
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+[Recommend API] Added 0 items from expanded radius
+[Recommend API] Got 20 recommendations after filtering (excluded 0 seen)
+[Recommend API] Starting AI ranking...
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:229:37)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+[Recommend API] Added 0 items from expanded radius
+[Recommend API] Got 10 recommendations after filtering (excluded 0 seen)
+[Recommend API] Not enough items (10/20), fetching more...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=16090, userLat=38.54773303367617, userLng=-121.76377976470695
+[Recommend API] Added 0 items from expanded radius
+[Recommend API] Got 10 recommendations after filtering (excluded 0 seen)
+[Recommend API] Not enough items (10/20), fetching more...
+[Yelp API] getRecommendations called with lat=38.54773303367617, lng=-121.76377976470695, radius=16090, userLat=38.54773303367617, userLng=-121.76377976470695
+[Recommend API] Added 20 items from expanded radius
+[Recommend API] Got 20 recommendations after filtering (excluded 0 seen)
+[Recommend API] Starting AI ranking...
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:268:27)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:268:27)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+Yelp API error: Error [AxiosError]: Request failed with status code 429
+    at async YelpAPI.search (lib/api/yelp.ts:48:24)
+    at async YelpAPI.getAllRestaurantSections (lib/api/yelp.ts:78:56)
+    at async YelpAPI.getRecommendations (lib/api/yelp.ts:129:27)
+    at async fetchFromAPI (app/api/recommend/route.ts:199:14)
+    at async GET (app/api/recommend/route.ts:268:27)
+  46 |       }
+  47 |       
+> 48 |       const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+     |                        ^
+  49 |         headers: {
+  50 |           'Authorization': `Bearer ${this.apiKey}`,
+  51 |         }, {
+  isAxiosError: true,
+  code: 'ERR_BAD_REQUEST',
+  config: [Object],
+  request: [ClientRequest],
+  response: [Object],
+  status: 429
+}
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+[Recommend API] Starting AI ranking...
+[Recommend API] Starting AI ranking...
+[AIRanker] Using cached AI response for batch 1
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+[Recommend API] User location: 38.54773303367617, -121.76377976470695
+[Recommend API] First result location: lat=38.5616759678951, lng=-121.493236938766, distance=14.65 mi
+[Recommend API] Filtered by distance: 20 -> 20 (requested 10 mi, tolerance 20.0 mi)
+[Recommend API] Returning 20 results (offset: 0, limit: 20, total: 20)
+ GET /api/recommend/?category=restaurants&limit=20&offset=0&sort_by=personalized_score&mode=discover&lat=38.54773303367617&lng=-121.76377976470695&radius=16090 200 in 3.7s (compile: 232ms, render: 3.5s)
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+[Recommend API] User location: 38.54773303367617, -121.76377976470695
+[Recommend API] First result location: lat=38.5616759678951, lng=-121.493236938766, distance=14.65 mi
+[Recommend API] Filtered by distance: 20 -> 20 (requested 10 mi, tolerance 20.0 mi)
+[Recommend API] Returning 20 results (offset: 0, limit: 20, total: 20)
+ GET /api/recommend/?category=restaurants&limit=20&offset=0&sort_by=personalized_score&mode=discover&lat=38.54773303367617&lng=-121.76377976470695&radius=16090 200 in 3.8s (compile: 219ms, render: 3.6s)
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+[Recommend API] User location: 38.54773303367617, -121.76377976470695
+[Recommend API] First result location: lat=38.5616759678951, lng=-121.493236938766, distance=14.65 mi
+[Recommend API] Filtered by distance: 20 -> 17 (requested 10 mi, tolerance 20.0 mi)
+[Recommend API] Returning 17 results (offset: 0, limit: 20, total: 17)
+ GET /api/recommend/?category=restaurants&limit=20&offset=0&sort_by=personalized_score&mode=discover&lat=38.54773303367617&lng=-121.76377976470695&radius=16090 200 in 3.9s (compile: 192ms, render: 3.8s)
+AI ranking error: Error: Claude API error: model: claude-3-5-haiku-20241022
+    at AIRanker.callClaudeAPI (lib/ai/ranker.ts:268:13)
+    at async AIRanker.rankBatch (lib/ai/ranker.ts:140:19)
+    at async AIRanker.rank (lib/ai/ranker.ts:109:28)
+    at async GET (app/api/recommend/route.ts:301:23)
+  266 |     if (!response.ok) {
+  267 |       const errorData = await response.json();
+> 268 |       throw new Error(`Claude API error: ${errorData.error?.message || response.statusText}`);
+      |             ^
+  269 |     }
+  270 |
+  271 |     const data = await response.json();
+[AIRanker] Using cached AI response for batch 2
+[Recommend API] User location: 38.54773303367617, -121.76377976470695
+[Recommend API] First result location: lat=38.54667, lng=-121.76104, distance=0.17 mi
+[Recommend API] Filtered by distance: 20 -> 20 (requested 10 mi, tolerance 20.0 mi)
+[Recommend API] Returning 20 results (offset: 0, limit: 20, total: 20)
+ GET /api/recommend/?category=restaurants&limit=20&offset=0&sort_by=personalized_score&mode=discover&lat=38.54773303367617&lng=-121.76377976470695&radius=16090 200

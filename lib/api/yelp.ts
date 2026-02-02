@@ -13,16 +13,56 @@ interface YelpSearchParams {
   attributes?: string;
 }
 
+interface CacheEntry {
+  data: any[];
+  timestamp: number;
+}
+
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const searchCache = new Map<string, CacheEntry>();
+
+function roundCoord(coord: number): number {
+  return Math.round(coord * 100) / 100; // Round to 2 decimal places (~1km precision)
+}
+
+function getCacheKey(params: any): string {
+  const lat = roundCoord(params.latitude);
+  const lng = roundCoord(params.longitude);
+  const radius = Math.round(params.radius / 1000); // Round radius to km
+  return `${lat},${lng},${radius},${params.term || ''},${params.sort_by || ''},${params.categories || ''},${params.attributes || ''}`;
+}
+
 export class YelpAPI {
   private baseUrl = 'https://api.yelp.com/v3';
   private apiKey: string;
+  private lastRequestTime = 0;
+  private minRequestInterval = 200; // 200ms between requests
   
   constructor() {
     this.apiKey = process.env.YELP_API_KEY!;
   }
+
+  private async throttle() {
+    const now = Date.now();
+    const elapsed = now - this.lastRequestTime;
+    if (elapsed < this.minRequestInterval) {
+      await new Promise(resolve => setTimeout(resolve, this.minRequestInterval - elapsed));
+    }
+    this.lastRequestTime = Date.now();
+  }
   
   async search(params: YelpSearchParams) {
+    const cacheKey = getCacheKey(params);
+    const cached = searchCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.log('[Yelp API] Cache hit for:', cacheKey.substring(0, 50));
+      return cached.data;
+    }
+
     try {
+      await this.throttle();
+      
       const queryParams: any = {
         latitude: params.latitude,
         longitude: params.longitude,
@@ -52,8 +92,14 @@ export class YelpAPI {
         params: queryParams,
       });
       
-      return response.data.businesses.map(this.normalize);
-    } catch (error) {
+      const results = response.data.businesses.map(this.normalize);
+      searchCache.set(cacheKey, { data: results, timestamp: Date.now() });
+      return results;
+    } catch (error: any) {
+      if (error?.response?.status === 429) {
+        console.warn('[Yelp API] Rate limited, returning cached data if available');
+        if (cached) return cached.data;
+      }
       console.error('Yelp API error:', error);
       return [];
     }
