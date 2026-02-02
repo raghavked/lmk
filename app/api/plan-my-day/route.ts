@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!userId) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return NextResponse.json({ plans: [] });
     }
 
     const requestUrl = new URL(request.url);
