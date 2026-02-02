@@ -136,10 +136,10 @@ export class AIRanker {
     try {
       let content: string | null = null;
       
-      if (openAIApiKey) {
-        content = await this.callOpenAIAPI(systemPrompt, prompt, openAIApiKey);
-      } else if (claudeApiKey) {
+      if (claudeApiKey) {
         content = await this.callClaudeAPI(systemPrompt, prompt, claudeApiKey);
+      } else if (openAIApiKey) {
+        content = await this.callOpenAIAPI(systemPrompt, prompt, openAIApiKey);
       } else {
         return this.getFallbackRankings(objects, context);
       }
@@ -255,7 +255,7 @@ export class AIRanker {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         system: systemPrompt,
         messages: [
           { role: 'user', content: userPrompt }
