@@ -151,9 +151,35 @@ export default function DiscoverScreen() {
   ];
   
   const filteredCities = citySearchQuery.length > 0 
-    ? POPULAR_CITIES.filter(city => 
-        city.name.toLowerCase().includes(citySearchQuery.toLowerCase())
-      ).slice(0, 5)
+    ? (() => {
+        const query = citySearchQuery.toLowerCase().trim();
+        
+        // Separate into prefix matches (start with query) and contains matches
+        const prefixMatches = POPULAR_CITIES.filter(city => 
+          city.name.toLowerCase().startsWith(query)
+        );
+        
+        const containsMatches = POPULAR_CITIES.filter(city => {
+          const name = city.name.toLowerCase();
+          // Include if contains but doesn't start with (avoid duplicates)
+          return !name.startsWith(query) && name.includes(query);
+        });
+        
+        // Also match city name after comma (state abbreviation or city after ", ")
+        const afterCommaMatches = POPULAR_CITIES.filter(city => {
+          const parts = city.name.split(', ');
+          if (parts.length > 1) {
+            const afterComma = parts[1].toLowerCase();
+            return afterComma.startsWith(query) && 
+              !city.name.toLowerCase().startsWith(query) &&
+              !city.name.toLowerCase().includes(query);
+          }
+          return false;
+        });
+        
+        // Prioritize: exact prefix > city name prefix > state prefix > contains anywhere
+        return [...prefixMatches, ...afterCommaMatches, ...containsMatches].slice(0, 6);
+      })()
     : [];
 
   // Pan responder for swipe DOWN to close modal (attached to handle area)
@@ -681,16 +707,33 @@ export default function DiscoverScreen() {
             />
             {showCitySuggestions && filteredCities.length > 0 && (
               <View style={styles.citySuggestionsDropdown}>
-                {filteredCities.map((city, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.citySuggestionItem}
-                    onPress={() => handleCitySelect(city)}
-                  >
-                    <Ionicons name="location-outline" size={14} color={Colors.accent.coral} />
-                    <Text style={styles.citySuggestionText}>{city.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {filteredCities.map((city, index) => {
+                  const query = citySearchQuery.toLowerCase().trim();
+                  const name = city.name;
+                  const lowerName = name.toLowerCase();
+                  const matchIndex = lowerName.indexOf(query);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.citySuggestionItem}
+                      onPress={() => handleCitySelect(city)}
+                    >
+                      <Ionicons name="location-outline" size={14} color={Colors.accent.coral} />
+                      {matchIndex >= 0 ? (
+                        <Text style={styles.citySuggestionText}>
+                          {name.substring(0, matchIndex)}
+                          <Text style={styles.citySuggestionMatch}>
+                            {name.substring(matchIndex, matchIndex + query.length)}
+                          </Text>
+                          {name.substring(matchIndex + query.length)}
+                        </Text>
+                      ) : (
+                        <Text style={styles.citySuggestionText}>{name}</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -1101,6 +1144,10 @@ const styles = StyleSheet.create({
   citySuggestionText: {
     color: Colors.text.primary,
     fontSize: 13,
+  },
+  citySuggestionMatch: {
+    color: Colors.accent.coral,
+    fontWeight: '600',
   },
   resetLocationButton: {
     backgroundColor: Colors.background.secondary,
