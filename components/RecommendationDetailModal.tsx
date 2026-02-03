@@ -79,9 +79,23 @@ export default function RecommendationDetailModal({
   const imageUrl = object.primary_image?.url || object.image_url;
   const displayTags = explanation?.tags || object.tags || [];
 
+  // Handle backdrop click to close
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-background-secondary rounded-[32px] border border-gray-700 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Swipe handle indicator */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+        </div>
         {/* Header with Close Button */}
         <div className="sticky top-0 flex justify-between items-center p-6 border-b border-gray-700 bg-background-secondary/95 backdrop-blur">
           <h2 className="text-2xl font-bold text-gray-50">Recommendation Details</h2>
