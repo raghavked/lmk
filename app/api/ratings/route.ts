@@ -1,18 +1,43 @@
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+async function authenticateRequest(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  const xAuthToken = request.headers.get('X-Auth-Token');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+
+  if (token) {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      return { user, supabase: supabaseAdmin };
+    }
+  }
+
   const cookieStore = await cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.user) {
+    return { user: session.user, supabase };
+  }
+  
+  return null;
+}
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
+export async function POST(request: Request) {
+  const auth = await authenticateRequest(request);
+  if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  
+  const { user, supabase } = auth;
 
   try {
     const body = await request.json();
@@ -26,12 +51,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
     }
 
-    console.log(`[Ratings API] Creating/updating rating for user ${session.user.id}, item: ${item_title}`);
-
     const { data: existingRating } = await supabase
       .from('ratings')
       .select('id')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .eq('item_id', item_id)
       .single();
 
@@ -52,7 +75,7 @@ export async function POST(request: Request) {
       result = await supabase
         .from('ratings')
         .insert({
-          user_id: session.user.id,
+          user_id: user.id,
           item_id,
           item_title,
           category,
@@ -69,7 +92,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Error saving rating' }, { status: 500 });
     }
 
-    console.log(`[Ratings API] Rating saved successfully`);
     return NextResponse.json({ rating: result.data });
   } catch (error) {
     console.error('[Ratings API] Fatal error:', error);
@@ -81,27 +103,20 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const auth = await authenticateRequest(request);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  
+  const { user, supabase } = auth;
   const requestUrl = new URL(request.url);
   const type = requestUrl.searchParams.get('type') || 'all';
 
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    console.log(`[Ratings API] Fetching ${type} ratings for user ${session.user.id}`);
-
     let query = supabase
       .from('ratings')
       .select('*')
-      .eq('user_id', session.user.id);
+      .eq('user_id', user.id);
 
     if (type === 'favorites') {
       query = query.eq('is_favorite', true);
@@ -114,7 +129,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Error fetching ratings' }, { status: 500 });
     }
 
-    console.log(`[Ratings API] Returning ${ratings?.length || 0} ratings`);
     return NextResponse.json({ ratings: ratings || [] });
   } catch (error) {
     console.error('[Ratings API] Fatal error:', error);
