@@ -56,7 +56,6 @@ export default function LoginScreen() {
             id: user.id,
             email: user.email,
             full_name: user.user_metadata?.full_name || '',
-            preferences_completed: false,
           });
           
           if (insertError) {
@@ -70,7 +69,6 @@ export default function LoginScreen() {
             id: user.id,
             email: user.email,
             full_name: user.user_metadata?.full_name || '',
-            preferences_completed: false,
           });
           if (insertError && insertError.code !== '23505') {
             console.error('Profile insert error:', JSON.stringify(insertError));

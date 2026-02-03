@@ -220,25 +220,23 @@ export default function QuizScreen() {
         .single();
 
       if (fetchError && fetchError.code === 'PGRST116') {
-        // Profile doesn't exist, create it
+        // Profile doesn't exist, create it with just taste_profile
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: session.user.id,
             email: session.user.email,
             taste_profile: preferences,
-            preferences_completed: true,
           });
         if (insertError) throw insertError;
       } else if (fetchError) {
         throw fetchError;
       } else {
-        // Profile exists, update it
+        // Profile exists, update just taste_profile
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
             taste_profile: preferences,
-            preferences_completed: true,
           })
           .eq('id', session.user.id);
         if (updateError) throw updateError;
