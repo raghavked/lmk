@@ -11,22 +11,32 @@ const { width } = Dimensions.get('window');
 const STEPS = [
   {
     title: 'Welcome to LMK',
-    description: 'Get personalized recommendations tailored to your unique taste',
+    description: 'Your personal AI-powered recommendation engine for discovering amazing restaurants, movies, TV shows, books, and activities',
     emoji: '✨',
   },
   {
-    title: 'Browse Categories',
-    description: 'Explore Restaurants, Movies, TV Shows, Reading, and Activities',
-    emoji: '🎯',
+    title: 'Discover Tab',
+    description: 'Browse personalized recommendations across 5 categories. Search, filter by distance, and tap any item to see details and ratings',
+    emoji: '🔍',
   },
   {
-    title: 'Personalized for You',
-    description: 'Each recommendation is curated based on your preferences and interests',
-    emoji: '🎁',
+    title: 'Decide Tab',
+    description: 'Swipe right to save items you love, left to skip. Build your personal favorites list with quick, fun swipe decisions',
+    emoji: '👆',
   },
   {
-    title: 'Rate & Refine',
-    description: 'Your ratings help us improve future recommendations just for you',
+    title: 'Plan My Day',
+    description: 'Chat with AI to plan the perfect day. Get restaurant suggestions, activity ideas, and complete itineraries based on your preferences',
+    emoji: '📅',
+  },
+  {
+    title: 'Social Features',
+    description: 'Connect with friends, share recommendations, create groups, and see what your friends are loving. Vote on group decisions with polls',
+    emoji: '👥',
+  },
+  {
+    title: 'Your Profile',
+    description: 'View your ratings, favorites, and taste profile. Customize your preferences anytime to get even better recommendations',
     emoji: '⭐',
   },
 ];
