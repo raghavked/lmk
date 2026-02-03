@@ -175,15 +175,17 @@ export async function GET(request: Request) {
     const now = Date.now();
     
     // OPTIMIZATION: Check if we have cached ranked results for pagination
-    if (rankedCached && (now - rankedCached.timestamp) < CACHE_TTL && rankedCached.data.length > offset) {
+    // Only use cache if we have enough items for this page
+    if (rankedCached && (now - rankedCached.timestamp) < CACHE_TTL && rankedCached.data.length >= offset + limit) {
       console.log(`[Recommend API] Using cached ranked results (${rankedCached.data.length} items, offset ${offset})`);
       const paginatedResults = rankedCached.data.slice(offset, offset + limit);
+      // Always indicate hasMore=true to allow endless scrolling (we'll fetch more when needed)
       return NextResponse.json({ 
         results: paginatedResults,
-        total: rankedCached.total,
+        total: Math.max(rankedCached.total, 1000), // Indicate more available
         offset,
         limit,
-        hasMore: offset + limit < rankedCached.total,
+        hasMore: true, // Always allow loading more
       });
     }
 
@@ -214,26 +216,42 @@ export async function GET(request: Request) {
     const isLocationBased = category === 'restaurants' || category === 'activities';
     const requestedRadius = radius ? parseInt(radius) : 16000; // Default ~10 miles in meters
     
-    // OPTIMIZATION: Only fetch what we need - limit + small buffer for filtering
-    // Don't over-fetch to avoid slow AI ranking
-    const neededItems = limit + 30; // Just enough for current page + filter buffer
+    // Calculate what offset to fetch from the external API
+    // This allows endless scrolling by fetching new pages
+    const apiOffset = offset > 0 ? offset : 0;
     
-    if (cached && (now - cached.timestamp) < CACHE_TTL) {
-      // Use cached data - no need to refetch
+    // Try to use cached raw data first, but fetch more if needed for this offset
+    const haveSufficientCache = cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length >= offset + limit + 20;
+    
+    if (haveSufficientCache) {
       console.log(`[Recommend API] Using cached data for ${category} (${cached.data.length} items)`);
       rawRecommendations = [...cached.data];
     } else {
-      console.log(`[Recommend API] Fetching fresh recommendations from ${category} API (need ${neededItems} items)...`);
+      console.log(`[Recommend API] Fetching recommendations from ${category} API at offset ${apiOffset}...`);
       try {
-        // Fetch just one page - fast initial load
-        const pageResults = await fetchFromAPI(50, undefined, offset);
-        rawRecommendations = pageResults;
-        console.log(`[Recommend API] Fetched ${pageResults.length} items`);
+        // Start with existing cached data if available
+        if (cached && cached.data.length > 0) {
+          rawRecommendations = [...cached.data];
+        }
         
+        // Fetch new page at the required offset
+        const pageResults = await fetchFromAPI(50, undefined, apiOffset);
+        
+        // Add new unique items to our collection
+        const existingIds = new Set(rawRecommendations.map((r: any) => r.id));
+        const newItems = pageResults.filter((r: any) => !existingIds.has(r.id));
+        rawRecommendations = [...rawRecommendations, ...newItems];
+        
+        console.log(`[Recommend API] Fetched ${pageResults.length} items, ${newItems.length} new (total: ${rawRecommendations.length})`);
+        
+        // Update cache with expanded data
         recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
       } catch (apiError) {
         console.error(`Error fetching from ${category} API:`, apiError);
-        rawRecommendations = [];
+        // Fall back to cached data if available
+        if (cached) {
+          rawRecommendations = [...cached.data];
+        }
       }
     }
 
@@ -424,14 +442,18 @@ export async function GET(request: Request) {
 
     // Apply offset-based pagination
     const paginatedResults = rankedResults.slice(offset, offset + limit);
+    
+    // Determine if more results are available
+    // Always allow loading more unless we got fewer results than requested (API exhausted)
+    const hasMoreResults = paginatedResults.length >= limit;
 
     console.log(`[Recommend API] Returning ${paginatedResults.length} results (offset: ${offset}, limit: ${limit}, total: ${rankedResults.length})`);
     return NextResponse.json({ 
       results: paginatedResults,
-      total: rankedResults.length,
+      total: Math.max(rankedResults.length, 1000), // Indicate more available from API
       offset,
       limit,
-      hasMore: offset + limit < rankedResults.length,
+      hasMore: hasMoreResults, // Allow endless scrolling as long as we have results
     });
   } catch (error) {
     console.error('[Recommend API] Fatal error:', error);
