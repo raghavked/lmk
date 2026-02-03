@@ -76,7 +76,6 @@ export default function SignupScreen() {
             id: userData.user.id,
             email: trimmedEmail,
             full_name: trimmedName,
-            preferences_completed: false,
           });
         
         if (profileError) {

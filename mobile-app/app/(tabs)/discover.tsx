@@ -163,10 +163,10 @@ export default function DiscoverScreen() {
       // First check if walkthrough was seen (using AsyncStorage)
       const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
       
-      // Try to fetch the profile
+      // Try to fetch the profile - only fetch taste_profile to avoid schema cache issues
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('taste_profile, preferences_completed')
+        .select('taste_profile')
         .eq('id', session.user.id)
         .single();
 
@@ -181,7 +181,6 @@ export default function DiscoverScreen() {
             id: session.user.id,
             email: session.user.email,
             full_name: session.user.user_metadata?.full_name || '',
-            preferences_completed: false,
           });
         }
         
