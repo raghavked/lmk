@@ -35,7 +35,8 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    AsyncStorage.setItem('lmk_onboarding_completed', 'true').catch(() => {
+    // Mark onboarding as seen - this only happens once ever
+    AsyncStorage.setItem('lmk_onboarding_seen', 'true').catch(() => {
       console.log('Could not save walkthrough status');
     });
   }, []);
