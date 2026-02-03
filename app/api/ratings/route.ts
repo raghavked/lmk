@@ -51,11 +51,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Rating must be between 1 and 5' }, { status: 400 });
     }
 
+    // Note: database column is 'object_id', not 'item_id'
     const { data: existingRating } = await supabase
       .from('ratings')
       .select('id')
       .eq('user_id', user.id)
-      .eq('item_id', item_id)
+      .eq('object_id', item_id)
       .single();
 
     let result;
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
         .from('ratings')
         .insert({
           user_id: user.id,
-          item_id,
+          object_id: item_id, // Map item_id to object_id column
           item_title,
           category,
           rating,
