@@ -230,6 +230,18 @@ export async function GET(request: Request) {
       }
     }
 
+    // Build set of already-rated item IDs to exclude from results
+    const ratedItemIds = new Set<string>();
+    if (userRatings && userRatings.length > 0) {
+      for (const rating of userRatings) {
+        if (rating.item_id) {
+          ratedItemIds.add(String(rating.item_id));
+        }
+      }
+      console.log(`[Recommend API] User has rated ${ratedItemIds.size} items - will exclude from results`);
+    }
+    
+    // Filter out seen IDs and already-rated items
     if (seenIds.length > 0) {
       rawRecommendations = rawRecommendations.filter((r: any) => !seenIds.includes(r.id));
     }
@@ -240,14 +252,15 @@ export async function GET(request: Request) {
     
     for (const item of rawRecommendations) {
       const itemId = String(item.id);
-      if (!seenSet.has(itemId) && !resultIds.has(itemId)) {
+      // Skip if already seen, duplicate, or already rated by user
+      if (!seenSet.has(itemId) && !resultIds.has(itemId) && !ratedItemIds.has(itemId)) {
         uniqueResults.push(item);
         resultIds.add(itemId);
       }
     }
     rawRecommendations = uniqueResults;
 
-    console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering (excluded ${seenIds.length} seen)`);
+    console.log(`[Recommend API] Got ${rawRecommendations.length} recommendations after filtering (excluded ${seenIds.length} seen, ${ratedItemIds.size} rated)`);
     
     if (rawRecommendations.length < limit) {
       console.log(`[Recommend API] Not enough items (${rawRecommendations.length}/${limit}), fetching more...`);
