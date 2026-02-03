@@ -17,10 +17,15 @@ const API_MAP: Record<string, any> = {
 };
 
 const recommendationCache = new Map<string, { data: any[], timestamp: number }>();
+const rankedResultsCache = new Map<string, { data: any[], timestamp: number, total: number }>();
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better performance at scale
 
 function getCacheKey(category: string, lat?: string | null, lng?: string | null, radius?: string | null, query?: string): string {
   return `${category}:${lat || ''}:${lng || ''}:${radius || ''}:${query || ''}`;
+}
+
+function getRankedCacheKey(category: string, lat?: string | null, lng?: string | null, radius?: string | null, query?: string, userId?: string): string {
+  return `ranked:${userId || 'anon'}:${category}:${lat || ''}:${lng || ''}:${radius || ''}:${query || ''}`;
 }
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -164,8 +169,23 @@ export async function GET(request: Request) {
     const lng = requestUrl.searchParams.get('lng');
     const radius = requestUrl.searchParams.get('radius');
     const cacheKey = getCacheKey(category, lat, lng, radius, query);
+    const rankedCacheKey = getRankedCacheKey(category, lat, lng, radius, query, session.user.id);
     const cached = recommendationCache.get(cacheKey);
+    const rankedCached = rankedResultsCache.get(rankedCacheKey);
     const now = Date.now();
+    
+    // OPTIMIZATION: Check if we have cached ranked results for pagination
+    if (rankedCached && (now - rankedCached.timestamp) < CACHE_TTL && rankedCached.data.length > offset) {
+      console.log(`[Recommend API] Using cached ranked results (${rankedCached.data.length} items, offset ${offset})`);
+      const paginatedResults = rankedCached.data.slice(offset, offset + limit);
+      return NextResponse.json({ 
+        results: paginatedResults,
+        total: rankedCached.total,
+        offset,
+        limit,
+        hasMore: offset + limit < rankedCached.total,
+      });
+    }
 
     const profileWithTaste = { 
       ...finalProfile, 
@@ -194,66 +214,23 @@ export async function GET(request: Request) {
     const isLocationBased = category === 'restaurants' || category === 'activities';
     const requestedRadius = radius ? parseInt(radius) : 16000; // Default ~10 miles in meters
     
-    // Determine how many items we need - fetch more to account for distance filtering
-    // Distance filtering can remove 50-70% of results, so fetch 3x what we need
-    const neededItems = (offset + limit) * 3 + 50;
+    // OPTIMIZATION: Only fetch what we need - limit + small buffer for filtering
+    // Don't over-fetch to avoid slow AI ranking
+    const neededItems = limit + 30; // Just enough for current page + filter buffer
     
-    if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length >= neededItems) {
+    if (cached && (now - cached.timestamp) < CACHE_TTL) {
+      // Use cached data - no need to refetch
       console.log(`[Recommend API] Using cached data for ${category} (${cached.data.length} items)`);
       rawRecommendations = [...cached.data];
     } else {
       console.log(`[Recommend API] Fetching fresh recommendations from ${category} API (need ${neededItems} items)...`);
       try {
-        // Start with cached data if available
-        if (cached) {
-          rawRecommendations = [...cached.data];
-        }
-        
-        // Fetch more items to support pagination - need extra to account for distance filtering
-        // Fetch from the external API starting at different offsets to get more variety
-        const existingIds = new Set(rawRecommendations.map((r: any) => r.id));
-        const fetchAmount = Math.min(50, 200); // Yelp limit is 50 per request
-        
-        // Fetch multiple pages to build up a larger pool
-        const pagesToFetch = Math.ceil(neededItems / 50);
-        for (let page = 0; page < pagesToFetch && rawRecommendations.length < neededItems; page++) {
-          const pageOffset = page * 50;
-          console.log(`[Recommend API] Fetching page ${page + 1} at offset ${pageOffset}...`);
-          try {
-            const pageResults = await fetchFromAPI(fetchAmount, undefined, pageOffset);
-            const newItems = pageResults.filter((r: any) => !existingIds.has(r.id));
-            newItems.forEach((r: any) => existingIds.add(r.id));
-            rawRecommendations = [...rawRecommendations, ...newItems];
-            console.log(`[Recommend API] Page ${page + 1}: got ${pageResults.length} items, ${newItems.length} new`);
-            
-            // If we got fewer items than requested, API is exhausted
-            if (pageResults.length < fetchAmount) {
-              console.log(`[Recommend API] API returned fewer items than requested, stopping pagination`);
-              break;
-            }
-          } catch (pageError) {
-            console.warn(`[Recommend API] Failed to fetch page ${page + 1}:`, pageError);
-            break;
-          }
-        }
-        
-        // For location-based categories, also fetch from expanded radius to ensure more results
-        if (isLocationBased && rawRecommendations.length < neededItems) {
-          const expandedRadius = Math.min(requestedRadius * 2, 80000); // Double radius, max ~50 miles
-          console.log(`[Recommend API] Fetching additional items from expanded radius (${(expandedRadius / 1609).toFixed(0)} mi)...`);
-          try {
-            const expandedResults = await fetchFromAPI(50, expandedRadius);
-            const additionalItems = expandedResults.filter((r: any) => !existingIds.has(r.id));
-            additionalItems.forEach((r: any) => existingIds.add(r.id));
-            rawRecommendations = [...rawRecommendations, ...additionalItems];
-            console.log(`[Recommend API] Added ${additionalItems.length} items from expanded radius`);
-          } catch (e) {
-            console.warn('[Recommend API] Failed to fetch expanded radius:', e);
-          }
-        }
+        // Fetch just one page - fast initial load
+        const pageResults = await fetchFromAPI(50, undefined, offset);
+        rawRecommendations = pageResults;
+        console.log(`[Recommend API] Fetched ${pageResults.length} items`);
         
         recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
-        console.log(`[Recommend API] Cached ${rawRecommendations.length} total items`);
       } catch (apiError) {
         console.error(`Error fetching from ${category} API:`, apiError);
         rawRecommendations = [];
@@ -321,8 +298,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ results: [] });
     }
 
-    // 3. Rank Recommendations
-    console.log(`[Recommend API] Starting AI ranking...`);
+    // 3. Rank Recommendations - OPTIMIZATION: Only rank what we need
+    // Limit items to rank to avoid slow AI API calls
+    const itemsToRank = rawRecommendations.slice(0, Math.min(rawRecommendations.length, limit + 20));
+    console.log(`[Recommend API] Starting AI ranking for ${itemsToRank.length} items...`);
+    
     const ranker = new AIRanker();
     const sortBy = requestUrl.searchParams.get('sort_by') || 'personalized_score';
     const userLat = lat ? parseFloat(lat) : null;
@@ -332,7 +312,7 @@ export async function GET(request: Request) {
     let rankedResults = [];
     try {
       rankedResults = await ranker.rank(
-        rawRecommendations,
+        itemsToRank,
         profileWithTaste as any,
         {
           category,
@@ -342,7 +322,7 @@ export async function GET(request: Request) {
       );
     } catch (rankError) {
       console.error('Error during AI ranking:', rankError);
-      rankedResults = rawRecommendations.map((obj: any, idx: number) => ({
+      rankedResults = itemsToRank.map((obj: any, idx: number) => ({
         rank: idx + 1,
         object: obj,
         personalized_score: 8.0,
@@ -434,6 +414,13 @@ export async function GET(request: Request) {
       ...result,
       rank: idx + 1,
     }));
+    
+    // Cache ranked results for fast pagination (Show More)
+    rankedResultsCache.set(rankedCacheKey, { 
+      data: rankedResults, 
+      timestamp: now,
+      total: rankedResults.length 
+    });
 
     // Apply offset-based pagination
     const paginatedResults = rankedResults.slice(offset, offset + limit);
