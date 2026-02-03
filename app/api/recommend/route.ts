@@ -59,19 +59,6 @@ export async function GET(request: Request) {
   let supabase;
   let session;
 
-  // Debug: Log all headers to see what's being sent
-  const allHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => {
-    if (key.toLowerCase() === 'authorization' || key.toLowerCase() === 'x-auth-token') {
-      allHeaders[key] = `${value.substring(0, 20)}...`;
-    } else {
-      allHeaders[key] = value;
-    }
-  });
-  console.log('[API] Request headers:', JSON.stringify(allHeaders));
-  console.log('[API] Auth header:', authHeader ? `present` : 'missing');
-  console.log('[API] X-Auth-Token:', xAuthToken ? `present (len: ${xAuthToken.length})` : 'missing');
-
   // Try Bearer token first, then X-Auth-Token as fallback
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
 
@@ -118,13 +105,7 @@ export async function GET(request: Request) {
   }
 
   if (!session) {
-    return NextResponse.json({ 
-      error: 'Unauthorized', 
-      debug: { 
-        hasAuthHeader: !!authHeader,
-        authHeaderStart: authHeader?.substring(0, 15) || 'none'
-      }
-    }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
