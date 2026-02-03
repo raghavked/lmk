@@ -166,6 +166,20 @@ export default function DecideScreen() {
     distanceRef.current = distanceFilter;
   }, [distanceFilter]);
 
+  // Track session-seen IDs (resets on category change or reshuffle)
+  const [sessionSeenIds, setSessionSeenIds] = useState<string[]>([]);
+  const sessionSeenIdsRef = useRef<string[]>([]);
+  
+  // Keep ref updated
+  useEffect(() => {
+    sessionSeenIdsRef.current = sessionSeenIds;
+  }, [sessionSeenIds]);
+  
+  // Reset session seen IDs when category changes
+  useEffect(() => {
+    setSessionSeenIds([]);
+  }, [selectedCategory]);
+
   // Fetch items when location is ready or when category/filters change
   useEffect(() => {
     if (!location) return;
@@ -174,6 +188,7 @@ export default function DecideScreen() {
     setItemQueue([]);
     setCurrentItem(null);
     setLoading(true);
+    setSessionSeenIds([]); // Reset session seen IDs
     
     const fetchItems = async () => {
       try {
@@ -190,8 +205,10 @@ export default function DecideScreen() {
           mode: 'decide',
         });
         
-        if (seenIds.length > 0) {
-          params.append('seen_ids', seenIds.join(','));
+        // Combine stored seenIds with any session seen IDs
+        const allSeenIds = [...new Set([...seenIds])];
+        if (allSeenIds.length > 0) {
+          params.append('seen_ids', allSeenIds.join(','));
         }
         
         params.append('lat', location.lat.toString());
@@ -199,7 +216,7 @@ export default function DecideScreen() {
         params.append('radius', (distanceFilter * 1609).toString());
         
         const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-        console.log('[Decide] Fetching items for category:', selectedCategory);
+        console.log('[Decide] Fetching items for category:', selectedCategory, 'excluding', allSeenIds.length, 'seen IDs');
         
         const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
           method: 'GET',
@@ -231,6 +248,8 @@ export default function DecideScreen() {
             const [first, ...rest] = items;
             setCurrentItem(first);
             setItemQueue(rest);
+            // Track all fetched items as session-seen
+            setSessionSeenIds(items.map((i: DecideItem) => i.id));
             setError(null);
             console.log('[Decide] Loaded', items.length, 'items');
           } else {
@@ -249,7 +268,7 @@ export default function DecideScreen() {
     };
     
     fetchItems();
-  }, [selectedCategory, location, distanceFilter]);
+  }, [selectedCategory, location, distanceFilter, seenIds]);
 
   const loadStoredData = async () => {
     try {
@@ -361,18 +380,26 @@ export default function DecideScreen() {
           const accessToken = await getAccessToken();
           if (!accessToken || !locationRef.current) return;
           
+          // Combine stored seenIds with session seenIds to exclude all seen items
+          const allExcludeIds = [...new Set([...newSeenIds, ...sessionSeenIdsRef.current])];
+          
           const params = new URLSearchParams({
             category: categoryRef.current,
             limit: '10',
             mode: 'decide',
-            seen_ids: newSeenIds.join(','),
           });
+          
+          if (allExcludeIds.length > 0) {
+            params.append('seen_ids', allExcludeIds.join(','));
+          }
           
           params.append('lat', locationRef.current.lat.toString());
           params.append('lng', locationRef.current.lng.toString());
           params.append('radius', (distanceRef.current * 1609).toString());
           
           const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+          console.log('[Decide] Fetching more items, excluding', allExcludeIds.length, 'IDs');
+          
           const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -400,6 +427,9 @@ export default function DecideScreen() {
               const [first, ...rest] = items;
               setCurrentItem(first);
               setItemQueue(rest);
+              
+              // Add new items to session seen IDs
+              setSessionSeenIds(prev => [...prev, ...items.map((i: DecideItem) => i.id)]);
             } else {
               setError('No more items');
             }
@@ -521,6 +551,7 @@ export default function DecideScreen() {
           text: 'Reshuffle', 
           onPress: async () => {
             setSeenIds([]);
+            setSessionSeenIds([]); // Reset session seen IDs
             setDecisionHistory([]);
             setDecisions({ yes: 0, no: 0 });
             await AsyncStorage.removeItem(`lmk_decide_history_${selectedCategory}`);
