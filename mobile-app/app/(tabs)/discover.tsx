@@ -110,14 +110,14 @@ export default function DiscoverScreen() {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [profile, setProfile] = useState<any>(null);
 
-  // Pan responder for swipe DOWN to close modal (more natural gesture)
+  // Pan responder for swipe DOWN to close modal (attached to handle area)
   const modalPanY = useRef(new Animated.Value(0)).current;
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true, // Capture touch immediately
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Respond to vertical swipes (prioritize downward)
-        return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
+        // Respond to vertical swipes
+        return Math.abs(gestureState.dy) > 5;
       },
       onPanResponderMove: (_, gestureState) => {
         // Allow downward swipes (positive dy) for dismiss
@@ -126,8 +126,8 @@ export default function DiscoverScreen() {
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        // If swiped down more than 100px or with velocity, close the modal
-        if (gestureState.dy > 100 || (gestureState.dy > 50 && gestureState.vy > 0.5)) {
+        // If swiped down more than 80px or with velocity, close the modal
+        if (gestureState.dy > 80 || (gestureState.dy > 30 && gestureState.vy > 0.3)) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           Animated.timing(modalPanY, {
             toValue: 600,
@@ -722,9 +722,8 @@ export default function DiscoverScreen() {
           />
           <Animated.View 
             style={[styles.detailModal, { transform: [{ translateY: modalPanY }] }]}
-            {...panResponder.panHandlers}
           >
-            <View style={styles.swipeHandle}>
+            <View style={styles.swipeHandle} {...panResponder.panHandlers}>
               <View style={styles.swipeHandleBar} />
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedItem(null)}>
@@ -1213,11 +1212,12 @@ const styles = StyleSheet.create({
   },
   swipeHandle: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 20, // Larger touch target for easier swiping
+    paddingHorizontal: 50, // Wider touch area
   },
   swipeHandleBar: {
-    width: 40,
-    height: 5,
+    width: 50,
+    height: 6,
     backgroundColor: Colors.text.secondary,
     borderRadius: 3,
   },
