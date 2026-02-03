@@ -703,20 +703,8 @@ export default function DecideScreen() {
             </View>
           </Animated.View>
           
-          <View style={styles.decisionButtons}>
-            <TouchableOpacity 
-              style={[styles.decisionButton, styles.noButton]} 
-              onPress={() => handleDecision('no')}
-            >
-              <Ionicons name="close" size={32} color="#F44336" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.decisionButton, styles.yesButton]} 
-              onPress={() => handleDecision('yes')}
-            >
-              <Ionicons name="checkmark" size={32} color="#4CAF50" />
-            </TouchableOpacity>
+          <View style={styles.swipeHint}>
+            <Text style={styles.swipeHintText}>Swipe right for Yes, left for No</Text>
           </View>
         </View>
         ) : (
@@ -959,7 +947,17 @@ const styles = StyleSheet.create({
   cardWrapper: {
     flex: 1,
     padding: 16,
-    justifyContent: 'center',
+    paddingTop: 8,
+    justifyContent: 'flex-start',
+  },
+  swipeHint: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  swipeHintText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    fontStyle: 'italic',
   },
   decideCard: {
     backgroundColor: Colors.background.secondary,
@@ -1105,28 +1103,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text.secondary,
     lineHeight: 20,
-  },
-  decisionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 32,
-    marginTop: 24,
-  },
-  decisionButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-  },
-  noButton: {
-    backgroundColor: Colors.background.secondary,
-    borderColor: '#F44336',
-  },
-  yesButton: {
-    backgroundColor: Colors.background.secondary,
-    borderColor: '#4CAF50',
   },
   matchOverlay: {
     flex: 1,
