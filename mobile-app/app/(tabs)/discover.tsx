@@ -160,38 +160,41 @@ export default function DiscoverScreen() {
     }
 
     try {
-      // First check if walkthrough was seen (using AsyncStorage)
-      const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+      // Check if user has already seen onboarding (only show once ever)
+      const onboardingSeen = await AsyncStorage.getItem('lmk_onboarding_seen');
       
-      // Try to fetch the profile - only fetch taste_profile to avoid schema cache issues
+      // Try to fetch the profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('taste_profile')
         .eq('id', session.user.id)
         .single();
 
-      // If profile doesn't exist or error, create it and show onboarding
-      if (profileError) {
-        console.log('Profile fetch error:', profileError.code, profileError.message);
+      // If profile doesn't exist, create one
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('Creating profile for user in Discover...');
+        await supabase.from('profiles').insert({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || '',
+        });
         
-        // If profile doesn't exist (PGRST116), create one
-        if (profileError.code === 'PGRST116') {
-          console.log('Creating profile for user in Discover...');
-          await supabase.from('profiles').insert({
-            id: session.user.id,
-            email: session.user.email,
-            full_name: session.user.user_metadata?.full_name || '',
-          });
-        }
-        
-        // Show onboarding for new users
-        if (!localOnboardingCompleted) {
+        // New user - show onboarding only if never seen before
+        if (!onboardingSeen) {
           router.push('/onboarding');
           return;
         }
         
-        // Onboarding done but no profile/preferences - show quiz
-        router.push('/quiz');
+        // Already saw onboarding but no preferences yet - just continue
+        setOnboardingChecked(true);
+        getLocation();
+        return;
+      }
+
+      if (profileError) {
+        console.log('Profile fetch error:', profileError.code, profileError.message);
+        setOnboardingChecked(true);
+        getLocation();
         return;
       }
 
@@ -199,33 +202,25 @@ export default function DiscoverScreen() {
 
       const hasPreferences = profileData?.taste_profile && Object.keys(profileData.taste_profile).length > 0;
 
-      // If user already has preferences, skip onboarding and quiz
+      // If user already has preferences, skip everything
       if (hasPreferences) {
         setOnboardingChecked(true);
         getLocation();
         return;
       }
 
-      // No preferences yet - check if they've seen onboarding
-      if (!localOnboardingCompleted) {
+      // No preferences - only show onboarding if never seen (first login after signup)
+      if (!onboardingSeen) {
         router.push('/onboarding');
         return;
       }
 
-      // Onboarding done but no preferences - show quiz
-      router.push('/quiz');
+      // User has seen onboarding before but no preferences - just continue
+      // They can set up preferences later from profile if they want
+      setOnboardingChecked(true);
+      getLocation();
     } catch (error) {
       console.error('Error checking onboarding:', error);
-      // On error, still try to show onboarding for new users
-      try {
-        const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
-        if (!localOnboardingCompleted) {
-          router.push('/onboarding');
-          return;
-        }
-      } catch (e) {
-        // Ignore storage errors
-      }
       setOnboardingChecked(true);
       getLocation();
     }
