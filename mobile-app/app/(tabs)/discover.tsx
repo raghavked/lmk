@@ -160,11 +160,41 @@ export default function DiscoverScreen() {
     }
 
     try {
-      const { data: profileData } = await supabase
+      // First check if walkthrough was seen (using AsyncStorage)
+      const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+      
+      // Try to fetch the profile
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('taste_profile')
+        .select('taste_profile, preferences_completed')
         .eq('id', session.user.id)
         .single();
+
+      // If profile doesn't exist or error, create it and show onboarding
+      if (profileError) {
+        console.log('Profile fetch error:', profileError.code, profileError.message);
+        
+        // If profile doesn't exist (PGRST116), create one
+        if (profileError.code === 'PGRST116') {
+          console.log('Creating profile for user in Discover...');
+          await supabase.from('profiles').insert({
+            id: session.user.id,
+            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || '',
+            preferences_completed: false,
+          });
+        }
+        
+        // Show onboarding for new users
+        if (!localOnboardingCompleted) {
+          router.push('/onboarding');
+          return;
+        }
+        
+        // Onboarding done but no profile/preferences - show quiz
+        router.push('/quiz');
+        return;
+      }
 
       setProfile(profileData);
 
@@ -177,9 +207,7 @@ export default function DiscoverScreen() {
         return;
       }
 
-      // Check if walkthrough was seen (using AsyncStorage)
-      const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
-
+      // No preferences yet - check if they've seen onboarding
       if (!localOnboardingCompleted) {
         router.push('/onboarding');
         return;
@@ -189,6 +217,16 @@ export default function DiscoverScreen() {
       router.push('/quiz');
     } catch (error) {
       console.error('Error checking onboarding:', error);
+      // On error, still try to show onboarding for new users
+      try {
+        const localOnboardingCompleted = await AsyncStorage.getItem('lmk_onboarding_completed');
+        if (!localOnboardingCompleted) {
+          router.push('/onboarding');
+          return;
+        }
+      } catch (e) {
+        // Ignore storage errors
+      }
       setOnboardingChecked(true);
       getLocation();
     }

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Colors } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface QuizQuestion {
   id: string;
@@ -243,21 +244,35 @@ export default function QuizScreen() {
         if (updateError) throw updateError;
       }
 
-      Alert.alert('Success', 'Your preferences have been saved!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)/discover') }
+      // Clear onboarding flag so the discover screen knows we completed
+      await AsyncStorage.setItem('lmk_quiz_completed', 'true');
+      
+      Alert.alert('All Set!', 'Your preferences have been saved. Enjoy your personalized recommendations!', [
+        { text: 'Let\'s Go!', onPress: () => router.replace('/(tabs)/discover') }
       ]);
     } catch (error: any) {
       console.error('Error saving preferences:', error);
-      Alert.alert('Error', error?.message || 'Failed to save preferences');
+      Alert.alert('Error', error?.message || 'Failed to save preferences. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
+  const handleClose = () => {
+    Alert.alert(
+      'Skip Preferences?',
+      'Setting up preferences helps us give you better recommendations. You can always do this later in your profile.',
+      [
+        { text: 'Continue Setup', style: 'cancel' },
+        { text: 'Skip for Now', onPress: () => router.replace('/(tabs)/discover') }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <Ionicons name="close" size={28} color={Colors.text.secondary} />
         </TouchableOpacity>
         <View style={styles.progressInfo}>
