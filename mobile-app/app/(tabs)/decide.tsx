@@ -424,11 +424,11 @@ export default function DecideScreen() {
     // Flatten offset before animating off-screen
     swipeAnim.flattenOffset();
     
-    // Animate card off screen
+    // Animate card off screen - must use useNativeDriver: false to match gesture handler
     Animated.timing(swipeAnim, {
       toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
       duration: 200,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start(() => {
       // Use ref to call the latest handleDecision
       if (handleDecisionRef.current) {
@@ -484,11 +484,11 @@ export default function DecideScreen() {
           // Swipe left = no - use ref for latest handler
           if (swipeHandlerRef.current) swipeHandlerRef.current('left');
         } else {
-          // Return to center with smooth spring
+          // Return to center with smooth spring - must use useNativeDriver: false to match gesture handler
           setSwipeDirection(null);
           Animated.spring(swipeAnim, {
             toValue: { x: 0, y: 0 },
-            useNativeDriver: true,
+            useNativeDriver: false,
             friction: 6,
             tension: 40,
           }).start();
@@ -499,7 +499,7 @@ export default function DecideScreen() {
         setSwipeDirection(null);
         Animated.spring(swipeAnim, {
           toValue: { x: 0, y: 0 },
-          useNativeDriver: true,
+          useNativeDriver: false,
           friction: 6,
           tension: 40,
         }).start();
