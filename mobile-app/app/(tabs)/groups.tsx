@@ -74,9 +74,15 @@ export default function GroupsScreen() {
   }, []);
 
   useEffect(() => {
-    if (selectedGroup) {
+    let isMounted = true;
+    
+    if (selectedGroup && isMounted) {
       loadMessages();
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [selectedGroup]);
 
   const loadProfile = async () => {
