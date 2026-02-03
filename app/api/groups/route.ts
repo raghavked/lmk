@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 const supabaseAdmin = createClient(
@@ -7,30 +9,26 @@ const supabaseAdmin = createClient(
 );
 
 async function authenticateRequest(request: Request) {
-  let token: string | null = null;
-  
   const authHeader = request.headers.get('Authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
-  }
-  
-  if (!token) {
-    const xAuthToken = request.headers.get('X-Auth-Token');
-    if (xAuthToken) {
-      token = xAuthToken;
+  const xAuthToken = request.headers.get('X-Auth-Token');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+
+  if (token) {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      return user;
     }
   }
+
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+  const { data: { session } } = await supabase.auth.getSession();
   
-  if (!token) {
-    return null;
+  if (session?.user) {
+    return session.user;
   }
   
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return null;
-  }
-  
-  return user;
+  return null;
 }
 
 export async function GET(request: Request) {
