@@ -113,10 +113,13 @@ export default function DiscoverScreen() {
   // City search state
   const [citySearchQuery, setCitySearchQuery] = useState('');
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null); // Original user location
-  const [customLocationName, setCustomLocationName] = useState<string | null>(null); // Display name for custom location
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [customLocationName, setCustomLocationName] = useState<string | null>(null);
+  const [apiCitySuggestions, setApiCitySuggestions] = useState<{ name: string; lat: number; lng: number }[]>([]);
+  const [isSearchingCities, setIsSearchingCities] = useState(false);
+  const citySearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Popular US cities for autocomplete
+  // Popular US cities for instant autocomplete (before API responds)
   const POPULAR_CITIES = [
     { name: 'New York, NY', lat: 40.7128, lng: -74.0060 },
     { name: 'Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
@@ -150,37 +153,128 @@ export default function DiscoverScreen() {
     { name: 'Baltimore, MD', lat: 39.2904, lng: -76.6122 },
   ];
   
-  const filteredCities = citySearchQuery.length > 0 
-    ? (() => {
-        const query = citySearchQuery.toLowerCase().trim();
+  // Search for cities using geocoding API (debounced)
+  const searchCities = async (query: string) => {
+    if (query.length < 2) {
+      setApiCitySuggestions([]);
+      return;
+    }
+    
+    setIsSearchingCities(true);
+    try {
+      // Use OpenStreetMap Nominatim API for geocoding (free, no API key needed)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` +
+        `q=${encodeURIComponent(query)}&` +
+        `format=json&` +
+        `countrycodes=us&` +
+        `limit=8&` +
+        `addressdetails=1&` +
+        `featuretype=city`,
+        {
+          headers: {
+            'User-Agent': 'LMK-App/1.0',
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const results = await response.json();
+        const cities = results
+          .filter((r: any) => 
+            r.type === 'city' || r.type === 'town' || r.type === 'village' || 
+            r.type === 'administrative' || r.class === 'place'
+          )
+          .map((r: any) => {
+            const city = r.address?.city || r.address?.town || r.address?.village || r.name;
+            const state = r.address?.state;
+            const stateAbbr = getStateAbbreviation(state);
+            return {
+              name: stateAbbr ? `${city}, ${stateAbbr}` : city,
+              lat: parseFloat(r.lat),
+              lng: parseFloat(r.lon),
+            };
+          })
+          .filter((c: any, i: number, arr: any[]) => 
+            arr.findIndex(x => x.name === c.name) === i
+          );
         
-        // Separate into prefix matches (start with query) and contains matches
-        const prefixMatches = POPULAR_CITIES.filter(city => 
-          city.name.toLowerCase().startsWith(query)
-        );
-        
-        const containsMatches = POPULAR_CITIES.filter(city => {
-          const name = city.name.toLowerCase();
-          // Include if contains but doesn't start with (avoid duplicates)
-          return !name.startsWith(query) && name.includes(query);
-        });
-        
-        // Also match city name after comma (state abbreviation or city after ", ")
-        const afterCommaMatches = POPULAR_CITIES.filter(city => {
-          const parts = city.name.split(', ');
-          if (parts.length > 1) {
-            const afterComma = parts[1].toLowerCase();
-            return afterComma.startsWith(query) && 
-              !city.name.toLowerCase().startsWith(query) &&
-              !city.name.toLowerCase().includes(query);
-          }
-          return false;
-        });
-        
-        // Prioritize: exact prefix > city name prefix > state prefix > contains anywhere
-        return [...prefixMatches, ...afterCommaMatches, ...containsMatches].slice(0, 6);
-      })()
-    : [];
+        setApiCitySuggestions(cities);
+      }
+    } catch (error) {
+      console.warn('City search error:', error);
+    } finally {
+      setIsSearchingCities(false);
+    }
+  };
+  
+  // State name to abbreviation mapping
+  const getStateAbbreviation = (stateName: string): string | null => {
+    const states: Record<string, string> = {
+      'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+      'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+      'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+      'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+      'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+      'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+      'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+      'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+      'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+      'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+      'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+      'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+      'Wisconsin': 'WI', 'Wyoming': 'WY', 'District of Columbia': 'DC',
+    };
+    return states[stateName] || null;
+  };
+  
+  // Handle city search input with debounce
+  const handleCitySearchChange = (text: string) => {
+    setCitySearchQuery(text);
+    setShowCitySuggestions(text.length > 0);
+    
+    // Clear previous timeout
+    if (citySearchTimeoutRef.current) {
+      clearTimeout(citySearchTimeoutRef.current);
+    }
+    
+    // Debounce API call (300ms)
+    if (text.length >= 2) {
+      citySearchTimeoutRef.current = setTimeout(() => {
+        searchCities(text);
+      }, 300);
+    } else {
+      setApiCitySuggestions([]);
+    }
+  };
+  
+  // Combine local and API results, prioritizing local matches
+  const filteredCities = (() => {
+    if (citySearchQuery.length === 0) return [];
+    
+    const query = citySearchQuery.toLowerCase().trim();
+    
+    // Get local matches first (instant)
+    const localPrefixMatches = POPULAR_CITIES.filter(city => 
+      city.name.toLowerCase().startsWith(query)
+    );
+    
+    const localContainsMatches = POPULAR_CITIES.filter(city => {
+      const name = city.name.toLowerCase();
+      return !name.startsWith(query) && name.includes(query);
+    });
+    
+    const localMatches = [...localPrefixMatches, ...localContainsMatches];
+    
+    // Filter API results to avoid duplicates with local matches
+    const localNames = new Set(localMatches.map(c => c.name.toLowerCase()));
+    const uniqueApiResults = apiCitySuggestions.filter(
+      c => !localNames.has(c.name.toLowerCase())
+    );
+    
+    // Combine: local matches first, then API results
+    return [...localMatches, ...uniqueApiResults].slice(0, 8);
+  })();
 
   // Pan responder for swipe DOWN to close modal (attached to handle area)
   const modalPanY = useRef(new Animated.Value(0)).current;
@@ -693,18 +787,24 @@ export default function DiscoverScreen() {
           </TouchableOpacity>
           
           <View style={styles.citySearchContainer}>
-            <TextInput
-              style={styles.citySearchInput}
-              placeholder={customLocationName || "Search city..."}
-              placeholderTextColor={customLocationName ? Colors.accent.coral : Colors.text.secondary}
-              value={citySearchQuery}
-              onChangeText={(text) => {
-                setCitySearchQuery(text);
-                setShowCitySuggestions(text.length > 0);
-              }}
-              onFocus={() => setShowCitySuggestions(citySearchQuery.length > 0)}
-              onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
-            />
+            <View style={styles.citySearchInputWrapper}>
+              <TextInput
+                style={styles.citySearchInput}
+                placeholder={customLocationName || "Search any city..."}
+                placeholderTextColor={customLocationName ? Colors.accent.coral : Colors.text.secondary}
+                value={citySearchQuery}
+                onChangeText={handleCitySearchChange}
+                onFocus={() => setShowCitySuggestions(citySearchQuery.length > 0)}
+                onBlur={() => setTimeout(() => setShowCitySuggestions(false), 250)}
+              />
+              {isSearchingCities && (
+                <ActivityIndicator 
+                  size="small" 
+                  color={Colors.accent.coral} 
+                  style={styles.citySearchSpinner}
+                />
+              )}
+            </View>
             {showCitySuggestions && filteredCities.length > 0 && (
               <View style={styles.citySuggestionsDropdown}>
                 {filteredCities.map((city, index) => {
@@ -1105,15 +1205,23 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 100,
   },
-  citySearchInput: {
+  citySearchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.background.secondary,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 8,
+  },
+  citySearchInput: {
+    flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 8,
     color: Colors.text.primary,
     fontSize: 13,
+  },
+  citySearchSpinner: {
+    marginRight: 8,
   },
   citySuggestionsDropdown: {
     position: 'absolute',
