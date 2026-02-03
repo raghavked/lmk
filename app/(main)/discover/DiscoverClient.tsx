@@ -177,31 +177,37 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [category, query, userLocation, distanceFilter, sortBy]);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
     
     // If user has already completed preferences (has taste_profile), skip onboarding
     if (hasTasteProfile) {
-      detectLocation();
-      return;
+      if (isMounted) detectLocation();
+      return () => { isMounted = false; };
     }
     
     // Check if onboarding was seen (only show once - first login after signup)
     const onboardingSeen = localStorage.getItem('lmk_onboarding_seen');
     
     if (!onboardingSeen) {
-      setShowWalkthrough(true);
+      if (isMounted) setShowWalkthrough(true);
     } else {
       // User has seen onboarding before but no preferences - just continue
       // They can set up preferences later from profile if they want
-      detectLocation();
+      if (isMounted) detectLocation();
     }
+    
+    return () => { isMounted = false; };
   }, [profile, detectLocation]);
 
   useEffect(() => {
+    let isMounted = true;
     // Only load recommendations after location detection is complete (or confirmed unavailable)
-    if (!showWalkthrough && !showPreferenceTest && locationReady) {
+    if (!showWalkthrough && !showPreferenceTest && locationReady && isMounted) {
       loadRecommendations();
     }
+    return () => { isMounted = false; };
   }, [category, showWalkthrough, showPreferenceTest, userLocation, distanceFilter, loadRecommendations, locationReady]);
 
   useEffect(() => {
