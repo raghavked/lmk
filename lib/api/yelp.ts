@@ -29,7 +29,8 @@ function getCacheKey(params: any): string {
   const lat = roundCoord(params.latitude);
   const lng = roundCoord(params.longitude);
   const radius = Math.round(params.radius / 1000); // Round radius to km
-  return `${lat},${lng},${radius},${params.term || ''},${params.sort_by || ''},${params.categories || ''},${params.attributes || ''}`;
+  const offset = params.offset || 0;
+  return `${lat},${lng},${radius},${params.term || ''},${params.sort_by || ''},${params.categories || ''},${params.attributes || ''},${offset}`;
 }
 
 export class YelpAPI {

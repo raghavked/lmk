@@ -312,7 +312,8 @@ export async function GET(request: Request) {
       }
     }
     
-    rawRecommendations = rawRecommendations.slice(0, limit);
+    // Don't slice here - we need all items to apply offset-based pagination after sorting
+    // The slice happens at line 438 after AI ranking and sorting
 
     // If no raw recommendations, return empty results
     if (!rawRecommendations || rawRecommendations.length === 0) {
