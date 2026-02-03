@@ -109,6 +109,52 @@ export default function DiscoverScreen() {
 
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  
+  // City search state
+  const [citySearchQuery, setCitySearchQuery] = useState('');
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null); // Original user location
+  const [customLocationName, setCustomLocationName] = useState<string | null>(null); // Display name for custom location
+  
+  // Popular US cities for autocomplete
+  const POPULAR_CITIES = [
+    { name: 'New York, NY', lat: 40.7128, lng: -74.0060 },
+    { name: 'Los Angeles, CA', lat: 34.0522, lng: -118.2437 },
+    { name: 'Chicago, IL', lat: 41.8781, lng: -87.6298 },
+    { name: 'Houston, TX', lat: 29.7604, lng: -95.3698 },
+    { name: 'Phoenix, AZ', lat: 33.4484, lng: -112.0740 },
+    { name: 'Philadelphia, PA', lat: 39.9526, lng: -75.1652 },
+    { name: 'San Antonio, TX', lat: 29.4241, lng: -98.4936 },
+    { name: 'San Diego, CA', lat: 32.7157, lng: -117.1611 },
+    { name: 'Dallas, TX', lat: 32.7767, lng: -96.7970 },
+    { name: 'San Jose, CA', lat: 37.3382, lng: -121.8863 },
+    { name: 'Austin, TX', lat: 30.2672, lng: -97.7431 },
+    { name: 'San Francisco, CA', lat: 37.7749, lng: -122.4194 },
+    { name: 'Seattle, WA', lat: 47.6062, lng: -122.3321 },
+    { name: 'Denver, CO', lat: 39.7392, lng: -104.9903 },
+    { name: 'Boston, MA', lat: 42.3601, lng: -71.0589 },
+    { name: 'Miami, FL', lat: 25.7617, lng: -80.1918 },
+    { name: 'Atlanta, GA', lat: 33.7490, lng: -84.3880 },
+    { name: 'Portland, OR', lat: 45.5152, lng: -122.6784 },
+    { name: 'Las Vegas, NV', lat: 36.1699, lng: -115.1398 },
+    { name: 'Nashville, TN', lat: 36.1627, lng: -86.7816 },
+    { name: 'Sacramento, CA', lat: 38.5816, lng: -121.4944 },
+    { name: 'Orlando, FL', lat: 28.5383, lng: -81.3792 },
+    { name: 'Minneapolis, MN', lat: 44.9778, lng: -93.2650 },
+    { name: 'Cleveland, OH', lat: 41.4993, lng: -81.6944 },
+    { name: 'Pittsburgh, PA', lat: 40.4406, lng: -79.9959 },
+    { name: 'St. Louis, MO', lat: 38.6270, lng: -90.1994 },
+    { name: 'Tampa, FL', lat: 27.9506, lng: -82.4572 },
+    { name: 'Charlotte, NC', lat: 35.2271, lng: -80.8431 },
+    { name: 'New Orleans, LA', lat: 29.9511, lng: -90.0715 },
+    { name: 'Baltimore, MD', lat: 39.2904, lng: -76.6122 },
+  ];
+  
+  const filteredCities = citySearchQuery.length > 0 
+    ? POPULAR_CITIES.filter(city => 
+        city.name.toLowerCase().includes(citySearchQuery.toLowerCase())
+      ).slice(0, 5)
+    : [];
 
   // Pan responder for swipe DOWN to close modal (attached to handle area)
   const modalPanY = useRef(new Animated.Value(0)).current;
@@ -270,7 +316,10 @@ export default function DiscoverScreen() {
           accuracy: Location.Accuracy.Balanced,
           timeInterval: 10000,
         });
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+        const coords = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+        setLocation(coords);
+        setUserLocation(coords); // Save original user location for reset
+        setCustomLocationName(null); // Clear custom location name
       } else {
         console.log('Location permission denied');
       }
@@ -279,11 +328,35 @@ export default function DiscoverScreen() {
       try {
         const lastKnown = await Location.getLastKnownPositionAsync({});
         if (lastKnown) {
-          setLocation({ lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude });
+          const coords = { lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude };
+          setLocation(coords);
+          setUserLocation(coords);
+          setCustomLocationName(null);
         }
       } catch (fallbackError) {
         console.warn('Location fallback error:', fallbackError);
       }
+    }
+  };
+  
+  // Select a city from autocomplete suggestions
+  const handleCitySelect = (city: { name: string; lat: number; lng: number }) => {
+    setLocation({ lat: city.lat, lng: city.lng });
+    setCustomLocationName(city.name);
+    setCitySearchQuery('');
+    setShowCitySuggestions(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+  
+  // Reset to user's current location
+  const handleResetLocation = async () => {
+    if (userLocation) {
+      setLocation(userLocation);
+      setCustomLocationName(null);
+      setCitySearchQuery('');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      await getLocation();
     }
   };
 
@@ -591,6 +664,47 @@ export default function DiscoverScreen() {
             <Ionicons name="location" size={16} color={Colors.accent.coral} />
             <Text style={styles.filterText}>{distanceFilter} mi</Text>
             <Ionicons name="chevron-down" size={14} color={Colors.text.secondary} />
+          </TouchableOpacity>
+          
+          <View style={styles.citySearchContainer}>
+            <TextInput
+              style={styles.citySearchInput}
+              placeholder={customLocationName || "Search city..."}
+              placeholderTextColor={customLocationName ? Colors.accent.coral : Colors.text.secondary}
+              value={citySearchQuery}
+              onChangeText={(text) => {
+                setCitySearchQuery(text);
+                setShowCitySuggestions(text.length > 0);
+              }}
+              onFocus={() => setShowCitySuggestions(citySearchQuery.length > 0)}
+              onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
+            />
+            {showCitySuggestions && filteredCities.length > 0 && (
+              <View style={styles.citySuggestionsDropdown}>
+                {filteredCities.map((city, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.citySuggestionItem}
+                    onPress={() => handleCitySelect(city)}
+                  >
+                    <Ionicons name="location-outline" size={14} color={Colors.accent.coral} />
+                    <Text style={styles.citySuggestionText}>{city.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          
+          <TouchableOpacity 
+            style={[styles.resetLocationButton, !customLocationName && styles.resetLocationButtonDisabled]} 
+            onPress={handleResetLocation}
+            disabled={!customLocationName}
+          >
+            <Ionicons 
+              name="navigate" 
+              size={18} 
+              color={customLocationName ? Colors.accent.coral : Colors.text.secondary} 
+            />
           </TouchableOpacity>
         </View>
       )}
@@ -942,6 +1056,63 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 13,
     fontWeight: '500',
+  },
+  citySearchContainer: {
+    flex: 1,
+    position: 'relative',
+    zIndex: 100,
+  },
+  citySearchInput: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: Colors.text.primary,
+    fontSize: 13,
+  },
+  citySuggestionsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: 4,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  citySuggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  citySuggestionText: {
+    color: Colors.text.primary,
+    fontSize: 13,
+  },
+  resetLocationButton: {
+    backgroundColor: Colors.background.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resetLocationButtonDisabled: {
+    opacity: 0.5,
   },
   content: {
     flex: 1,
