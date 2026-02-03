@@ -104,6 +104,10 @@ export default function DecideScreen() {
   const swipeAnim = useRef(new Animated.ValueXY()).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  
+  // Refs to hold latest values for use in panResponder
+  const currentItemRef = useRef<DecideItem | null>(null);
+  const handleDecisionRef = useRef<(decision: 'yes' | 'no') => Promise<void>>();
 
   useEffect(() => {
     let isMounted = true;
@@ -341,8 +345,9 @@ export default function DecideScreen() {
     }
   };
 
-  const handleDecision = async (decision: 'yes' | 'no') => {
-    if (!currentItem) return;
+  const handleDecision = useCallback(async (decision: 'yes' | 'no') => {
+    const item = currentItemRef.current;
+    if (!item) return;
     
     await Haptics.impactAsync(
       decision === 'yes' 
@@ -351,30 +356,54 @@ export default function DecideScreen() {
     );
 
     const newRecord: DecisionRecord = {
-      item: currentItem,
+      item: item,
       decision,
       timestamp: new Date().toISOString(),
     };
 
-    const newHistory = [newRecord, ...decisionHistory].slice(0, 50);
-    const newSeenIds = [...seenIds, currentItem.id];
-
-    setDecisionHistory(newHistory);
-    setSeenIds(newSeenIds);
+    setDecisionHistory(prev => {
+      const newHistory = [newRecord, ...prev].slice(0, 50);
+      return newHistory;
+    });
+    
+    setSeenIds(prev => {
+      const newSeenIds = [...prev, item.id];
+      return newSeenIds;
+    });
+    
     setDecisions(prev => ({
       ...prev,
       [decision]: prev[decision] + 1,
     }));
 
-    await saveStoredData(newHistory, newSeenIds);
-
     if (decision === 'yes') {
-      setMatchedItem(currentItem);
+      setMatchedItem(item);
       setShowMatchPopup(true);
     }
 
-    loadNextItem(newSeenIds);
-  };
+    // Load next item with updated seen IDs
+    setSeenIds(prev => {
+      const updatedSeenIds = [...prev];
+      if (!updatedSeenIds.includes(item.id)) {
+        updatedSeenIds.push(item.id);
+      }
+      loadNextItem(updatedSeenIds);
+      saveStoredData(
+        [newRecord, ...decisionHistory].slice(0, 50),
+        updatedSeenIds
+      );
+      return updatedSeenIds;
+    });
+  }, [decisionHistory]);
+  
+  // Keep refs updated
+  useEffect(() => {
+    currentItemRef.current = currentItem;
+  }, [currentItem]);
+  
+  useEffect(() => {
+    handleDecisionRef.current = handleDecision;
+  }, [handleDecision]);
 
   // Reset swipe animation when item changes
   useEffect(() => {
@@ -385,8 +414,11 @@ export default function DecideScreen() {
     setSwipeDirection(null);
   }, [currentItem?.id]);
 
-  // Swipe gesture handler
-  const handleSwipeDecision = async (direction: 'left' | 'right') => {
+  // Ref for swipe handler to use latest state in panResponder
+  const swipeHandlerRef = useRef<(direction: 'left' | 'right') => void>();
+  
+  // Swipe gesture handler - uses ref for latest handleDecision
+  const handleSwipeDecision = useCallback((direction: 'left' | 'right') => {
     const decision = direction === 'right' ? 'yes' : 'no';
     
     // Flatten offset before animating off-screen
@@ -398,12 +430,19 @@ export default function DecideScreen() {
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
-      // Trigger the decision - animation reset happens in useEffect
-      handleDecision(decision);
+      // Use ref to call the latest handleDecision
+      if (handleDecisionRef.current) {
+        handleDecisionRef.current(decision);
+      }
     });
-  };
+  }, [swipeAnim]);
+  
+  // Keep swipe handler ref updated
+  useEffect(() => {
+    swipeHandlerRef.current = handleSwipeDecision;
+  }, [handleSwipeDecision]);
 
-  // Pan responder for swipe gestures - optimized for fluid swiping
+  // Pan responder for swipe gestures - uses refs for latest handlers
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -439,11 +478,11 @@ export default function DecideScreen() {
         
         // Check both position and velocity for more responsive swiping
         if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
-          // Swipe right = yes
-          handleSwipeDecision('right');
+          // Swipe right = yes - use ref for latest handler
+          if (swipeHandlerRef.current) swipeHandlerRef.current('right');
         } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
-          // Swipe left = no
-          handleSwipeDecision('left');
+          // Swipe left = no - use ref for latest handler
+          if (swipeHandlerRef.current) swipeHandlerRef.current('left');
         } else {
           // Return to center with smooth spring
           setSwipeDirection(null);
