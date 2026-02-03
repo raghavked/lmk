@@ -141,23 +141,31 @@ function getInitialPrompt(eventType: string): string {
   }
 }
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
 export async function POST(request: NextRequest) {
-  console.log('[Plan My Day] POST request received');
-  const startTime = Date.now();
-  
   try {
     const cookieStore = await cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
     
     const { data: { session } } = await supabase.auth.getSession();
-    
-    const authHeader = request.headers.get('authorization');
     let userId = session?.user?.id;
     
-    if (!userId && authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id;
+    if (!userId) {
+      const authHeader = request.headers.get('authorization');
+      const xAuthToken = request.headers.get('x-auth-token');
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+      
+      if (token) {
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        if (!error && user) {
+          userId = user.id;
+        }
+      }
     }
 
     if (!userId) {
@@ -211,7 +219,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[Plan My Day] Calling OpenAI, elapsed:', Date.now() - startTime, 'ms');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       max_tokens: 800,
@@ -221,7 +228,6 @@ export async function POST(request: NextRequest) {
         ...messages
       ],
     });
-    console.log('[Plan My Day] OpenAI responded, elapsed:', Date.now() - startTime, 'ms');
 
     const assistantContent = response.choices[0]?.message?.content || '';
 
@@ -243,11 +249,8 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Enrich venue data with Yelp API (real images, ratings, addresses)
     if (parsedResponse.categories && parsedResponse.categories.length > 0) {
-      console.log('[Plan My Day] Enriching with Yelp data, elapsed:', Date.now() - startTime, 'ms');
       parsedResponse.categories = await enrichWithYelpData(parsedResponse.categories, city, event_type);
-      console.log('[Plan My Day] Yelp enrichment complete, elapsed:', Date.now() - startTime, 'ms');
     }
 
     const updatedHistory = [
@@ -257,20 +260,11 @@ export async function POST(request: NextRequest) {
 
     let planSessionId = session_id;
     
-    console.log('[Plan My Day] Saving plan, userId:', userId, 'session_id:', session_id);
-    
     try {
-      const adminClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-      );
-      
       const title = `${event_type.charAt(0).toUpperCase() + event_type.slice(1)} in ${city}`;
       
       if (session_id) {
-        console.log('[Plan My Day] Updating existing session:', session_id);
-        const { error: updateError } = await adminClient
+        await supabaseAdmin
           .from('plan_sessions')
           .update({
             chat_history: updatedHistory,
@@ -279,15 +273,8 @@ export async function POST(request: NextRequest) {
           })
           .eq('id', session_id)
           .eq('user_id', userId);
-        
-        if (updateError) {
-          console.log('[Plan My Day] Update error:', updateError.message);
-        } else {
-          console.log('[Plan My Day] Updated session successfully');
-        }
       } else {
-        console.log('[Plan My Day] Creating new session');
-        const { data: newSession, error: insertError } = await adminClient
+        const { data: newSession } = await supabaseAdmin
           .from('plan_sessions')
           .insert({
             user_id: userId,
@@ -301,15 +288,12 @@ export async function POST(request: NextRequest) {
           .select('id')
           .single();
         
-        if (insertError) {
-          console.log('[Plan My Day] Insert error:', insertError.message);
-        } else if (newSession) {
+        if (newSession) {
           planSessionId = newSession.id;
-          console.log('[Plan My Day] Created session:', planSessionId);
         }
       }
     } catch (dbError: any) {
-      console.log('[Plan My Day] Database error:', dbError.message);
+      console.error('[Plan My Day] Database error:', dbError.message);
     }
 
     return NextResponse.json({
@@ -329,37 +313,25 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  console.log('[Plan My Day GET] Request received');
   try {
-    console.log('[Plan My Day GET] Creating admin client');
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
     
-    // Get token from Authorization header or X-Auth-Token
-    let token: string | null = null;
-    const authHeader = request.headers.get('authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-    if (!token) {
-      token = request.headers.get('x-auth-token');
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    let userId = session?.user?.id;
     
-    console.log('[Plan My Day GET] Token present:', !!token);
-    
-    let userId: string | undefined;
-    if (token) {
-      const { data: { user }, error: userError } = await adminClient.auth.getUser(token);
-      if (userError) {
-        console.log('[Plan My Day GET] User auth error:', userError.message);
+    if (!userId) {
+      const authHeader = request.headers.get('authorization');
+      const xAuthToken = request.headers.get('x-auth-token');
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+      
+      if (token) {
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        if (!error && user) {
+          userId = user.id;
+        }
       }
-      userId = user?.id;
     }
-
-    console.log('[Plan My Day GET] User ID:', userId ? 'found' : 'not found');
 
     if (!userId) {
       return NextResponse.json({ plans: [] });
@@ -369,8 +341,7 @@ export async function GET(request: NextRequest) {
     const planId = requestUrl.searchParams.get('id');
 
     if (planId) {
-      console.log('[Plan My Day GET] Fetching single plan:', planId);
-      const { data: plan, error } = await adminClient
+      const { data: plan, error } = await supabaseAdmin
         .from('plan_sessions')
         .select('*')
         .eq('id', planId)
@@ -378,15 +349,13 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (error || !plan) {
-        console.log('[Plan My Day GET] Plan not found error:', error?.message);
         return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
       }
 
       return NextResponse.json(plan);
     }
 
-    console.log('[Plan My Day GET] Fetching all plans for user');
-    const { data: plans, error } = await adminClient
+    const { data: plans, error } = await supabaseAdmin
       .from('plan_sessions')
       .select('id, title, event_type, city, created_at, updated_at')
       .eq('user_id', userId)
@@ -394,15 +363,13 @@ export async function GET(request: NextRequest) {
       .limit(20);
 
     if (error) {
-      console.log('[Plan My Day GET] Query error:', error.message);
       return NextResponse.json({ error: 'Failed to load plans' }, { status: 500 });
     }
 
-    console.log('[Plan My Day GET] Found plans:', plans?.length || 0);
     return NextResponse.json({ plans: plans || [] });
 
   } catch (error: any) {
-    console.error('[Plan My Day GET] Exception:', error.message, error.stack);
+    console.error('[Plan My Day GET] Exception:', error.message);
     return NextResponse.json(
       { error: error.message || 'Failed to load plans' },
       { status: 500 }
