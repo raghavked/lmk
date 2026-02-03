@@ -1,9 +1,24 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw, Clock, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw, Clock, ChevronRight, Star, ExternalLink, X, Utensils, Wine, Coffee, IceCream, Ticket, Film, Footprints, Tv, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+const getCategoryIcon = (type: string) => {
+  const lower = type.toLowerCase();
+  if (lower.includes('dinner') || lower.includes('restaurant') || lower.includes('food') || lower.includes('dining') || lower.includes('lunch')) return Utensils;
+  if (lower.includes('drink') || lower.includes('bar') || lower.includes('cocktail')) return Wine;
+  if (lower.includes('coffee') || lower.includes('cafe')) return Coffee;
+  if (lower.includes('dessert') || lower.includes('sweet')) return IceCream;
+  if (lower.includes('entertainment') || lower.includes('show') || lower.includes('concert')) return Ticket;
+  if (lower.includes('movie') || lower.includes('film') || lower.includes('cinema')) return Film;
+  if (lower.includes('activity') || lower.includes('activities') || lower.includes('park') || lower.includes('walk')) return Footprints;
+  if (lower.includes('tv')) return Tv;
+  if (lower.includes('read') || lower.includes('book')) return BookOpen;
+  return Sparkles;
+};
 
 type EventType = 'date' | 'hangout' | 'solo' | 'other' | null;
 type Stage = 'event_select' | 'city_prompt' | 'intent_prompt' | 'chat';
@@ -14,13 +29,26 @@ interface ChatMessage {
   categories?: Category[];
 }
 
+interface PlanItem {
+  title: string;
+  description: string;
+  event_relevance?: string;
+  neighborhood?: string;
+  rating?: number;
+  price?: string;
+  why_perfect?: string;
+  address?: string;
+  cuisine?: string;
+  vibe?: string;
+  image_url?: string;
+  review_count?: number;
+  yelp_url?: string;
+  yelp_id?: string;
+}
+
 interface Category {
   type: string;
-  items: {
-    title: string;
-    description: string;
-    event_relevance: string;
-  }[];
+  items: PlanItem[];
 }
 
 interface SavedPlan {
@@ -54,6 +82,7 @@ export default function PlanMyDayPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<{ item: PlanItem; category: string } | null>(null);
 
   useEffect(() => {
     loadSavedPlans();
@@ -361,24 +390,66 @@ export default function PlanMyDayPage() {
                   </div>
                   
                   {msg.categories && msg.categories.length > 0 && (
-                    <div className="mt-3 space-y-3">
-                      {msg.categories.map((cat, catIdx) => (
-                        <div key={catIdx} className="bg-[#161B22] rounded-xl p-4 border border-[#30363D]">
-                          <h3 className="text-[#feafb0] font-semibold mb-3 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-[#feafb0]"></span>
-                            {cat.type}
-                          </h3>
-                          <div className="space-y-3">
-                            {cat.items.map((item, itemIdx) => (
-                              <div key={itemIdx} className="bg-[#21262D] rounded-lg p-3">
-                                <h4 className="text-[#E6EDF3] font-medium">{item.title}</h4>
-                                <p className="text-[#8B949E] text-sm mt-1">{item.description}</p>
-                                <p className="text-[#feafb0] text-sm mt-2 italic">{item.event_relevance}</p>
-                              </div>
-                            ))}
+                    <div className="mt-4 space-y-4">
+                      {msg.categories.map((cat, catIdx) => {
+                        const CategoryIcon = getCategoryIcon(cat.type);
+                        return (
+                          <div key={catIdx} className="bg-[#161B22] rounded-xl p-4 border border-[#30363D]">
+                            <h3 className="text-[#feafb0] font-semibold mb-3 flex items-center gap-2">
+                              <CategoryIcon className="w-5 h-5" />
+                              {cat.type}
+                              <span className="text-[#8B949E] text-xs font-normal ml-auto">{cat.items.length} picks</span>
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {cat.items.map((item, itemIdx) => (
+                                <button
+                                  key={itemIdx}
+                                  onClick={() => setSelectedItem({ item, category: cat.type })}
+                                  className="bg-[#21262D] rounded-xl overflow-hidden border border-[#30363D] hover:border-[#feafb0]/50 transition-all hover:scale-[1.02] text-left"
+                                >
+                                  {item.image_url && (
+                                    <div className="relative h-32 w-full">
+                                      <Image
+                                        src={item.image_url}
+                                        alt={item.title}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                      />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-[#21262D] to-transparent" />
+                                    </div>
+                                  )}
+                                  <div className="p-3">
+                                    <h4 className="text-[#E6EDF3] font-medium text-sm line-clamp-1">{item.title}</h4>
+                                    {(item.cuisine || item.vibe) && (
+                                      <p className="text-[#8B949E] text-xs mt-1 line-clamp-1">
+                                        {[item.cuisine, item.vibe].filter(Boolean).join(' · ')}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      {item.rating && (
+                                        <div className="flex items-center gap-1 text-[#feafb0]">
+                                          <Star className="w-3 h-3 fill-current" />
+                                          <span className="text-xs font-medium">{item.rating}</span>
+                                        </div>
+                                      )}
+                                      {item.price && (
+                                        <span className="text-[#8B949E] text-xs">{item.price}</span>
+                                      )}
+                                      {item.neighborhood && (
+                                        <span className="text-[#8B949E] text-xs flex items-center gap-1">
+                                          <MapPin className="w-3 h-3" />
+                                          {item.neighborhood}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -423,6 +494,124 @@ export default function PlanMyDayPage() {
             </button>
           </div>
         </footer>
+      )}
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedItem(null)}
+        >
+          <div 
+            className="bg-[#161B22] rounded-2xl border border-[#30363D] max-w-lg w-full max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Swipe handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-12 h-1.5 bg-[#30363D] rounded-full" />
+            </div>
+            
+            {/* Header */}
+            <div className="flex justify-between items-center px-5 py-3 border-b border-[#30363D]">
+              <div className="flex items-center gap-2 text-[#feafb0]">
+                {(() => {
+                  const CategoryIcon = getCategoryIcon(selectedItem.category);
+                  return <CategoryIcon className="w-5 h-5" />;
+                })()}
+                <span className="text-sm font-medium">{selectedItem.category}</span>
+              </div>
+              <button 
+                onClick={() => setSelectedItem(null)}
+                className="p-1.5 hover:bg-[#21262D] rounded-full"
+              >
+                <X className="w-5 h-5 text-[#8B949E]" />
+              </button>
+            </div>
+
+            {/* Image */}
+            {selectedItem.item.image_url && (
+              <div className="relative h-48 w-full">
+                <Image
+                  src={selectedItem.item.image_url}
+                  alt={selectedItem.item.title}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#161B22] via-transparent to-transparent" />
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="p-5 space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#E6EDF3]">{selectedItem.item.title}</h2>
+                {(selectedItem.item.cuisine || selectedItem.item.vibe) && (
+                  <p className="text-[#8B949E] text-sm mt-1">
+                    {[selectedItem.item.cuisine, selectedItem.item.vibe].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
+
+              {/* Rating & Price Row */}
+              <div className="flex items-center gap-4">
+                {selectedItem.item.rating && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star}
+                          className={`w-4 h-4 ${star <= Math.round(selectedItem.item.rating!) ? 'fill-[#feafb0] text-[#feafb0]' : 'text-[#30363D]'}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[#E6EDF3] text-sm font-medium">{selectedItem.item.rating}</span>
+                    {selectedItem.item.review_count && (
+                      <span className="text-[#8B949E] text-sm">({selectedItem.item.review_count} reviews)</span>
+                    )}
+                  </div>
+                )}
+                {selectedItem.item.price && (
+                  <span className="text-[#8B949E] font-medium">{selectedItem.item.price}</span>
+                )}
+              </div>
+
+              {/* Address */}
+              {selectedItem.item.address && (
+                <div className="flex items-start gap-2 text-[#8B949E]">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{selectedItem.item.address}</span>
+                </div>
+              )}
+
+              {/* Why Perfect */}
+              {selectedItem.item.why_perfect && (
+                <div className="bg-[#21262D] rounded-xl p-4 border border-[#30363D]">
+                  <p className="text-[#feafb0] text-sm font-medium mb-1">Why it&apos;s perfect</p>
+                  <p className="text-[#E6EDF3] text-sm">{selectedItem.item.why_perfect}</p>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedItem.item.description && (
+                <p className="text-[#8B949E] text-sm">{selectedItem.item.description}</p>
+              )}
+
+              {/* Yelp Link */}
+              {selectedItem.item.yelp_url && (
+                <a
+                  href={selectedItem.item.yelp_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-[#feafb0] text-[#0D1117] rounded-xl font-semibold hover:bg-[#feafb0]/90 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View on Yelp
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
