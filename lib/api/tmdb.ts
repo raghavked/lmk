@@ -84,37 +84,6 @@ export class TMDBAPI {
     }
   }
   
-  async getNowPlayingMovies() {
-    try {
-      const response = await axios.get(`${this.baseUrl}/movie/now_playing`, {
-        params: {
-          api_key: this.apiKey,
-          page: 1,
-        },
-      });
-      
-      return response.data.results.map((m: any) => this.normalizeMovie(m));
-    } catch (error) {
-      console.error('TMDB now playing error:', error);
-      return [];
-    }
-  }
-  
-  async getTopRatedMovies() {
-    try {
-      const response = await axios.get(`${this.baseUrl}/movie/top_rated`, {
-        params: {
-          api_key: this.apiKey,
-          page: 1,
-        },
-      });
-      
-      return response.data.results.map((m: any) => this.normalizeMovie(m));
-    } catch (error) {
-      console.error('TMDB top rated movies error:', error);
-      return [];
-    }
-  }
   
   async getAllMovieCategories() {
     const [trending, nowPlaying, popular, topRated] = await Promise.all([
@@ -163,37 +132,6 @@ export class TMDBAPI {
     }
   }
   
-  async getOnTheAirTVShows() {
-    try {
-      const response = await axios.get(`${this.baseUrl}/tv/on_the_air`, {
-        params: {
-          api_key: this.apiKey,
-          page: 1,
-        },
-      });
-      
-      return response.data.results.map((tv: any) => this.normalizeTVShow(tv));
-    } catch (error) {
-      console.error('TMDB on the air error:', error);
-      return [];
-    }
-  }
-  
-  async getTopRatedTVShows() {
-    try {
-      const response = await axios.get(`${this.baseUrl}/tv/top_rated`, {
-        params: {
-          api_key: this.apiKey,
-          page: 1,
-        },
-      });
-      
-      return response.data.results.map((tv: any) => this.normalizeTVShow(tv));
-    } catch (error) {
-      console.error('TMDB top rated error:', error);
-      return [];
-    }
-  }
   
   async getAllTVShowCategories() {
     const [trending, airing, popular, topRated] = await Promise.all([
@@ -384,31 +322,155 @@ export class TMDBAPI {
   }
   
   async getRecommendations({ category, limit, offset, query }: { category: string, limit: number, offset: number, profile: any, query?: string }) {
+    // TMDB returns 20 results per page, calculate page from offset
+    const page = Math.floor(offset / 20) + 1;
+    console.log(`[TMDB API] getRecommendations: category=${category}, limit=${limit}, offset=${offset}, page=${page}`);
+    
     if (query && query.length >= 2) {
       if (category === 'movies') {
-        return this.searchMovies({ query, page: Math.floor(offset / limit) + 1 });
+        return this.searchMovies({ query, page });
       } else if (category === 'tv_shows') {
-        return this.searchTVShows({ query, page: Math.floor(offset / limit) + 1 });
+        return this.searchTVShows({ query, page });
       }
     }
 
+    // For browsing, use TMDB's paginated endpoints directly
+    // TMDB has thousands of items available - we rotate through different endpoints based on page
     if (category === 'movies') {
-      const allSections = await this.getAllMovieCategories();
-      const combined = [...allSections.trending, ...allSections.nowPlaying, ...allSections.popular, ...allSections.topRated];
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex((t) => t.id === item.id)
-      );
-      return unique.slice(offset, offset + limit);
+      // Rotate through different movie lists for variety
+      const endpoints = ['popular', 'top_rated', 'now_playing', 'upcoming'];
+      const endpointIndex = (page - 1) % endpoints.length;
+      const adjustedPage = Math.floor((page - 1) / endpoints.length) + 1;
+      
+      let results: any[] = [];
+      const endpoint = endpoints[endpointIndex];
+      
+      if (endpoint === 'popular') {
+        results = await this.getPopularMovies(adjustedPage);
+      } else if (endpoint === 'top_rated') {
+        results = await this.getTopRatedMovies(adjustedPage);
+      } else if (endpoint === 'now_playing') {
+        results = await this.getNowPlayingMovies(adjustedPage);
+      } else {
+        results = await this.getUpcomingMovies(adjustedPage);
+      }
+      
+      console.log(`[TMDB API] Fetched ${results.length} movies from ${endpoint} page ${adjustedPage}`);
+      return results;
     } else if (category === 'tv_shows') {
-      const allSections = await this.getAllTVShowCategories();
-      const combined = [...allSections.trending, ...allSections.airing, ...allSections.popular, ...allSections.topRated];
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex((t) => t.id === item.id)
-      );
-      return unique.slice(offset, offset + limit);
+      // Rotate through different TV lists for variety
+      const endpoints = ['popular', 'top_rated', 'on_the_air', 'airing_today'];
+      const endpointIndex = (page - 1) % endpoints.length;
+      const adjustedPage = Math.floor((page - 1) / endpoints.length) + 1;
+      
+      let results: any[] = [];
+      const endpoint = endpoints[endpointIndex];
+      
+      if (endpoint === 'popular') {
+        results = await this.getPopularTVShows(adjustedPage);
+      } else if (endpoint === 'top_rated') {
+        results = await this.getTopRatedTVShows(adjustedPage);
+      } else if (endpoint === 'on_the_air') {
+        results = await this.getOnTheAirTVShows(adjustedPage);
+      } else {
+        results = await this.getAiringTodayTVShows(adjustedPage);
+      }
+      
+      console.log(`[TMDB API] Fetched ${results.length} TV shows from ${endpoint} page ${adjustedPage}`);
+      return results;
     }
     
-    return this.searchMovies({ query: category, page: Math.floor(offset / limit) + 1 });
+    return this.searchMovies({ query: category, page });
+  }
+  
+  async getUpcomingMovies(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/movie/upcoming`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((m: any) => this.normalizeMovie(m));
+    } catch (error) {
+      console.error('TMDB upcoming movies error:', error);
+      return [];
+    }
+  }
+  
+  async getAiringTodayTVShows(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/tv/airing_today`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((tv: any) => this.normalizeTVShow(tv));
+    } catch (error) {
+      console.error('TMDB airing today error:', error);
+      return [];
+    }
+  }
+  
+  async getTopRatedMovies(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/movie/top_rated`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((m: any) => this.normalizeMovie(m));
+    } catch (error) {
+      console.error('TMDB top rated movies error:', error);
+      return [];
+    }
+  }
+  
+  async getNowPlayingMovies(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/movie/now_playing`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((m: any) => this.normalizeMovie(m));
+    } catch (error) {
+      console.error('TMDB now playing error:', error);
+      return [];
+    }
+  }
+  
+  async getOnTheAirTVShows(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/tv/on_the_air`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((tv: any) => this.normalizeTVShow(tv));
+    } catch (error) {
+      console.error('TMDB on the air error:', error);
+      return [];
+    }
+  }
+  
+  async getTopRatedTVShows(page: number = 1) {
+    try {
+      const response = await axios.get(`${this.baseUrl}/tv/top_rated`, {
+        params: {
+          api_key: this.apiKey,
+          page: page,
+        },
+      });
+      return response.data.results.map((tv: any) => this.normalizeTVShow(tv));
+    } catch (error) {
+      console.error('TMDB top rated TV error:', error);
+      return [];
+    }
   }
 
   private inferMoodTags(genres: string[]): string[] {

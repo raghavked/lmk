@@ -25,19 +25,40 @@ export class OpenLibraryAPI {
 
   async getRecommendations({ category, limit, offset, profile, query: searchQuery }: { category: string, limit: number, offset: number, profile: any, query?: string }) {
     const tasteProfile = profile.taste_profile || [];
-    const query = searchQuery && searchQuery.length >= 2 ? searchQuery : (tasteProfile.length > 0 ? tasteProfile[0] : 'fiction');
+    
+    // Use search query if provided, otherwise rotate through popular subjects for variety
+    const popularSubjects = [
+      'fiction', 'mystery', 'science fiction', 'fantasy', 'romance', 
+      'thriller', 'biography', 'history', 'self-help', 'adventure',
+      'horror', 'literary fiction', 'classics', 'young adult', 'crime'
+    ];
+    
+    let query: string;
+    if (searchQuery && searchQuery.length >= 2) {
+      query = searchQuery;
+    } else if (tasteProfile.length > 0) {
+      query = tasteProfile[Math.floor(offset / 20) % tasteProfile.length];
+    } else {
+      // Rotate through subjects based on offset to provide variety
+      query = popularSubjects[Math.floor(offset / 20) % popularSubjects.length];
+    }
+    
+    console.log(`[OpenLibrary API] Fetching books: query="${query}", limit=${limit}, offset=${offset}`);
     
     try {
       const response = await axios.get(`${this.baseUrl}/search.json`, {
         params: {
           q: query,
-          limit: limit,
-          offset: offset,
+          limit: Math.min(limit, 100), // Open Library supports larger limits
+          offset: offset % 100, // Adjust offset for subject rotation
           sort: 'rating',
+          has_fulltext: true, // Prioritize books with content
         },
       });
 
-      return response.data.docs?.map((book: any) => this.normalizeBook(book)) || [];
+      const results = response.data.docs?.map((book: any) => this.normalizeBook(book)) || [];
+      console.log(`[OpenLibrary API] Fetched ${results.length} books`);
+      return results;
     } catch (error) {
       console.error('OpenLibrary search error:', error);
       return [];
