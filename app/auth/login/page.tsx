@@ -42,24 +42,24 @@ export default function SignInPage() {
     }
 
     try {
-      console.log('Attempting to sign in with:', email);
-
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
 
-      console.log('Sign in response:', { data, signInError });
-
       if (signInError) {
-        console.error('Sign in error:', signInError);
-        setError(signInError.message || 'Failed to sign in');
+        let errorMessage = signInError.message || 'Failed to sign in';
+        if (signInError.message?.includes('Invalid login')) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        } else if (signInError.message?.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and confirm your account before signing in.';
+        }
+        setError(errorMessage);
         setLoading(false);
         return;
       }
 
       if (data?.user) {
-        console.log('Login successful, redirecting...');
         // Clear form
         setEmail('');
         setPassword('');
@@ -70,8 +70,7 @@ export default function SignInPage() {
         }, 500);
       }
     } catch (err: any) {
-      console.error('Unexpected error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      setError('Unable to connect. Please check your internet connection.');
       setLoading(false);
     }
   };

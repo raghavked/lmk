@@ -55,11 +55,17 @@ export default function SignUpPage() {
       return;
     }
 
-    try {
-      console.log('Attempting to sign up with:', { email, fullName });
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
 
+    try {
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
@@ -69,11 +75,12 @@ export default function SignUpPage() {
         },
       });
 
-      console.log('Sign up response:', { data, signUpError });
-
       if (signUpError) {
-        console.error('Sign up error:', signUpError);
-        setError(signUpError.message || 'Failed to create account');
+        let errorMessage = signUpError.message || 'Failed to create account';
+        if (signUpError.message?.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        }
+        setError(errorMessage);
         setLoading(false);
         return;
       }
@@ -86,12 +93,11 @@ export default function SignUpPage() {
         setPassword('');
         setAgreeToTerms(false);
         
-        // Redirect immediately after successful sign-up
-        router.push('/auth/verify-email?email=' + encodeURIComponent(email));
+        // Redirect to verify email page
+        router.push('/auth/verify-email?email=' + encodeURIComponent(email.trim().toLowerCase()));
       }
     } catch (err: any) {
-      console.error('Unexpected error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      setError('Unable to connect. Please check your internet connection.');
     } finally {
       setLoading(false);
     }

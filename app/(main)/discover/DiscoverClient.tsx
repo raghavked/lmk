@@ -177,24 +177,23 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [category, query, userLocation, distanceFilter, sortBy]);
 
   useEffect(() => {
-    const preferencesCompleted = profile?.preferences_completed;
     const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
-    const walkthroughSeen = profile?.walkthrough_seen;
     
-    // If user has already completed preferences, skip both walkthrough and quiz
-    if (preferencesCompleted || hasTasteProfile) {
+    // If user has already completed preferences (has taste_profile), skip onboarding
+    if (hasTasteProfile) {
       detectLocation();
       return;
     }
     
-    // Check if walkthrough was seen (database flag takes priority, then localStorage fallback)
-    const localWalkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
+    // Check if onboarding was seen (only show once - first login after signup)
+    const onboardingSeen = localStorage.getItem('lmk_onboarding_seen');
     
-    if (!walkthroughSeen && !localWalkthroughCompleted) {
+    if (!onboardingSeen) {
       setShowWalkthrough(true);
     } else {
-      // Walkthrough done but no preferences - show quiz
-      setShowPreferenceTest(true);
+      // User has seen onboarding before but no preferences - just continue
+      // They can set up preferences later from profile if they want
+      detectLocation();
     }
   }, [profile, detectLocation]);
 
@@ -246,12 +245,11 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   };
 
   const handleWalkthroughComplete = () => {
+    // Mark onboarding as seen (only happens once ever)
+    localStorage.setItem('lmk_onboarding_seen', 'true');
     setShowWalkthrough(false);
-    if (profile?.preferences_completed === false) {
-      setShowPreferenceTest(true);
-    } else {
-      detectLocation();
-    }
+    // Show preference quiz after walkthrough
+    setShowPreferenceTest(true);
   };
 
   const handlePreferenceTestComplete = () => {
