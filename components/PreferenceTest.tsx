@@ -207,7 +207,6 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
             id: user.id,
             email: user.email,
             taste_profile: preferences,
-            preferences_completed: true,
           });
         if (insertError) {
           console.error('Error creating profile:', insertError);
@@ -218,13 +217,15 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
           .from('profiles')
           .update({
             taste_profile: preferences,
-            preferences_completed: true,
           })
           .eq('id', user.id);
         if (updateError) {
           console.error('Error updating profile:', updateError);
         }
       }
+      
+      // Mark quiz as completed in localStorage
+      localStorage.setItem('lmk_quiz_completed', 'true');
       
       onComplete(preferences);
     } catch (error) {
