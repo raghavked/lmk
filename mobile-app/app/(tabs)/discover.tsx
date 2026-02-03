@@ -150,7 +150,19 @@ export default function DiscoverScreen() {
   ).current;
 
   useEffect(() => {
-    checkOnboardingAndPreferences();
+    let isMounted = true;
+    
+    const checkOnboarding = async () => {
+      if (isMounted) {
+        await checkOnboardingAndPreferences();
+      }
+    };
+    
+    checkOnboarding();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [session]);
 
   const checkOnboardingAndPreferences = async () => {

@@ -104,17 +104,47 @@ export default function DecideScreen() {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
 
   useEffect(() => {
-    getLocation();
+    let isMounted = true;
+    
+    const initLocation = async () => {
+      if (isMounted) {
+        await getLocation();
+      }
+    };
+    
+    initLocation();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    loadStoredData();
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (isMounted) {
+        await loadStoredData();
+      }
+    };
+    
+    loadData();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCategory]);
 
   useEffect(() => {
-    if (location) {
+    let isMounted = true;
+    
+    if (location && isMounted) {
       loadNextItem();
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCategory, location, distanceFilter]);
 
   const getLocation = async () => {

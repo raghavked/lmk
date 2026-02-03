@@ -61,6 +61,12 @@ Preferred communication style: Simple, everyday language.
 - **Types**: Defined in `lib/supabase/types.ts`
 
 ### Recent Enhancements (February 2026)
+- **One-Time Onboarding**: Walkthrough and preference quiz only appear once - the very first time a user logs in after signing up. Uses `lmk_onboarding_seen` AsyncStorage key.
+- **Improved Swipe Gestures**: Decide screen swipe gestures now use velocity detection and Animated.event for fluid card swiping. Object card modal uses swipe-down to dismiss (more natural gesture).
+- **Memory Leak Prevention**: Added proper cleanup functions to useEffect hooks across all screens (Discover, Decide, Friends, Groups) with isMounted checks for async operations.
+- **Better Modal UX**: Detail modals now have tap-outside-to-close, visible swipe handle bar, and smooth slide-down dismiss animation.
+- **Robust Auth Flow**: Login and signup with email normalization, better error messages, network error handling, and automatic profile creation fallbacks.
+- **Schema Resilience**: Removed dependency on `preferences_completed` column to avoid Supabase schema cache issues. Uses `taste_profile` presence instead.
 - **Switched to OpenAI**: All AI features now use OpenAI GPT-4o-mini for faster, more reliable responses. Plan My Day uses 256 max tokens for ~1-2s response times.
 - **Yelp API Caching**: Added 30-minute cache with location rounding and request throttling to prevent rate limit errors.
 - **Mobile App Beta Readiness**: Added global error boundary, skeleton loaders, pull-to-refresh, network error detection, and retry buttons across all screens for improved stability.
@@ -78,7 +84,6 @@ Preferred communication style: Simple, everyday language.
 - **Ratings Field Normalization**: Handles both rating/score and review/feedback field names for schema flexibility
 - **Accent Color Update**: Changed from #FF6B6B to softer coral #feafb0 throughout the app
 - **Preference Quiz Improvements**: Q5 (movie style) now allows multiple selections; Pizza removed from cuisine options
-- **Smart Walkthrough**: Only shows for first-time users who haven't completed preferences
 
 ### Enhancements (January 2026)
 - **Dark/Coral Theme**: Consistent dark mode (#0D1117 background) with coral accent (#FF6B6B) across all pages
