@@ -554,9 +554,12 @@ export default function DecideScreen() {
             setSessionSeenIds([]); // Reset session seen IDs
             setDecisionHistory([]);
             setDecisions({ yes: 0, no: 0 });
+            setItemQueue([]);
+            setCurrentItem(null);
             await AsyncStorage.removeItem(`lmk_decide_history_${selectedCategory}`);
             await AsyncStorage.removeItem(`lmk_decide_seen_${selectedCategory}`);
-            loadNextItem([]);
+            // Trigger refetch by changing location slightly then back
+            // The fetch useEffect will run since seenIds changed to []
           }
         },
       ]
