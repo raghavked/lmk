@@ -378,13 +378,11 @@ export default function DiscoverScreen() {
         newItems.forEach((item: RecommendationItem) => updatedSeenIds.add(item.id));
         setSeenIds(updatedSeenIds);
         
-        // Use API's hasMore flag or check if we got items
-        const apiHasMore = data.hasMore ?? (rawItems.length >= 20);
-        if (!apiHasMore && newItems.length === 0) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
+        // Use API's hasMore flag - trust the backend's pagination
+        // If API returns hasMore, there are more items to fetch
+        // Only mark as no more if API says so AND we got zero new unique items
+        const apiHasMore = data.hasMore !== false; // Default to true unless explicitly false
+        setHasMore(apiHasMore || newItems.length > 0);
         
         if (reset) {
           setRecommendations(newItems);
