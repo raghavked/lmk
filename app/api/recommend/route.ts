@@ -176,17 +176,24 @@ export async function GET(request: Request) {
     
     // OPTIMIZATION: Check if we have cached ranked results for pagination
     // Only use cache if we have enough items for this page
-    if (rankedCached && (now - rankedCached.timestamp) < CACHE_TTL && rankedCached.data.length >= offset + limit) {
-      console.log(`[Recommend API] Using cached ranked results (${rankedCached.data.length} items, offset ${offset})`);
-      const paginatedResults = rankedCached.data.slice(offset, offset + limit);
-      // Always indicate hasMore=true to allow endless scrolling (we'll fetch more when needed)
-      return NextResponse.json({ 
-        results: paginatedResults,
-        total: Math.max(rankedCached.total, 1000), // Indicate more available
-        offset,
-        limit,
-        hasMore: true, // Always allow loading more
-      });
+    // BUT always filter out seen IDs first
+    if (rankedCached && (now - rankedCached.timestamp) < CACHE_TTL) {
+      // Filter out seen IDs from cached results
+      const seenSet = new Set(seenIds);
+      const filteredCached = rankedCached.data.filter((r: any) => !seenSet.has(String(r.object?.id || r.id)));
+      
+      if (filteredCached.length >= offset + limit) {
+        console.log(`[Recommend API] Using cached ranked results (${filteredCached.length} items after filtering ${seenIds.length} seen, offset ${offset})`);
+        const paginatedResults = filteredCached.slice(offset, offset + limit);
+        // Always indicate hasMore=true to allow endless scrolling (we'll fetch more when needed)
+        return NextResponse.json({ 
+          results: paginatedResults,
+          total: Math.max(rankedCached.total, 1000), // Indicate more available
+          offset,
+          limit,
+          hasMore: true, // Always allow loading more
+        });
+      }
     }
 
     const profileWithTaste = { 
