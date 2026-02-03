@@ -52,22 +52,36 @@ export default function RatingModal({ object, onClose }: RatingModalProps) {
     }
   };
 
+  // Handle backdrop click to close
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end z-50 animate-in fade-in">
-      <div className="w-full bg-white rounded-t-[32px] p-8 animate-in slide-in-from-bottom duration-300">
+    <div 
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end z-50 animate-in fade-in"
+      onClick={handleBackdropClick}
+    >
+      <div className="w-full bg-[#1a1a1a] rounded-t-[32px] p-8 animate-in slide-in-from-bottom duration-300 border-t border-gray-700">
+        {/* Swipe handle indicator */}
+        <div className="flex justify-center -mt-4 mb-4">
+          <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
+        </div>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-black text-black">Rate this item</h2>
+          <h2 className="text-2xl font-black text-white">Rate this item</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+            className="p-2 hover:bg-gray-700 rounded-full transition"
             aria-label="Close"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-gray-400" />
           </button>
         </div>
 
         <div className="mb-8">
-          <p className="text-black/60 font-bold mb-4">{object.title}</p>
+          <p className="text-gray-300 font-bold mb-4">{object.title}</p>
           <div className="flex gap-4 justify-center">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -78,8 +92,8 @@ export default function RatingModal({ object, onClose }: RatingModalProps) {
                 <Star
                   className={`w-10 h-10 ${
                     star <= rating
-                      ? 'fill-brand-600 text-brand-600'
-                      : 'text-gray-300'
+                      ? 'fill-[#feafb0] text-[#feafb0]'
+                      : 'text-gray-500'
                   }`}
                 />
               </button>
@@ -88,14 +102,14 @@ export default function RatingModal({ object, onClose }: RatingModalProps) {
         </div>
 
         <div className="mb-8">
-          <label className="block text-sm font-black text-black/60 mb-2 uppercase tracking-widest">
+          <label className="block text-sm font-black text-gray-400 mb-2 uppercase tracking-widest">
             Optional feedback
           </label>
           <textarea
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder="Share your thoughts..."
-            className="w-full p-4 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+            className="w-full p-4 bg-gray-800 border border-gray-600 rounded-2xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#feafb0] focus:border-transparent resize-none"
             rows={4}
           />
         </div>
@@ -103,14 +117,14 @@ export default function RatingModal({ object, onClose }: RatingModalProps) {
         <div className="flex gap-4">
           <button
             onClick={onClose}
-            className="flex-1 py-4 bg-gray-100 text-black rounded-2xl font-black hover:bg-gray-200 transition"
+            className="flex-1 py-4 bg-gray-700 text-white rounded-2xl font-black hover:bg-gray-600 transition"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="flex-1 py-4 bg-black text-white rounded-2xl font-black hover:bg-gray-900 transition disabled:opacity-50"
+            className="flex-1 py-4 bg-[#feafb0] text-gray-900 rounded-2xl font-black hover:bg-[#feafb0]/90 transition disabled:opacity-50"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Rating'}
           </button>
