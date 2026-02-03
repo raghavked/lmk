@@ -109,12 +109,29 @@ export default function DecideScreen() {
   const currentItemRef = useRef<DecideItem | null>(null);
   const handleDecisionRef = useRef<(decision: 'yes' | 'no') => Promise<void>>();
 
+  // Initialize location on mount
   useEffect(() => {
     let isMounted = true;
     
     const initLocation = async () => {
-      if (isMounted) {
-        await getLocation();
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted' && isMounted) {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
+        } else if (isMounted) {
+          // Use default location (Los Angeles) if permission denied
+          console.log('[Decide] Location permission denied, using default');
+          setLocation({ lat: 34.0522, lng: -118.2437 });
+        }
+      } catch (error) {
+        console.warn('[Decide] Location error:', error);
+        if (isMounted) {
+          // Use default location on error
+          setLocation({ lat: 34.0522, lng: -118.2437 });
+        }
       }
     };
     
@@ -125,62 +142,114 @@ export default function DecideScreen() {
     };
   }, []);
 
+  // Load stored data when category changes
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadData = async () => {
-      if (isMounted) {
-        await loadStoredData();
-      }
-    };
-    
-    loadData();
-    
-    return () => {
-      isMounted = false;
-    };
+    loadStoredData();
   }, [selectedCategory]);
 
+  // Track if we've done initial load
+  const hasInitializedRef = useRef(false);
+  const categoryRef = useRef(selectedCategory);
+  const locationRef = useRef(location);
+  const distanceRef = useRef(distanceFilter);
+  
+  // Update refs
   useEffect(() => {
-    let isMounted = true;
+    categoryRef.current = selectedCategory;
+  }, [selectedCategory]);
+  
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+  
+  useEffect(() => {
+    distanceRef.current = distanceFilter;
+  }, [distanceFilter]);
+
+  // Fetch items when location is ready or when category/filters change
+  useEffect(() => {
+    if (!location) return;
     
-    // Clear queue when category or filters change
+    // Clear queue and fetch new items
     setItemQueue([]);
     setCurrentItem(null);
+    setLoading(true);
     
-    if (location && isMounted) {
-      loadNextItem();
-    }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [selectedCategory, location, distanceFilter]);
-
-  const getLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 10000,
-        });
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
-      } else {
-        console.log('Location permission denied');
-      }
-    } catch (error) {
-      console.warn('Location error:', error);
+    const fetchItems = async () => {
       try {
-        const lastKnown = await Location.getLastKnownPositionAsync({});
-        if (lastKnown) {
-          setLocation({ lat: lastKnown.coords.latitude, lng: lastKnown.coords.longitude });
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          setLoading(false);
+          setError('Please sign in');
+          return;
         }
-      } catch (fallbackError) {
-        console.warn('Location fallback error:', fallbackError);
+        
+        const params = new URLSearchParams({
+          category: selectedCategory,
+          limit: '10',
+          mode: 'decide',
+        });
+        
+        if (seenIds.length > 0) {
+          params.append('seen_ids', seenIds.join(','));
+        }
+        
+        params.append('lat', location.lat.toString());
+        params.append('lng', location.lng.toString());
+        params.append('radius', (distanceFilter * 1609).toString());
+        
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+        console.log('[Decide] Fetching items for category:', selectedCategory);
+        
+        const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'X-Auth-Token': accessToken,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.results && data.results.length > 0) {
+            const items = data.results.map((r: any) => ({
+              id: r.object?.id || r.id || Math.random().toString(),
+              title: r.object?.title || r.title || 'Untitled',
+              description: r.object?.description || '',
+              image_url: r.object?.image_url || r.object?.primary_image?.url,
+              category: selectedCategory,
+              personalized_score: r.personalized_score,
+              distance: r.distance || r.object?.distance,
+              rating: r.object?.rating || r.object?.external_rating,
+              price: r.object?.price,
+              location: r.object?.location,
+              explanation: r.explanation,
+            }));
+            
+            const [first, ...rest] = items;
+            setCurrentItem(first);
+            setItemQueue(rest);
+            setError(null);
+            console.log('[Decide] Loaded', items.length, 'items');
+          } else {
+            setCurrentItem(null);
+            setError('No items found');
+          }
+        } else {
+          setError('Failed to load items');
+        }
+      } catch (err) {
+        console.error('[Decide] Fetch error:', err);
+        setError('Network error');
+      } finally {
+        setLoading(false);
       }
-    }
-  };
+    };
+    
+    fetchItems();
+  }, [selectedCategory, location, distanceFilter]);
 
   const loadStoredData = async () => {
     try {
@@ -227,133 +296,25 @@ export default function DecideScreen() {
     }
   };
 
-  // Fetch a batch of items and add to queue
-  const fetchBatch = async (excludeIds?: string[]): Promise<DecideItem[]> => {
-    try {
-      const accessToken = await getAccessToken();
-      if (!accessToken) return [];
-
-      const params = new URLSearchParams({
-        category: selectedCategory,
-        limit: '10', // Fetch 10 items at once for smoother swiping
-        mode: 'decide',
-      });
-      
-      const idsToExclude = excludeIds || seenIds;
-      if (idsToExclude.length > 0) {
-        params.append('seen_ids', idsToExclude.join(','));
-      }
-      
-      if (location) {
-        params.append('lat', location.lat.toString());
-        params.append('lng', location.lng.toString());
-        params.append('radius', (distanceFilter * 1609).toString());
-      }
-
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      console.log('[Decide] Fetching batch of items...');
-      
-      const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Auth-Token': accessToken,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.results && data.results.length > 0) {
-          return data.results.map((r: any) => ({
-            id: r.object?.id || r.id || Math.random().toString(),
-            title: r.object?.title || r.title || 'Untitled',
-            description: r.object?.description || '',
-            image_url: r.object?.image_url || r.object?.primary_image?.url,
-            category: selectedCategory,
-            personalized_score: r.personalized_score,
-            distance: r.distance || r.object?.distance,
-            rating: r.object?.rating || r.object?.external_rating,
-            price: r.object?.price,
-            location: r.object?.location,
-            explanation: r.explanation,
-          }));
-        }
-      }
-      return [];
-    } catch (err) {
-      console.error('[Decide] Batch fetch error:', err);
-      return [];
-    }
-  };
-
-  // Pre-fetch more items when queue runs low
-  const prefetchIfNeeded = async (currentSeenIds: string[]) => {
-    if (isFetching || itemQueue.length >= 3) return;
-    
-    setIsFetching(true);
-    try {
-      const queueIds = itemQueue.map(item => item.id);
-      const allExcludeIds = [...currentSeenIds, ...queueIds];
-      const newItems = await fetchBatch(allExcludeIds);
-      if (newItems.length > 0) {
-        setItemQueue(prev => [...prev, ...newItems]);
-        console.log(`[Decide] Prefetched ${newItems.length} items, queue now has ${itemQueue.length + newItems.length}`);
-      }
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  const loadNextItem = async (excludeIds?: string[]) => {
-    const currentSeenIds = excludeIds || seenIds;
-    
-    // If we have items in the queue, use them instantly
-    if (itemQueue.length > 0) {
-      const [nextItem, ...remainingQueue] = itemQueue;
-      setCurrentItem(nextItem);
-      setItemQueue(remainingQueue);
-      setLoading(false);
-      setError(null);
-      
-      // Pre-fetch more items in background if queue is running low
-      prefetchIfNeeded(currentSeenIds);
+  // Handle yes/no decision
+  const handleDecision = useCallback(async (decision: 'yes' | 'no') => {
+    const item = currentItem;
+    if (!item) {
+      console.log('[Decide] No current item to decide on');
       return;
     }
     
-    // Queue is empty, need to fetch
-    setLoading(true);
-    setError(null);
+    console.log('[Decide] Decision:', decision, 'for item:', item.title);
     
     try {
-      const newItems = await fetchBatch(currentSeenIds);
-      if (newItems.length > 0) {
-        const [firstItem, ...rest] = newItems;
-        setCurrentItem(firstItem);
-        setItemQueue(rest);
-        console.log(`[Decide] Loaded ${newItems.length} items, showing first, ${rest.length} in queue`);
-      } else {
-        setCurrentItem(null);
-        setError('No more items to decide on');
-      }
-    } catch (err) {
-      console.error('[Decide] Error:', err);
-      setError('Network error');
-    } finally {
-      setLoading(false);
+      await Haptics.impactAsync(
+        decision === 'yes' 
+          ? Haptics.ImpactFeedbackStyle.Heavy 
+          : Haptics.ImpactFeedbackStyle.Medium
+      );
+    } catch (e) {
+      // Haptics might fail on some devices
     }
-  };
-
-  const handleDecision = useCallback(async (decision: 'yes' | 'no') => {
-    const item = currentItemRef.current;
-    if (!item) return;
-    
-    await Haptics.impactAsync(
-      decision === 'yes' 
-        ? Haptics.ImpactFeedbackStyle.Heavy 
-        : Haptics.ImpactFeedbackStyle.Medium
-    );
 
     const newRecord: DecisionRecord = {
       item: item,
@@ -361,46 +322,100 @@ export default function DecideScreen() {
       timestamp: new Date().toISOString(),
     };
 
-    setDecisionHistory(prev => {
-      const newHistory = [newRecord, ...prev].slice(0, 50);
-      return newHistory;
-    });
+    // Update all state
+    const newHistory = [newRecord, ...decisionHistory].slice(0, 50);
+    const newSeenIds = [...seenIds, item.id];
     
-    setSeenIds(prev => {
-      const newSeenIds = [...prev, item.id];
-      return newSeenIds;
-    });
-    
+    setDecisionHistory(newHistory);
+    setSeenIds(newSeenIds);
     setDecisions(prev => ({
       ...prev,
       [decision]: prev[decision] + 1,
     }));
+
+    // Save to storage
+    saveStoredData(newHistory, newSeenIds);
 
     if (decision === 'yes') {
       setMatchedItem(item);
       setShowMatchPopup(true);
     }
 
-    // Load next item with updated seen IDs
-    setSeenIds(prev => {
-      const updatedSeenIds = [...prev];
-      if (!updatedSeenIds.includes(item.id)) {
-        updatedSeenIds.push(item.id);
-      }
-      loadNextItem(updatedSeenIds);
-      saveStoredData(
-        [newRecord, ...decisionHistory].slice(0, 50),
-        updatedSeenIds
-      );
-      return updatedSeenIds;
-    });
-  }, [decisionHistory]);
+    // Move to next item from queue
+    if (itemQueue.length > 0) {
+      const [nextItem, ...rest] = itemQueue;
+      setCurrentItem(nextItem);
+      setItemQueue(rest);
+      
+      // Reset animation for new card
+      swipeAnim.setValue({ x: 0, y: 0 });
+      setSwipeDirection(null);
+    } else {
+      // Queue empty, need to fetch more
+      setCurrentItem(null);
+      setLoading(true);
+      
+      // Fetch more items
+      const fetchMore = async () => {
+        try {
+          const accessToken = await getAccessToken();
+          if (!accessToken || !locationRef.current) return;
+          
+          const params = new URLSearchParams({
+            category: categoryRef.current,
+            limit: '10',
+            mode: 'decide',
+            seen_ids: newSeenIds.join(','),
+          });
+          
+          params.append('lat', locationRef.current.lat.toString());
+          params.append('lng', locationRef.current.lng.toString());
+          params.append('radius', (distanceRef.current * 1609).toString());
+          
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+          const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'X-Auth-Token': accessToken,
+            },
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.results?.length > 0) {
+              const items = data.results.map((r: any) => ({
+                id: r.object?.id || r.id || Math.random().toString(),
+                title: r.object?.title || r.title || 'Untitled',
+                description: r.object?.description || '',
+                image_url: r.object?.image_url || r.object?.primary_image?.url,
+                category: categoryRef.current,
+                personalized_score: r.personalized_score,
+                distance: r.distance || r.object?.distance,
+                rating: r.object?.rating || r.object?.external_rating,
+                price: r.object?.price,
+                location: r.object?.location,
+                explanation: r.explanation,
+              }));
+              
+              const [first, ...rest] = items;
+              setCurrentItem(first);
+              setItemQueue(rest);
+            } else {
+              setError('No more items');
+            }
+          }
+        } catch (err) {
+          console.error('[Decide] Fetch more error:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      fetchMore();
+    }
+  }, [currentItem, itemQueue, decisionHistory, seenIds, swipeAnim, getAccessToken]);
   
-  // Keep refs updated
-  useEffect(() => {
-    currentItemRef.current = currentItem;
-  }, [currentItem]);
-  
+  // Keep handleDecision ref updated for panResponder
   useEffect(() => {
     handleDecisionRef.current = handleDecision;
   }, [handleDecision]);
@@ -414,39 +429,34 @@ export default function DecideScreen() {
     setSwipeDirection(null);
   }, [currentItem?.id]);
 
-  // Ref for swipe handler to use latest state in panResponder
-  const swipeHandlerRef = useRef<(direction: 'left' | 'right') => void>();
-  
-  // Swipe gesture handler - uses ref for latest handleDecision
-  const handleSwipeDecision = useCallback((direction: 'left' | 'right') => {
+  // Swipe gesture handler
+  const handleSwipeComplete = useCallback((direction: 'left' | 'right') => {
     const decision = direction === 'right' ? 'yes' : 'no';
     
-    // Flatten offset before animating off-screen
     swipeAnim.flattenOffset();
     
-    // Animate card off screen - must use useNativeDriver: false to match gesture handler
     Animated.timing(swipeAnim, {
       toValue: { x: direction === 'right' ? width * 1.5 : -width * 1.5, y: 0 },
       duration: 200,
       useNativeDriver: false,
     }).start(() => {
-      // Use ref to call the latest handleDecision
       if (handleDecisionRef.current) {
         handleDecisionRef.current(decision);
       }
     });
   }, [swipeAnim]);
-  
-  // Keep swipe handler ref updated
-  useEffect(() => {
-    swipeHandlerRef.current = handleSwipeDecision;
-  }, [handleSwipeDecision]);
 
-  // Pan responder for swipe gestures - uses useMemo to recreate when needed
+  // Ref to hold latest swipe handler
+  const swipeHandlerRef = useRef(handleSwipeComplete);
+  useEffect(() => {
+    swipeHandlerRef.current = handleSwipeComplete;
+  }, [handleSwipeComplete]);
+
+  // Pan responder for swipe gestures
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dx) > 5;
+      return Math.abs(gestureState.dx) > 10;
     },
     onPanResponderGrant: () => {
       swipeAnim.stopAnimation();
@@ -454,9 +464,9 @@ export default function DecideScreen() {
     },
     onPanResponderMove: (_, gestureState) => {
       swipeAnim.x.setValue(gestureState.dx);
-      if (gestureState.dx > 40) {
+      if (gestureState.dx > 50) {
         setSwipeDirection('right');
-      } else if (gestureState.dx < -40) {
+      } else if (gestureState.dx < -50) {
         setSwipeDirection('left');
       } else {
         setSwipeDirection(null);
@@ -464,13 +474,13 @@ export default function DecideScreen() {
     },
     onPanResponderRelease: (_, gestureState) => {
       swipeAnim.flattenOffset();
-      const swipeThreshold = width * 0.2;
-      const velocityThreshold = 0.5;
+      const swipeThreshold = width * 0.25;
+      const velocityThreshold = 0.3;
       
       if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
-        if (swipeHandlerRef.current) swipeHandlerRef.current('right');
+        swipeHandlerRef.current('right');
       } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
-        if (swipeHandlerRef.current) swipeHandlerRef.current('left');
+        swipeHandlerRef.current('left');
       } else {
         setSwipeDirection(null);
         Animated.spring(swipeAnim, {
