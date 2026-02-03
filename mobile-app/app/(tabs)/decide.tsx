@@ -99,6 +99,8 @@ export default function DecideScreen() {
   const [showMatchPopup, setShowMatchPopup] = useState(false);
   const [matchedItem, setMatchedItem] = useState<DecideItem | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showExpandedCard, setShowExpandedCard] = useState(false);
+  const [expandedItem, setExpandedItem] = useState<DecideItem | null>(null);
   
   // Swipe animation values
   const swipeAnim = useRef(new Animated.ValueXY()).current;
@@ -680,61 +682,75 @@ export default function DecideScreen() {
                 </View>
               )}
               
-            {currentItem.image_url && (
-              <View style={styles.cardImageContainer}>
-                <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
-                <View style={styles.cardOverlay} />
-              </View>
-            )}
-            
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle} numberOfLines={2}>{currentItem.title}</Text>
-              
-              {currentItem.explanation?.tagline && (
-                <Text style={styles.cardTagline}>{currentItem.explanation.tagline}</Text>
+            <TouchableOpacity 
+              activeOpacity={0.95}
+              onPress={() => {
+                setExpandedItem(currentItem);
+                setShowExpandedCard(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              style={styles.cardTouchable}
+            >
+              {currentItem.image_url && (
+                <View style={styles.cardImageContainer}>
+                  <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
+                  <View style={styles.cardOverlay} />
+                </View>
               )}
               
-              <View style={styles.metaRow}>
-                {currentItem.location?.city && (
-                  <View style={styles.metaItem}>
-                    <Ionicons name="location" size={14} color={Colors.accent.coral} />
-                    <Text style={styles.metaText}>
-                      {currentItem.location.city}{currentItem.location.state ? `, ${currentItem.location.state}` : ''}
-                    </Text>
-                  </View>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle} numberOfLines={2}>{currentItem.title}</Text>
+                
+                {currentItem.explanation?.tagline && (
+                  <Text style={styles.cardTagline}>{currentItem.explanation.tagline}</Text>
                 )}
-                {currentItem.distance !== undefined && (
-                  <View style={styles.distanceBadge}>
-                    <Text style={styles.distanceText}>{formatDistance(currentItem.distance)}</Text>
-                  </View>
+                
+                <View style={styles.metaRow}>
+                  {currentItem.location?.city && (
+                    <View style={styles.metaItem}>
+                      <Ionicons name="location" size={14} color={Colors.accent.coral} />
+                      <Text style={styles.metaText}>
+                        {currentItem.location.city}{currentItem.location.state ? `, ${currentItem.location.state}` : ''}
+                      </Text>
+                    </View>
+                  )}
+                  {currentItem.distance !== undefined && (
+                    <View style={styles.distanceBadge}>
+                      <Text style={styles.distanceText}>{formatDistance(currentItem.distance)}</Text>
+                    </View>
+                  )}
+                </View>
+                
+                <View style={styles.metricsRow}>
+                  {currentItem.rating && (
+                    <View style={styles.metric}>
+                      <Text style={styles.metricLabel}>Rating</Text>
+                      <Text style={styles.metricValue}>
+                        {selectedCategory === 'restaurants' || selectedCategory === 'activities' 
+                          ? `${currentItem.rating.toFixed(1)}/5` 
+                          : `${currentItem.rating.toFixed(1)}/10`}
+                      </Text>
+                    </View>
+                  )}
+                  {currentItem.price && (
+                    <View style={styles.metric}>
+                      <Text style={styles.metricLabel}>Price</Text>
+                      <Text style={styles.metricValue}>{currentItem.price}</Text>
+                    </View>
+                  )}
+                </View>
+                
+                {currentItem.explanation?.why_youll_like && (
+                  <Text style={styles.cardDescription} numberOfLines={3}>
+                    {currentItem.explanation.why_youll_like}
+                  </Text>
                 )}
+                
+                <View style={styles.tapHint}>
+                  <Text style={styles.tapHintText}>Tap for details</Text>
+                </View>
               </View>
-              
-              <View style={styles.metricsRow}>
-                {currentItem.rating && (
-                  <View style={styles.metric}>
-                    <Text style={styles.metricLabel}>Rating</Text>
-                    <Text style={styles.metricValue}>
-                      {selectedCategory === 'restaurants' || selectedCategory === 'activities' 
-                        ? `${currentItem.rating.toFixed(1)}/5` 
-                        : `${currentItem.rating.toFixed(1)}/10`}
-                    </Text>
-                  </View>
-                )}
-                {currentItem.price && (
-                  <View style={styles.metric}>
-                    <Text style={styles.metricLabel}>Price</Text>
-                    <Text style={styles.metricValue}>{currentItem.price}</Text>
-                  </View>
-                )}
-              </View>
-              
-              {currentItem.explanation?.why_youll_like && (
-                <Text style={styles.cardDescription} numberOfLines={3}>
-                  {currentItem.explanation.why_youll_like}
-                </Text>
-              )}
-            </View>
+            </TouchableOpacity>
           </Animated.View>
           
           <View style={styles.swipeHint}>
@@ -750,10 +766,70 @@ export default function DecideScreen() {
 
       <Modal visible={showMatchPopup} transparent animationType="fade">
         <View style={styles.matchOverlay}>
-          <View style={styles.matchModal}>
-            <Text style={styles.matchEmoji}>🎉</Text>
-            <Text style={styles.matchTitle}>It's a Match!</Text>
-            <Text style={styles.matchItemTitle}>{matchedItem?.title}</Text>
+          <ScrollView contentContainerStyle={styles.matchScrollContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.matchHeader}>
+              <Text style={styles.matchEmoji}>🎉</Text>
+              <Text style={styles.matchTitle}>It's a Match!</Text>
+              <Text style={styles.matchSubtitle}>Added to your favorites</Text>
+            </View>
+            
+            {matchedItem && (
+              <View style={styles.matchCard}>
+                {matchedItem.image_url && (
+                  <Image source={{ uri: matchedItem.image_url }} style={styles.matchCardImage} />
+                )}
+                <View style={styles.matchCardContent}>
+                  <Text style={styles.matchCardTitle}>{matchedItem.title}</Text>
+                  
+                  {matchedItem.explanation?.tagline && (
+                    <Text style={styles.matchCardTagline}>{matchedItem.explanation.tagline}</Text>
+                  )}
+                  
+                  <View style={styles.matchMetaRow}>
+                    {matchedItem.location?.city && (
+                      <View style={styles.metaItem}>
+                        <Ionicons name="location" size={14} color={Colors.accent.coral} />
+                        <Text style={styles.metaText}>
+                          {matchedItem.location.city}{matchedItem.location.state ? `, ${matchedItem.location.state}` : ''}
+                        </Text>
+                      </View>
+                    )}
+                    {matchedItem.distance !== undefined && (
+                      <View style={styles.distanceBadge}>
+                        <Text style={styles.distanceText}>{formatDistance(matchedItem.distance)}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.matchMetricsRow}>
+                    {matchedItem.rating && (
+                      <View style={styles.matchMetric}>
+                        <Ionicons name="star" size={16} color="#FFD700" />
+                        <Text style={styles.matchMetricText}>
+                          {selectedCategory === 'restaurants' || selectedCategory === 'activities' 
+                            ? matchedItem.rating.toFixed(1) 
+                            : matchedItem.rating.toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
+                    {matchedItem.price && (
+                      <View style={styles.matchMetric}>
+                        <Text style={styles.matchMetricText}>{matchedItem.price}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {matchedItem.explanation?.why_youll_like && (
+                    <Text style={styles.matchCardDescription}>{matchedItem.explanation.why_youll_like}</Text>
+                  )}
+                  
+                  {matchedItem.description && !matchedItem.explanation?.why_youll_like && (
+                    <Text style={styles.matchCardDescription}>{matchedItem.description}</Text>
+                  )}
+                </View>
+              </View>
+            )}
+            
             <TouchableOpacity 
               style={styles.matchButton} 
               onPress={() => {
@@ -761,8 +837,95 @@ export default function DecideScreen() {
                 setMatchedItem(null);
               }}
             >
-              <Text style={styles.matchButtonText}>Continue</Text>
+              <Text style={styles.matchButtonText}>Continue Swiping</Text>
             </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={showExpandedCard} transparent animationType="slide">
+        <View style={styles.expandedOverlay}>
+          <View style={styles.expandedModal}>
+            <TouchableOpacity 
+              style={styles.expandedCloseButton} 
+              onPress={() => {
+                setShowExpandedCard(false);
+                setExpandedItem(null);
+              }}
+            >
+              <Ionicons name="close" size={28} color={Colors.text.primary} />
+            </TouchableOpacity>
+            
+            {expandedItem && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.expandedScrollContent}>
+                {expandedItem.image_url && (
+                  <Image source={{ uri: expandedItem.image_url }} style={styles.expandedImage} />
+                )}
+                
+                <View style={styles.expandedContent}>
+                  <Text style={styles.expandedTitle}>{expandedItem.title}</Text>
+                  
+                  {expandedItem.explanation?.tagline && (
+                    <Text style={styles.expandedTagline}>{expandedItem.explanation.tagline}</Text>
+                  )}
+                  
+                  <View style={styles.expandedMetaRow}>
+                    {expandedItem.location?.city && (
+                      <View style={styles.metaItem}>
+                        <Ionicons name="location" size={16} color={Colors.accent.coral} />
+                        <Text style={styles.expandedMetaText}>
+                          {expandedItem.location.city}{expandedItem.location.state ? `, ${expandedItem.location.state}` : ''}
+                        </Text>
+                      </View>
+                    )}
+                    {expandedItem.distance !== undefined && (
+                      <View style={styles.expandedDistanceBadge}>
+                        <Text style={styles.distanceText}>{formatDistance(expandedItem.distance)}</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  <View style={styles.expandedMetricsRow}>
+                    {expandedItem.rating && (
+                      <View style={styles.expandedMetric}>
+                        <Ionicons name="star" size={20} color="#FFD700" />
+                        <Text style={styles.expandedMetricValue}>
+                          {selectedCategory === 'restaurants' || selectedCategory === 'activities' 
+                            ? `${expandedItem.rating.toFixed(1)}/5` 
+                            : `${expandedItem.rating.toFixed(1)}/10`}
+                        </Text>
+                      </View>
+                    )}
+                    {expandedItem.price && (
+                      <View style={styles.expandedMetric}>
+                        <Text style={styles.expandedMetricLabel}>Price</Text>
+                        <Text style={styles.expandedMetricValue}>{expandedItem.price}</Text>
+                      </View>
+                    )}
+                    {expandedItem.personalized_score && (
+                      <View style={styles.expandedMetric}>
+                        <Text style={styles.expandedMetricLabel}>Match</Text>
+                        <Text style={styles.expandedMetricValue}>{Math.round(expandedItem.personalized_score * 100)}%</Text>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {expandedItem.explanation?.why_youll_like && (
+                    <View style={styles.expandedSection}>
+                      <Text style={styles.expandedSectionTitle}>Why You'll Love It</Text>
+                      <Text style={styles.expandedSectionText}>{expandedItem.explanation.why_youll_like}</Text>
+                    </View>
+                  )}
+                  
+                  {expandedItem.description && (
+                    <View style={styles.expandedSection}>
+                      <Text style={styles.expandedSectionTitle}>About</Text>
+                      <Text style={styles.expandedSectionText}>{expandedItem.description}</Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            )}
           </View>
         </View>
       </Modal>
@@ -1140,44 +1303,213 @@ const styles = StyleSheet.create({
   },
   matchOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  matchScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
-  matchModal: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 24,
-    padding: 32,
+  matchHeader: {
     alignItems: 'center',
-    width: width - 64,
-    maxWidth: 320,
+    marginBottom: 24,
   },
   matchEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
+    fontSize: 72,
+    marginBottom: 12,
   },
   matchTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: Colors.accent.coral,
+    marginBottom: 4,
+  },
+  matchSubtitle: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+  },
+  matchCard: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 20,
+    overflow: 'hidden',
+    width: width - 48,
+    maxWidth: 380,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: Colors.accent.coral,
+  },
+  matchCardImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: Colors.background.tertiary,
+  },
+  matchCardContent: {
+    padding: 20,
+  },
+  matchCardTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
     marginBottom: 8,
   },
-  matchItemTitle: {
-    fontSize: 18,
+  matchCardTagline: {
+    fontSize: 15,
+    color: Colors.accent.coral,
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  matchMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  matchMetricsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 12,
+  },
+  matchMetric: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  matchMetricText: {
+    fontSize: 14,
     color: Colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 24,
+    fontWeight: '500',
+  },
+  matchCardDescription: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    lineHeight: 20,
   },
   matchButton: {
     backgroundColor: Colors.accent.coral,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
+    paddingHorizontal: 40,
+    paddingVertical: 16,
     borderRadius: 12,
   },
   matchButtonText: {
     color: Colors.background.primary,
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  cardTouchable: {
+    flex: 1,
+  },
+  tapHint: {
+    alignItems: 'center',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  tapHintText: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+  },
+  expandedOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+  },
+  expandedModal: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    marginTop: 50,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  expandedCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 100,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  expandedScrollContent: {
+    paddingBottom: 40,
+  },
+  expandedImage: {
+    width: '100%',
+    height: height * 0.35,
+    backgroundColor: Colors.background.tertiary,
+  },
+  expandedContent: {
+    padding: 24,
+  },
+  expandedTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  expandedTagline: {
+    fontSize: 17,
+    color: Colors.accent.coral,
+    fontStyle: 'italic',
+    marginBottom: 16,
+  },
+  expandedMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 20,
+  },
+  expandedMetaText: {
+    fontSize: 15,
+    color: Colors.text.secondary,
+    marginLeft: 4,
+  },
+  expandedDistanceBadge: {
+    backgroundColor: Colors.background.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  expandedMetricsRow: {
+    flexDirection: 'row',
+    gap: 24,
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  expandedMetric: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  expandedMetricLabel: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    textTransform: 'uppercase',
+  },
+  expandedMetricValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  expandedSection: {
+    marginBottom: 20,
+  },
+  expandedSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.accent.coral,
+    marginBottom: 8,
+  },
+  expandedSectionText: {
+    fontSize: 15,
+    color: Colors.text.secondary,
+    lineHeight: 24,
   },
   historyModalContainer: {
     flex: 1,
