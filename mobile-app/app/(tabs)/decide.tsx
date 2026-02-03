@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, 
-  Dimensions, Modal, ScrollView, Alert, PanResponder, Animated
+  Dimensions, Modal, ScrollView, Alert, PanResponder, Animated, SafeAreaView
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -442,60 +442,36 @@ export default function DecideScreen() {
     swipeHandlerRef.current = handleSwipeDecision;
   }, [handleSwipeDecision]);
 
-  // Pan responder for swipe gestures - uses refs for latest handlers
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Respond to any horizontal movement
-        return Math.abs(gestureState.dx) > 5;
-      },
-      onPanResponderGrant: () => {
-        // Stop any running animation when touch starts
-        swipeAnim.stopAnimation();
-        swipeAnim.extractOffset();
-      },
-      onPanResponderMove: Animated.event(
-        [null, { dx: swipeAnim.x }],
-        { 
-          useNativeDriver: false,
-          listener: (_, gestureState: any) => {
-            // Update swipe direction indicator
-            if (gestureState.dx > 40) {
-              setSwipeDirection('right');
-            } else if (gestureState.dx < -40) {
-              setSwipeDirection('left');
-            } else {
-              setSwipeDirection(null);
-            }
-          }
-        }
-      ),
-      onPanResponderRelease: (_, gestureState) => {
-        swipeAnim.flattenOffset();
-        const swipeThreshold = width * 0.2;
-        const velocityThreshold = 0.5;
-        
-        // Check both position and velocity for more responsive swiping
-        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
-          // Swipe right = yes - use ref for latest handler
-          if (swipeHandlerRef.current) swipeHandlerRef.current('right');
-        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
-          // Swipe left = no - use ref for latest handler
-          if (swipeHandlerRef.current) swipeHandlerRef.current('left');
-        } else {
-          // Return to center with smooth spring - must use useNativeDriver: false to match gesture handler
-          setSwipeDirection(null);
-          Animated.spring(swipeAnim, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-            friction: 6,
-            tension: 40,
-          }).start();
-        }
-      },
-      onPanResponderTerminate: () => {
-        swipeAnim.flattenOffset();
+  // Pan responder for swipe gestures - uses useMemo to recreate when needed
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, gestureState) => {
+      return Math.abs(gestureState.dx) > 5;
+    },
+    onPanResponderGrant: () => {
+      swipeAnim.stopAnimation();
+      swipeAnim.extractOffset();
+    },
+    onPanResponderMove: (_, gestureState) => {
+      swipeAnim.x.setValue(gestureState.dx);
+      if (gestureState.dx > 40) {
+        setSwipeDirection('right');
+      } else if (gestureState.dx < -40) {
+        setSwipeDirection('left');
+      } else {
+        setSwipeDirection(null);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      swipeAnim.flattenOffset();
+      const swipeThreshold = width * 0.2;
+      const velocityThreshold = 0.5;
+      
+      if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
+        if (swipeHandlerRef.current) swipeHandlerRef.current('right');
+      } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
+        if (swipeHandlerRef.current) swipeHandlerRef.current('left');
+      } else {
         setSwipeDirection(null);
         Animated.spring(swipeAnim, {
           toValue: { x: 0, y: 0 },
@@ -503,9 +479,19 @@ export default function DecideScreen() {
           friction: 6,
           tension: 40,
         }).start();
-      },
-    })
-  ).current;
+      }
+    },
+    onPanResponderTerminate: () => {
+      swipeAnim.flattenOffset();
+      setSwipeDirection(null);
+      Animated.spring(swipeAnim, {
+        toValue: { x: 0, y: 0 },
+        useNativeDriver: false,
+        friction: 6,
+        tension: 40,
+      }).start();
+    },
+  }), [swipeAnim]);
 
   // Calculate card rotation based on swipe position
   const cardRotation = swipeAnim.x.interpolate({
@@ -545,16 +531,16 @@ export default function DecideScreen() {
 
   if (loading && !currentItem) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.skeletonContainer}>
           <CardSkeleton />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
           {CATEGORIES.map((cat) => {
@@ -816,7 +802,7 @@ export default function DecideScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
