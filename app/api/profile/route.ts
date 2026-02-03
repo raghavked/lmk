@@ -1,6 +1,35 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+async function authenticateRequest(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  const xAuthToken = request.headers.get('X-Auth-Token');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+
+  if (token) {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      return { user, supabase: supabaseAdmin };
+    }
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.user) {
+    return { user: session.user, supabase };
+  }
+  
+  return null;
+}
 
 // POST - Create profile (uses service role key for reliability)
 export async function POST(request: NextRequest) {
@@ -61,18 +90,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+
+    const { user, supabase } = auth;
 
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
 
     if (error) {
@@ -88,13 +116,12 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
+
+    const { user, supabase } = auth;
 
     const body = await request.json();
     const { full_name, profile_image, taste_profile, location } = body;
@@ -114,7 +141,7 @@ export async function PATCH(request: NextRequest) {
     const { data: profile, error } = await supabase
       .from('profiles')
       .update(updates)
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .select()
       .single();
 
@@ -131,15 +158,13 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const { user, supabase } = auth;
+    const userId = user.id;
 
     const { error: ratingsError } = await supabase
       .from('ratings')
@@ -159,21 +184,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete profile' }, { status: 500 });
     }
 
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    
-    if (serviceRoleKey && supabaseUrl) {
-      const { createClient } = await import('@supabase/supabase-js');
-      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false }
-      });
-      
-      const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
-      if (authError) {
-        console.warn('Could not delete auth user:', authError.message);
-      }
-    } else {
-      console.warn('Service role key not available - auth user not deleted');
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authError) {
+      console.warn('Could not delete auth user:', authError.message);
     }
 
     return NextResponse.json({ message: 'Account deleted successfully' });
