@@ -157,34 +157,53 @@ export class YelpAPI {
     const lng = userLng || profile.location?.coordinates?.[1] || -118.2437;
     const radius = userRadius || 16000;
     
-    console.log(`[Yelp API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}, userLat=${userLat}, userLng=${userLng}`);
+    console.log(`[Yelp API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}, limit=${limit}, offset=${offset}`);
 
+    // For search queries, use Yelp's native pagination
     if (query && query.length >= 2) {
       return this.search({
         latitude: lat,
         longitude: lng,
         radius,
         term: category === 'restaurants' ? `${query} restaurant` : query,
-        limit: Math.max(limit, 20),
+        limit: Math.min(limit, 50), // Yelp max is 50 per request
         offset,
         sort_by: 'best_match',
       });
     }
 
+    // For browsing, fetch large batches directly from Yelp with native pagination
+    // Yelp supports up to 1000 results with offset (50 per page x 20 pages)
     if (category === 'restaurants') {
-      const allSections = await this.getAllRestaurantSections(lat, lng, radius);
-      const combined = [...allSections.trending, ...allSections.newOpenings, ...allSections.popular, ...allSections.topRated];
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex((t) => t.id === item.id)
-      );
-      return unique.slice(offset, offset + limit);
+      const results = await this.search({
+        latitude: lat,
+        longitude: lng,
+        radius,
+        term: 'restaurants',
+        limit: Math.min(limit, 50),
+        offset: offset,
+        sort_by: 'best_match',
+      });
+      console.log(`[Yelp API] Fetched ${results.length} restaurants at offset ${offset}`);
+      return results;
     } else if (category === 'activities') {
-      const allSections = await this.getAllActivitySections(lat, lng, radius);
-      const combined = [...allSections.trending, ...allSections.newEvents, ...allSections.popular, ...allSections.topRated];
-      const unique = combined.filter((item, index, self) =>
-        index === self.findIndex((t) => t.id === item.id)
-      );
-      return unique.slice(offset, offset + limit);
+      // For activities, search across multiple activity terms
+      const activityTerms = ['things to do', 'entertainment', 'attractions'];
+      const termIndex = Math.floor(offset / 50) % activityTerms.length;
+      const adjustedOffset = offset % 50;
+      
+      const results = await this.search({
+        latitude: lat,
+        longitude: lng,
+        radius,
+        term: activityTerms[termIndex],
+        categories: 'active,arts,nightlife,entertainment',
+        limit: Math.min(limit, 50),
+        offset: adjustedOffset,
+        sort_by: 'best_match',
+      });
+      console.log(`[Yelp API] Fetched ${results.length} activities at offset ${offset}`);
+      return results;
     }
     
     return this.search({
@@ -192,7 +211,7 @@ export class YelpAPI {
       longitude: lng,
       radius,
       term: category,
-      limit,
+      limit: Math.min(limit, 50),
       offset,
     });
   }

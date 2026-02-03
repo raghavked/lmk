@@ -40,8 +40,9 @@ export class ActivitiesAPI {
       const lng = userLng || profile?.location?.coordinates?.[1] || -74.0060;
       const radius = userRadius || 16000;
       
-      console.log(`[Activities API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}`);
+      console.log(`[Activities API] getRecommendations called with lat=${lat}, lng=${lng}, radius=${radius}, limit=${limit}, offset=${offset}`);
       
+      // For search queries, use Yelp's native pagination
       if (query && query.length >= 2) {
         const response = await axios.get(`${this.baseUrl}/businesses/search`, {
           headers: {
@@ -52,47 +53,52 @@ export class ActivitiesAPI {
             longitude: lng,
             radius: Math.min(radius, 40000),
             term: query,
-            limit: Math.max(limit, 20),
+            limit: Math.min(limit, 50),
+            offset: offset,
             sort_by: 'best_match',
           },
         });
         return (response.data.businesses || []).map(this.normalize);
       }
       
-      const categories = ['arts', 'active', 'nightlife', 'parks', 'tours', 'landmarks'];
+      // Rotate through activity categories based on offset for endless variety
+      // Yelp supports up to 1000 results per category with pagination
+      const categories = [
+        'arts,entertainment', 'active', 'nightlife', 'parks', 
+        'tours', 'landmarks', 'museums', 'amusementparks',
+        'bowling', 'escapegames', 'gokarts', 'mini_golf'
+      ];
       
-      const allActivities: any[] = [];
+      // Use offset to determine which category and page within that category
+      const categoryIndex = Math.floor(offset / 50) % categories.length;
+      const categoryOffset = offset % 50;
+      const selectedCategory = categories[categoryIndex];
       
-      for (const category of categories) {
-        try {
-          const response = await axios.get(`${this.baseUrl}/businesses/search`, {
-            headers: {
-              'Authorization': `Bearer ${this.yelpApiKey}`,
-            },
-            params: {
-              latitude: lat,
-              longitude: lng,
-              radius: Math.min(radius, 40000),
-              categories: category,
-              limit: 10,
-              sort_by: 'rating',
-            },
-          });
-          
-          const businesses = response.data.businesses || [];
-          allActivities.push(...businesses.map(this.normalize));
-        } catch (err) {
-          console.warn(`Failed to fetch ${category} activities:`, err);
-        }
+      console.log(`[Activities API] Fetching category "${selectedCategory}" at offset ${categoryOffset}`);
+      
+      try {
+        const response = await axios.get(`${this.baseUrl}/businesses/search`, {
+          headers: {
+            'Authorization': `Bearer ${this.yelpApiKey}`,
+          },
+          params: {
+            latitude: lat,
+            longitude: lng,
+            radius: Math.min(radius, 40000),
+            categories: selectedCategory,
+            limit: Math.min(limit, 50),
+            offset: categoryOffset,
+            sort_by: 'best_match',
+          },
+        });
+        
+        const results = (response.data.businesses || []).map(this.normalize);
+        console.log(`[Activities API] Fetched ${results.length} activities`);
+        return results;
+      } catch (err) {
+        console.warn(`Failed to fetch ${selectedCategory} activities:`, err);
+        return [];
       }
-      
-      // Remove duplicates and apply seen filter
-      const uniqueActivities = Array.from(
-        new Map(allActivities.map(a => [a.id, a])).values()
-      ).filter(a => !seenIds.includes(a.id));
-      
-      // Return paginated results
-      return uniqueActivities.slice(offset, offset + limit);
     } catch (error) {
       console.error('Activities API error:', error);
       return [];
