@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
@@ -891,18 +891,23 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingTop: 12,
-    gap: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    gap: 32,
   },
   stat: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   statText: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-    fontWeight: '500',
+    fontSize: 16,
+    color: Colors.text.primary,
+    fontWeight: '600',
   },
   loadingContainer: {
     flex: 1,
