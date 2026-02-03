@@ -86,7 +86,9 @@ export default function DecideScreen() {
   const { session, getAccessToken } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<Category>('restaurants');
   const [currentItem, setCurrentItem] = useState<DecideItem | null>(null);
+  const [itemQueue, setItemQueue] = useState<DecideItem[]>([]); // Pre-fetched items queue
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false); // Track background fetching
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [distanceFilter, setDistanceFilter] = useState(25);
   const [seenIds, setSeenIds] = useState<string[]>([]);
@@ -137,6 +139,10 @@ export default function DecideScreen() {
 
   useEffect(() => {
     let isMounted = true;
+    
+    // Clear queue when category or filters change
+    setItemQueue([]);
+    setCurrentItem(null);
     
     if (location && isMounted) {
       loadNextItem();
@@ -217,21 +223,15 @@ export default function DecideScreen() {
     }
   };
 
-  const loadNextItem = async (excludeIds?: string[]) => {
-    setLoading(true);
-    setError(null);
-    
+  // Fetch a batch of items and add to queue
+  const fetchBatch = async (excludeIds?: string[]): Promise<DecideItem[]> => {
     try {
       const accessToken = await getAccessToken();
-      if (!accessToken) {
-        setError('Please log in');
-        setLoading(false);
-        return;
-      }
+      if (!accessToken) return [];
 
       const params = new URLSearchParams({
         category: selectedCategory,
-        limit: '1',
+        limit: '10', // Fetch 10 items at once for smoother swiping
         mode: 'decide',
       });
       
@@ -247,7 +247,7 @@ export default function DecideScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      console.log('[Decide] Making API request with token length:', accessToken.length);
+      console.log('[Decide] Fetching batch of items...');
       
       const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
         method: 'GET',
@@ -262,30 +262,79 @@ export default function DecideScreen() {
       if (response.ok) {
         const data = await response.json();
         if (data.results && data.results.length > 0) {
-          const r = data.results[0];
-          setCurrentItem({
+          return data.results.map((r: any) => ({
             id: r.object?.id || r.id || Math.random().toString(),
             title: r.object?.title || r.title || 'Untitled',
             description: r.object?.description || '',
             image_url: r.object?.image_url || r.object?.primary_image?.url,
             category: selectedCategory,
             personalized_score: r.personalized_score,
-            distance: r.object?.distance,
+            distance: r.distance || r.object?.distance,
             rating: r.object?.rating || r.object?.external_rating,
             price: r.object?.price,
             location: r.object?.location,
             explanation: r.explanation,
-          });
-        } else {
-          setCurrentItem(null);
-          setError('No more items to decide on');
+          }));
         }
+      }
+      return [];
+    } catch (err) {
+      console.error('[Decide] Batch fetch error:', err);
+      return [];
+    }
+  };
+
+  // Pre-fetch more items when queue runs low
+  const prefetchIfNeeded = async (currentSeenIds: string[]) => {
+    if (isFetching || itemQueue.length >= 3) return;
+    
+    setIsFetching(true);
+    try {
+      const queueIds = itemQueue.map(item => item.id);
+      const allExcludeIds = [...currentSeenIds, ...queueIds];
+      const newItems = await fetchBatch(allExcludeIds);
+      if (newItems.length > 0) {
+        setItemQueue(prev => [...prev, ...newItems]);
+        console.log(`[Decide] Prefetched ${newItems.length} items, queue now has ${itemQueue.length + newItems.length}`);
+      }
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
+  const loadNextItem = async (excludeIds?: string[]) => {
+    const currentSeenIds = excludeIds || seenIds;
+    
+    // If we have items in the queue, use them instantly
+    if (itemQueue.length > 0) {
+      const [nextItem, ...remainingQueue] = itemQueue;
+      setCurrentItem(nextItem);
+      setItemQueue(remainingQueue);
+      setLoading(false);
+      setError(null);
+      
+      // Pre-fetch more items in background if queue is running low
+      prefetchIfNeeded(currentSeenIds);
+      return;
+    }
+    
+    // Queue is empty, need to fetch
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const newItems = await fetchBatch(currentSeenIds);
+      if (newItems.length > 0) {
+        const [firstItem, ...rest] = newItems;
+        setCurrentItem(firstItem);
+        setItemQueue(rest);
+        console.log(`[Decide] Loaded ${newItems.length} items, showing first, ${rest.length} in queue`);
       } else {
-        console.error('API Error:', response.status);
-        setError('Failed to load item');
+        setCurrentItem(null);
+        setError('No more items to decide on');
       }
     } catch (err) {
-      console.error('Error:', err);
+      console.error('[Decide] Error:', err);
       setError('Network error');
     } finally {
       setLoading(false);
