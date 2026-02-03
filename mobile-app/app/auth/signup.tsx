@@ -49,73 +49,41 @@ export default function SignupScreen() {
         return;
       }
 
-      if (!data) {
+      if (!data?.user) {
         Alert.alert('Error', 'Something went wrong. Please try again.');
         setLoading(false);
         return;
       }
-    } catch (e) {
-      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
-      setLoading(false);
-      return;
-    }
-    
-    // Get the user data after signup
-    const { data: userData } = await supabase.auth.getUser();
-    
-    if (userData?.user) {
-      // Create profile for new user - try direct insert first, then API fallback
-      let profileCreated = false;
+      
+      // Use the user from the signup response directly
+      const userId = data.user.id;
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedName = fullName.trim();
       
+      // Create profile for new user via API (most reliable)
+      let profileCreated = false;
+      
       try {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userData.user.id,
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+        const response = await fetch(`${apiUrl}/api/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
             email: trimmedEmail,
             full_name: trimmedName,
-          });
+          }),
+        });
         
-        if (profileError) {
-          console.error('Direct profile creation error:', JSON.stringify(profileError));
-          // If it's a duplicate key error, profile already exists
-          if (profileError.code === '23505') {
-            profileCreated = true;
-          }
-        } else {
-          console.log('Profile created successfully via direct insert');
+        if (response.ok) {
+          console.log('Profile created successfully via API');
           profileCreated = true;
+        } else {
+          const errorData = await response.json();
+          console.error('API profile creation failed:', errorData);
         }
-      } catch (e) {
-        console.error('Direct profile creation exception:', e);
-      }
-
-      // Fallback: Try API endpoint if direct insert failed
-      if (!profileCreated) {
-        try {
-          const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://6e0df1e5-2908-4c73-8a4c-a5e12f6fda83-00-5b7dipj1tt5q.worf.replit.dev';
-          const response = await fetch(`${apiUrl}/api/profile`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: userData.user.id,
-              email: trimmedEmail,
-              full_name: trimmedName,
-            }),
-          });
-          
-          if (response.ok) {
-            console.log('Profile created successfully via API');
-            profileCreated = true;
-          } else {
-            const errorData = await response.json();
-            console.error('API profile creation failed:', errorData);
-          }
-        } catch (apiError) {
-          console.error('API profile creation exception:', apiError);
-        }
+      } catch (apiError) {
+        console.error('API profile creation exception:', apiError);
       }
       
       if (!profileCreated) {
@@ -125,6 +93,8 @@ export default function SignupScreen() {
       Alert.alert('Success', 'Account created! Please check your email to verify.', [
         { text: 'OK', onPress: () => router.replace('/auth/login') }
       ]);
+    } catch (e) {
+      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }
     setLoading(false);
   };
