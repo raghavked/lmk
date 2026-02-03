@@ -110,32 +110,39 @@ export default function DiscoverScreen() {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [profile, setProfile] = useState<any>(null);
 
-  // Pan responder for swipe up to close modal
+  // Pan responder for swipe DOWN to close modal (more natural gesture)
   const modalPanY = useRef(new Animated.Value(0)).current;
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to vertical swipes
+        // Respond to vertical swipes (prioritize downward)
         return Math.abs(gestureState.dy) > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx);
       },
       onPanResponderMove: (_, gestureState) => {
-        // Only allow upward swipes (negative dy)
-        if (gestureState.dy < 0) {
+        // Allow downward swipes (positive dy) for dismiss
+        if (gestureState.dy > 0) {
           modalPanY.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        // If swiped up more than 100px, close the modal
-        if (gestureState.dy < -100 || (gestureState.dy < -50 && gestureState.vy < -0.5)) {
+        // If swiped down more than 100px or with velocity, close the modal
+        if (gestureState.dy > 100 || (gestureState.dy > 50 && gestureState.vy > 0.5)) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedItem(null);
-          modalPanY.setValue(0);
+          Animated.timing(modalPanY, {
+            toValue: 600,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            setSelectedItem(null);
+            modalPanY.setValue(0);
+          });
         } else {
           // Bounce back
           Animated.spring(modalPanY, {
             toValue: 0,
             useNativeDriver: true,
+            friction: 8,
           }).start();
         }
       },
@@ -663,11 +670,21 @@ export default function DiscoverScreen() {
 
       <Modal visible={!!selectedItem} transparent animationType="slide" onRequestClose={() => setSelectedItem(null)}>
         <View style={styles.detailModalContainer}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop} 
+            activeOpacity={1} 
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSelectedItem(null);
+            }} 
+          />
           <Animated.View 
             style={[styles.detailModal, { transform: [{ translateY: modalPanY }] }]}
             {...panResponder.panHandlers}
           >
-            <View style={styles.swipeIndicator} />
+            <View style={styles.swipeHandle}>
+              <View style={styles.swipeHandleBar} />
+            </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedItem(null)}>
               <Ionicons name="close" size={24} color={Colors.text.primary} />
             </TouchableOpacity>
@@ -1139,28 +1156,32 @@ const styles = StyleSheet.create({
   },
   detailModalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   detailModal: {
-    flex: 1,
+    height: '85%',
     backgroundColor: Colors.background.primary,
-    marginTop: 50,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: 'hidden',
   },
-  swipeIndicator: {
+  swipeHandle: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  swipeHandleBar: {
     width: 40,
-    height: 4,
+    height: 5,
     backgroundColor: Colors.text.secondary,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
+    borderRadius: 3,
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
+    top: 8,
     right: 16,
     zIndex: 10,
     backgroundColor: Colors.background.secondary,

@@ -16,13 +16,25 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-    if (error) {
-      Alert.alert('Error', error.message);
+      if (error) {
+        let errorMessage = error.message;
+        if (error.message.includes('Invalid login')) {
+          errorMessage = 'Invalid email or password. Please try again.';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and confirm your account before signing in.';
+        }
+        Alert.alert('Sign In Failed', errorMessage);
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
       setLoading(false);
       return;
     }

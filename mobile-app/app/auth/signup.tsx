@@ -21,34 +21,61 @@ export default function SignupScreen() {
       return;
     }
 
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-        },
-      },
-    });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
 
-    if (error) {
-      Alert.alert('Error', error.message);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
+      });
+
+      if (error) {
+        let errorMessage = error.message;
+        if (error.message.includes('already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        }
+        Alert.alert('Sign Up Failed', errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
       setLoading(false);
       return;
     }
     
-    if (data.user) {
+    // Get the user data after signup
+    const { data: userData } = await supabase.auth.getUser();
+    
+    if (userData?.user) {
       // Create profile for new user - try direct insert first, then API fallback
       let profileCreated = false;
+      const trimmedEmail = email.trim().toLowerCase();
+      const trimmedName = fullName.trim();
       
       try {
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
-            id: data.user.id,
-            email: email,
-            full_name: fullName,
+            id: userData.user.id,
+            email: trimmedEmail,
+            full_name: trimmedName,
             preferences_completed: false,
           });
         
@@ -74,9 +101,9 @@ export default function SignupScreen() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              user_id: data.user.id,
-              email: email,
-              full_name: fullName,
+              user_id: userData.user.id,
+              email: trimmedEmail,
+              full_name: trimmedName,
             }),
           });
           
