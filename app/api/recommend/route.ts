@@ -264,8 +264,10 @@ export async function GET(request: Request) {
     const ratedItemIds = new Set<string>();
     if (userRatings && userRatings.length > 0) {
       for (const rating of userRatings) {
-        if (rating.item_id) {
-          ratedItemIds.add(String(rating.item_id));
+        // Database uses object_id column, but may also have item_id in response
+        const itemId = rating.object_id || rating.item_id;
+        if (itemId) {
+          ratedItemIds.add(String(itemId));
         }
       }
       console.log(`[Recommend API] User has rated ${ratedItemIds.size} items - will exclude from results`);

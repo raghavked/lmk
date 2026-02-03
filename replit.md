@@ -33,6 +33,12 @@ Preferred communication style: Simple, everyday language.
 - **Data Normalization**: External API data is normalized into a common object format.
 - **Caching**: 15-minute recommendation cache, 30-minute AI response cache, user-aware caching of AI responses.
 
+### Database Schema Notes
+- **ratings table**: Uses `object_id` column (NOT `item_id`) to store item identifiers. Code accepts `item_id` in API requests but maps to `object_id` in database.
+  - Columns: id (uuid), user_id (uuid), object_id (text), item_title (text), category (text), rating (integer 1-5), review (text), is_favorite (boolean), created_at, updated_at
+- **profiles table**: id matches Supabase auth user ID
+  - Columns: id (uuid), full_name (text), email (text), avatar_url (text), location (jsonb), taste_profile (jsonb), preferences_completed (boolean), created_at, updated_at
+
 ### Authentication
 - **Provider**: Supabase Auth, client-side `@supabase/auth-helpers-nextjs`.
 - **Middleware**: `middleware.ts` for authentication checks.
