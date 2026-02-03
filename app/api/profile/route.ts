@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
         id: user_id,
         email: email,
         full_name: full_name || '',
-        preferences_completed: false,
       })
       .select()
       .single();
