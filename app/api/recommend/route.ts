@@ -173,14 +173,14 @@ export async function GET(request: Request) {
       user_ratings: userRatings || [],
     };
 
-    let rawRecommendations = [];
+    let rawRecommendations: any[] = [];
     
-    const fetchFromAPI = async (fetchLimit: number, customRadius?: number) => {
+    const fetchFromAPI = async (fetchLimit: number, customRadius?: number, apiOffset: number = 0) => {
       const apiInstance = new ApiClass();
       return await apiInstance.getRecommendations({
         category,
         limit: fetchLimit,
-        offset: 0,
+        offset: apiOffset,
         seenIds: [],
         query,
         profile: profileWithTaste as any,
@@ -194,8 +194,9 @@ export async function GET(request: Request) {
     const isLocationBased = category === 'restaurants' || category === 'activities';
     const requestedRadius = radius ? parseInt(radius) : 16000; // Default ~10 miles in meters
     
-    // Determine how many items we need (offset + limit + buffer for filtering)
-    const neededItems = offset + limit + 30; // Buffer for filtering out seen items
+    // Determine how many items we need - fetch more to account for distance filtering
+    // Distance filtering can remove 50-70% of results, so fetch 3x what we need
+    const neededItems = (offset + limit) * 3 + 50;
     
     if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length >= neededItems) {
       console.log(`[Recommend API] Using cached data for ${category} (${cached.data.length} items)`);
@@ -203,18 +204,47 @@ export async function GET(request: Request) {
     } else {
       console.log(`[Recommend API] Fetching fresh recommendations from ${category} API (need ${neededItems} items)...`);
       try {
-        // Fetch more items to support pagination - at least 100 items for good pagination experience
-        const fetchAmount = Math.max(100, neededItems);
-        rawRecommendations = await fetchFromAPI(fetchAmount);
+        // Start with cached data if available
+        if (cached) {
+          rawRecommendations = [...cached.data];
+        }
+        
+        // Fetch more items to support pagination - need extra to account for distance filtering
+        // Fetch from the external API starting at different offsets to get more variety
+        const existingIds = new Set(rawRecommendations.map((r: any) => r.id));
+        const fetchAmount = Math.min(50, 200); // Yelp limit is 50 per request
+        
+        // Fetch multiple pages to build up a larger pool
+        const pagesToFetch = Math.ceil(neededItems / 50);
+        for (let page = 0; page < pagesToFetch && rawRecommendations.length < neededItems; page++) {
+          const pageOffset = page * 50;
+          console.log(`[Recommend API] Fetching page ${page + 1} at offset ${pageOffset}...`);
+          try {
+            const pageResults = await fetchFromAPI(fetchAmount, undefined, pageOffset);
+            const newItems = pageResults.filter((r: any) => !existingIds.has(r.id));
+            newItems.forEach((r: any) => existingIds.add(r.id));
+            rawRecommendations = [...rawRecommendations, ...newItems];
+            console.log(`[Recommend API] Page ${page + 1}: got ${pageResults.length} items, ${newItems.length} new`);
+            
+            // If we got fewer items than requested, API is exhausted
+            if (pageResults.length < fetchAmount) {
+              console.log(`[Recommend API] API returned fewer items than requested, stopping pagination`);
+              break;
+            }
+          } catch (pageError) {
+            console.warn(`[Recommend API] Failed to fetch page ${page + 1}:`, pageError);
+            break;
+          }
+        }
         
         // For location-based categories, also fetch from expanded radius to ensure more results
-        if (isLocationBased && rawRecommendations.length < 50) {
+        if (isLocationBased && rawRecommendations.length < neededItems) {
           const expandedRadius = Math.min(requestedRadius * 2, 80000); // Double radius, max ~50 miles
           console.log(`[Recommend API] Fetching additional items from expanded radius (${(expandedRadius / 1609).toFixed(0)} mi)...`);
           try {
             const expandedResults = await fetchFromAPI(50, expandedRadius);
-            const existingIds = new Set(rawRecommendations.map((r: any) => r.id));
             const additionalItems = expandedResults.filter((r: any) => !existingIds.has(r.id));
+            additionalItems.forEach((r: any) => existingIds.add(r.id));
             rawRecommendations = [...rawRecommendations, ...additionalItems];
             console.log(`[Recommend API] Added ${additionalItems.length} items from expanded radius`);
           } catch (e) {
