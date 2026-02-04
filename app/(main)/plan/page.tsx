@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw, Clock, ChevronRight, Star, ExternalLink, X, Utensils, Wine, Coffee, IceCream, Ticket, Film, Footprints, Tv, BookOpen } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Heart, Users, User, Sparkles, MapPin, RefreshCw, Clock, ChevronRight, Star, ExternalLink, X, Utensils, Wine, Coffee, IceCream, Ticket, Film, Footprints, Tv, BookOpen, Pencil, Trash2, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -83,6 +83,10 @@ export default function PlanMyDayPage() {
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedItem, setSelectedItem] = useState<{ item: PlanItem; category: string } | null>(null);
+  const [selectedPlanForEdit, setSelectedPlanForEdit] = useState<SavedPlan | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
 
   useEffect(() => {
     loadSavedPlans();
@@ -134,6 +138,41 @@ export default function PlanMyDayPage() {
       console.log('Could not load plan');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renamePlan = async (planId: string, newTitle: string) => {
+    try {
+      const response = await fetch('/api/plan-my-day', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: planId, title: newTitle })
+      });
+      
+      if (response.ok) {
+        setSavedPlans(prev => prev.map(p => 
+          p.id === planId ? { ...p, title: newTitle } : p
+        ));
+      }
+    } catch (error) {
+      console.log('Could not rename plan');
+    }
+  };
+
+  const deletePlan = async (planId: string) => {
+    try {
+      const response = await fetch(`/api/plan-my-day?id=${planId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setSavedPlans(prev => prev.filter(p => p.id !== planId));
+        if (sessionId === planId) {
+          resetFlow();
+        }
+      }
+    } catch (error) {
+      console.log('Could not delete plan');
     }
   };
 
@@ -338,17 +377,44 @@ export default function PlanMyDayPage() {
                 </h3>
                 <div className="space-y-2">
                   {savedPlans.slice(0, 5).map((plan) => (
-                    <button
+                    <div
                       key={plan.id}
-                      onClick={() => loadPlan(plan.id)}
-                      className="w-full flex items-center justify-between p-4 bg-[#21262D] rounded-xl border border-[#30363D] hover:border-[#feafb0]/50 transition-colors"
+                      className="w-full flex items-center justify-between p-4 bg-[#21262D] rounded-xl border border-[#30363D] hover:border-[#feafb0]/50 transition-colors group"
                     >
-                      <div className="text-left">
+                      <button
+                        onClick={() => loadPlan(plan.id)}
+                        className="flex-1 text-left"
+                      >
                         <p className="text-[#E6EDF3] font-medium">{plan.title}</p>
                         <p className="text-[#8B949E] text-sm">{formatDate(plan.updated_at)}</p>
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlanForEdit(plan);
+                            setNewPlanName(plan.title);
+                            setShowRenameModal(true);
+                          }}
+                          className="p-2 text-[#8B949E] hover:text-[#feafb0] hover:bg-[#30363D] rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Rename plan"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPlanForEdit(plan);
+                            setShowDeleteConfirm(true);
+                          }}
+                          className="p-2 text-[#8B949E] hover:text-red-400 hover:bg-[#30363D] rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          title="Delete plan"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <ChevronRight className="w-5 h-5 text-[#8B949E]" />
                       </div>
-                      <ChevronRight className="w-5 h-5 text-[#8B949E]" />
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -609,6 +675,84 @@ export default function PlanMyDayPage() {
                   View on Yelp
                 </a>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Modal */}
+      {showRenameModal && selectedPlanForEdit && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#161B22] rounded-2xl border border-[#30363D] w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-[#E6EDF3] mb-4 text-center">Rename Plan</h3>
+            <input
+              type="text"
+              value={newPlanName}
+              onChange={(e) => setNewPlanName(e.target.value)}
+              placeholder="Enter plan name"
+              className="w-full bg-[#21262D] border border-[#30363D] rounded-xl px-4 py-3 text-[#E6EDF3] placeholder-[#8B949E] focus:outline-none focus:border-[#feafb0] mb-5"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRenameModal(false);
+                  setSelectedPlanForEdit(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-[#21262D] text-[#8B949E] font-semibold hover:bg-[#30363D] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (selectedPlanForEdit && newPlanName.trim()) {
+                    await renamePlan(selectedPlanForEdit.id, newPlanName.trim());
+                  }
+                  setShowRenameModal(false);
+                  setSelectedPlanForEdit(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-[#feafb0] text-[#0D1117] font-semibold hover:bg-[#feafb0]/90 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedPlanForEdit && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#161B22] rounded-2xl border border-[#30363D] w-full max-w-md p-6 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-red-400" />
+            </div>
+            <h3 className="text-xl font-bold text-[#E6EDF3] mb-2">Delete Plan?</h3>
+            <p className="text-[#8B949E] mb-6">
+              This will permanently delete "{selectedPlanForEdit.title}". This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedPlanForEdit(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-[#21262D] text-[#8B949E] font-semibold hover:bg-[#30363D] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (selectedPlanForEdit) {
+                    await deletePlan(selectedPlanForEdit.id);
+                  }
+                  setShowDeleteConfirm(false);
+                  setSelectedPlanForEdit(null);
+                }}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
