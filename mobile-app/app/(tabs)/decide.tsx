@@ -101,6 +101,7 @@ export default function DecideScreen() {
   const [error, setError] = useState<string | null>(null);
   const [showExpandedCard, setShowExpandedCard] = useState(false);
   const [expandedItem, setExpandedItem] = useState<DecideItem | null>(null);
+  const [showMatches, setShowMatches] = useState(false);
   
   // Swipe animation values
   const swipeAnim = useRef(new Animated.ValueXY()).current;
@@ -629,10 +630,21 @@ export default function DecideScreen() {
         </View>
         
         <View style={styles.statsRow}>
-          <View style={styles.stat}>
+          <TouchableOpacity 
+            style={styles.stat} 
+            onPress={() => {
+              if (decisions.yes > 0) {
+                setShowMatches(true);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }
+            }}
+          >
             <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
             <Text style={styles.statText}>{decisions.yes} Yes</Text>
-          </View>
+            {decisions.yes > 0 && (
+              <Ionicons name="chevron-forward" size={14} color={Colors.text.secondary} />
+            )}
+          </TouchableOpacity>
           <View style={styles.stat}>
             <Ionicons name="close-circle" size={16} color="#F44336" />
             <Text style={styles.statText}>{decisions.no} No</Text>
@@ -922,6 +934,82 @@ export default function DecideScreen() {
                 </View>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showMatches} transparent animationType="slide">
+        <View style={styles.matchesModalContainer}>
+          <View style={styles.matchesModal}>
+            <View style={styles.matchesHeader}>
+              <View>
+                <Text style={styles.matchesTitle}>Your Matches</Text>
+                <Text style={styles.matchesSubtitle}>
+                  {decisionHistory.filter(d => d.decision === 'yes').length} items you loved
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setShowMatches(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.matchesList} showsVerticalScrollIndicator={false}>
+              {decisionHistory.filter(d => d.decision === 'yes').length === 0 ? (
+                <View style={styles.emptyMatches}>
+                  <Text style={styles.emptyMatchesEmoji}>💔</Text>
+                  <Text style={styles.emptyMatchesText}>No matches yet</Text>
+                  <Text style={styles.emptyMatchesSubtext}>Swipe right on items you like!</Text>
+                </View>
+              ) : (
+                decisionHistory
+                  .filter(d => d.decision === 'yes')
+                  .reverse()
+                  .map((record, index) => (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.matchItem}
+                      onPress={() => {
+                        setExpandedItem(record.item);
+                        setShowMatches(false);
+                        setShowExpandedCard(true);
+                      }}
+                    >
+                      {record.item.image_url && (
+                        <Image 
+                          source={{ uri: record.item.image_url }} 
+                          style={styles.matchItemImage} 
+                        />
+                      )}
+                      <View style={styles.matchItemContent}>
+                        <Text style={styles.matchItemTitle} numberOfLines={1}>
+                          {record.item.title}
+                        </Text>
+                        {record.item.explanation?.tagline && (
+                          <Text style={styles.matchItemTagline} numberOfLines={1}>
+                            {record.item.explanation.tagline}
+                          </Text>
+                        )}
+                        <View style={styles.matchItemMeta}>
+                          {record.item.rating && (
+                            <View style={styles.matchItemRating}>
+                              <Ionicons name="star" size={12} color="#FFD700" />
+                              <Text style={styles.matchItemRatingText}>
+                                {record.item.rating.toFixed(1)}
+                              </Text>
+                            </View>
+                          )}
+                          {record.item.distance !== undefined && (
+                            <Text style={styles.matchItemDistance}>
+                              {formatDistance(record.item.distance)}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors.text.secondary} />
+                    </TouchableOpacity>
+                  ))
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1614,5 +1702,105 @@ const styles = StyleSheet.create({
   pickerOptionTextActive: {
     color: Colors.accent.coral,
     fontWeight: '600',
+  },
+  matchesModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  matchesModal: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    marginTop: 80,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  matchesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  matchesTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+  },
+  matchesSubtitle: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  matchesList: {
+    flex: 1,
+    padding: 16,
+  },
+  emptyMatches: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+  },
+  emptyMatchesEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyMatchesText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 8,
+  },
+  emptyMatchesSubtext: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+  },
+  matchItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  matchItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  matchItemContent: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  matchItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  matchItemTagline: {
+    fontSize: 13,
+    color: Colors.accent.coral,
+    fontStyle: 'italic',
+    marginBottom: 6,
+  },
+  matchItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  matchItemRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  matchItemRatingText: {
+    fontSize: 13,
+    color: Colors.text.secondary,
+  },
+  matchItemDistance: {
+    fontSize: 13,
+    color: Colors.text.secondary,
   },
 });
