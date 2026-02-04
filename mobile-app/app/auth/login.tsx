@@ -50,28 +50,43 @@ export default function LoginScreen() {
           .single();
         
         if (fetchError && fetchError.code === 'PGRST116') {
-          // Profile doesn't exist, create it
+          // Profile doesn't exist, create it via API
           console.log('Creating profile for user:', user.id);
-          const { error: insertError } = await supabase.from('profiles').insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || '',
-          });
-          
-          if (insertError) {
-            console.error('Profile creation error on login:', JSON.stringify(insertError));
-          } else {
-            console.log('Profile created successfully on login');
+          try {
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/profile`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: user.id,
+                full_name: user.user_metadata?.full_name || '',
+              }),
+            });
+            if (response.ok) {
+              console.log('Profile created successfully on login');
+            } else {
+              console.error('Profile creation failed on login');
+            }
+          } catch (apiError) {
+            console.error('Profile API error:', apiError);
           }
         } else if (!existingProfile) {
-          console.log('Profile check returned no data, attempting insert');
-          const { error: insertError } = await supabase.from('profiles').insert({
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || '',
-          });
-          if (insertError && insertError.code !== '23505') {
-            console.error('Profile insert error:', JSON.stringify(insertError));
+          console.log('Profile check returned no data, attempting insert via API');
+          try {
+            const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+            const response = await fetch(`${apiUrl}/api/profile`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: user.id,
+                full_name: user.user_metadata?.full_name || '',
+              }),
+            });
+            if (!response.ok) {
+              console.error('Profile insert failed');
+            }
+          } catch (apiError) {
+            console.error('Profile API error:', apiError);
           }
         }
       }
