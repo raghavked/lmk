@@ -86,6 +86,20 @@ export default function SignUpPage() {
       }
 
       if (data?.user) {
+        // Create profile for new user
+        try {
+          await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              full_name: fullName.trim(),
+            }),
+          });
+        } catch (profileError) {
+          console.error('Profile creation error:', profileError);
+        }
+        
         setSuccess(true);
         // Clear form
         setFullName('');

@@ -60,6 +60,28 @@ export default function SignInPage() {
       }
 
       if (data?.user) {
+        // Ensure profile exists (fallback for users who signed up before)
+        try {
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', data.user.id)
+            .single();
+          
+          if (!existingProfile) {
+            await fetch('/api/profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: data.user.id,
+                full_name: data.user.user_metadata?.full_name || '',
+              }),
+            });
+          }
+        } catch (profileError) {
+          console.error('Profile check/create error:', profileError);
+        }
+        
         // Clear form
         setEmail('');
         setPassword('');
