@@ -144,14 +144,6 @@ export default function SignUpPage() {
           <p className="text-gray-400 text-xl leading-relaxed">
             Join a community of tech-savvy enthusiasts and get personalized recommendations that match your lifestyle.
           </p>
-          <div className="mt-12 flex items-center gap-4">
-            <div className="flex -space-x-3">
-              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#feafb0]/30"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#feafb0]/20"></div>
-              <div className="w-10 h-10 rounded-full border-2 border-[#0D1117] bg-[#feafb0]/10"></div>
-            </div>
-            <p className="text-sm text-gray-400">Join <span className="text-white font-semibold">10k+</span> members today</p>
-          </div>
         </div>
         <div className="relative z-10 text-gray-600 text-sm">
           © 2024 LMK Recommendations. All rights reserved.
