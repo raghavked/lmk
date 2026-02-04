@@ -682,19 +682,20 @@ export default function DecideScreen() {
                 </View>
               )}
               
-            <TouchableOpacity 
-              activeOpacity={0.95}
-              onPress={() => {
-                setExpandedItem(currentItem);
-                setShowExpandedCard(true);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-              style={styles.cardTouchable}
-            >
               {currentItem.image_url && (
                 <View style={styles.cardImageContainer}>
                   <Image source={{ uri: currentItem.image_url }} style={styles.cardImage} />
                   <View style={styles.cardOverlay} />
+                  <TouchableOpacity 
+                    style={styles.infoButton}
+                    onPress={() => {
+                      setExpandedItem(currentItem);
+                      setShowExpandedCard(true);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                  >
+                    <Ionicons name="information-circle" size={28} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               )}
               
@@ -745,12 +746,7 @@ export default function DecideScreen() {
                     {currentItem.explanation.why_youll_like}
                   </Text>
                 )}
-                
-                <View style={styles.tapHint}>
-                  <Text style={styles.tapHintText}>Tap for details</Text>
-                </View>
               </View>
-            </TouchableOpacity>
           </Animated.View>
           
           <View style={styles.swipeHint}>
@@ -1398,19 +1394,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
-  cardTouchable: {
-    flex: 1,
-  },
-  tapHint: {
+  infoButton: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  tapHintText: {
-    fontSize: 12,
-    color: Colors.text.tertiary,
   },
   expandedOverlay: {
     flex: 1,
