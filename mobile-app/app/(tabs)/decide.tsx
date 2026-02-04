@@ -102,6 +102,7 @@ export default function DecideScreen() {
   const [showExpandedCard, setShowExpandedCard] = useState(false);
   const [expandedItem, setExpandedItem] = useState<DecideItem | null>(null);
   const [showMatches, setShowMatches] = useState(false);
+  const [shuffleSeed, setShuffleSeed] = useState(0);
   
   // Swipe animation values
   const swipeAnim = useRef(new Animated.ValueXY()).current;
@@ -234,7 +235,7 @@ export default function DecideScreen() {
         if (response.ok) {
           const data = await response.json();
           if (data.results && data.results.length > 0) {
-            const items = data.results.map((r: any) => ({
+            let items = data.results.map((r: any) => ({
               id: r.object?.id || r.id || Math.random().toString(),
               title: r.object?.title || r.title || 'Untitled',
               description: r.object?.description || '',
@@ -247,6 +248,11 @@ export default function DecideScreen() {
               location: r.object?.location,
               explanation: r.explanation,
             }));
+            
+            // Shuffle items when shuffleSeed > 0 (after reshuffle)
+            if (shuffleSeed > 0) {
+              items = [...items].sort(() => Math.random() - 0.5);
+            }
             
             const [first, ...rest] = items;
             setCurrentItem(first);
@@ -271,7 +277,7 @@ export default function DecideScreen() {
     };
     
     fetchItems();
-  }, [selectedCategory, location, distanceFilter, seenIds]);
+  }, [selectedCategory, location, distanceFilter, seenIds, shuffleSeed]);
 
   const loadStoredData = async () => {
     try {
@@ -561,8 +567,8 @@ export default function DecideScreen() {
             setCurrentItem(null);
             await AsyncStorage.removeItem(`lmk_decide_history_${selectedCategory}`);
             await AsyncStorage.removeItem(`lmk_decide_seen_${selectedCategory}`);
-            // Trigger refetch by changing location slightly then back
-            // The fetch useEffect will run since seenIds changed to []
+            // Increment shuffle seed to trigger refetch with shuffled order
+            setShuffleSeed(prev => prev + 1);
           }
         },
       ]
