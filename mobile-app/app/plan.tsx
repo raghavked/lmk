@@ -125,6 +125,10 @@ export default function PlanMyDayScreen() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedItem, setSelectedItem] = useState<{ item: PlanItem; category: string } | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedPlanForEdit, setSelectedPlanForEdit] = useState<SavedPlan | null>(null);
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
 
   useEffect(() => {
     loadSavedPlans();
@@ -228,6 +232,59 @@ export default function PlanMyDayScreen() {
       console.log('[Plan] Could not load plan:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const renamePlan = async (planId: string, newTitle: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      
+      console.log('[Plan] Renaming plan:', planId, 'to:', newTitle);
+      const response = await fetch(`${apiUrl}/api/plan-my-day/`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'X-Auth-Token': session?.access_token || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: planId, title: newTitle })
+      });
+      
+      if (response.ok) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSavedPlans(prev => prev.map(p => 
+          p.id === planId ? { ...p, title: newTitle } : p
+        ));
+      }
+    } catch (error) {
+      console.log('[Plan] Could not rename plan:', error);
+    }
+  };
+
+  const deletePlan = async (planId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      
+      console.log('[Plan] Deleting plan:', planId);
+      const response = await fetch(`${apiUrl}/api/plan-my-day/?id=${planId}`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'X-Auth-Token': session?.access_token || ''
+        }
+      });
+      
+      if (response.ok) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSavedPlans(prev => prev.filter(p => p.id !== planId));
+        if (sessionId === planId) {
+          resetFlow();
+        }
+      }
+    } catch (error) {
+      console.log('[Plan] Could not delete plan:', error);
     }
   };
 
@@ -827,37 +884,62 @@ export default function PlanMyDayScreen() {
                 savedPlans.map((plan) => {
                   const eventConfig = eventTypes.find(e => e.id === plan.event_type);
                   return (
-                    <TouchableOpacity
-                      key={plan.id}
-                      onPress={() => {
-                        setShowHistoryModal(false);
-                        loadPlan(plan.id);
-                      }}
-                      style={[
-                        styles.historyCard,
-                        sessionId === plan.id && styles.historyCardActive
-                      ]}
-                    >
-                      <View style={styles.historyCardIcon}>
-                        <Ionicons 
-                          name={(eventConfig?.icon || 'sparkles') as any} 
-                          size={24} 
-                          color={eventConfig?.color || Colors.accent.coral} 
-                        />
-                      </View>
-                      <View style={styles.historyCardContent}>
-                        <Text style={styles.historyCardTitle} numberOfLines={1}>
-                          {plan.title || `${plan.event_type} in ${plan.city}`}
-                        </Text>
-                        <View style={styles.historyCardMeta}>
-                          <Ionicons name="location-outline" size={12} color={Colors.text.muted} />
-                          <Text style={styles.historyCardCity}>{plan.city}</Text>
-                          <Text style={styles.historyCardDot}>•</Text>
-                          <Text style={styles.historyCardDate}>{formatDate(plan.updated_at)}</Text>
+                    <View key={plan.id} style={styles.historyCardWrapper}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setShowHistoryModal(false);
+                          loadPlan(plan.id);
+                        }}
+                        style={[
+                          styles.historyCard,
+                          sessionId === plan.id && styles.historyCardActive
+                        ]}
+                      >
+                        <View style={styles.historyCardIcon}>
+                          <Ionicons 
+                            name={(eventConfig?.icon || 'sparkles') as any} 
+                            size={24} 
+                            color={eventConfig?.color || Colors.accent.coral} 
+                          />
                         </View>
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={Colors.text.muted} />
-                    </TouchableOpacity>
+                        <View style={styles.historyCardContent}>
+                          <Text style={styles.historyCardTitle} numberOfLines={1}>
+                            {plan.title || `${plan.event_type} in ${plan.city}`}
+                          </Text>
+                          <View style={styles.historyCardMeta}>
+                            <Ionicons name="location-outline" size={12} color={Colors.text.muted} />
+                            <Text style={styles.historyCardCity}>{plan.city}</Text>
+                            <Text style={styles.historyCardDot}>•</Text>
+                            <Text style={styles.historyCardDate}>{formatDate(plan.updated_at)}</Text>
+                          </View>
+                        </View>
+                        <View style={styles.historyCardActions}>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedPlanForEdit(plan);
+                              setNewPlanName(plan.title || `${plan.event_type} in ${plan.city}`);
+                              setShowRenameModal(true);
+                            }}
+                            style={styles.historyCardAction}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons name="pencil" size={18} color={Colors.text.secondary} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setSelectedPlanForEdit(plan);
+                              setShowDeleteConfirm(true);
+                            }}
+                            style={styles.historyCardAction}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <Ionicons name="trash-outline" size={18} color="#F44336" />
+                          </TouchableOpacity>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   );
                 })
               )}
@@ -873,6 +955,80 @@ export default function PlanMyDayScreen() {
               <Ionicons name="add-circle" size={20} color={Colors.background.primary} />
               <Text style={styles.newPlanModalButtonText}>Start New Plan</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showRenameModal} transparent animationType="fade">
+        <View style={styles.renameModalOverlay}>
+          <View style={styles.renameModalContent}>
+            <Text style={styles.renameModalTitle}>Rename Plan</Text>
+            <TextInput
+              style={styles.renameInput}
+              value={newPlanName}
+              onChangeText={setNewPlanName}
+              placeholder="Enter plan name"
+              placeholderTextColor={Colors.text.muted}
+              autoFocus
+            />
+            <View style={styles.renameModalButtons}>
+              <TouchableOpacity 
+                style={styles.renameModalCancelButton}
+                onPress={() => {
+                  setShowRenameModal(false);
+                  setSelectedPlanForEdit(null);
+                }}
+              >
+                <Text style={styles.renameModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.renameModalSaveButton}
+                onPress={async () => {
+                  if (selectedPlanForEdit && newPlanName.trim()) {
+                    await renamePlan(selectedPlanForEdit.id, newPlanName.trim());
+                  }
+                  setShowRenameModal(false);
+                  setSelectedPlanForEdit(null);
+                }}
+              >
+                <Text style={styles.renameModalSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showDeleteConfirm} transparent animationType="fade">
+        <View style={styles.renameModalOverlay}>
+          <View style={styles.renameModalContent}>
+            <Ionicons name="warning" size={48} color="#F44336" style={{ alignSelf: 'center', marginBottom: 16 }} />
+            <Text style={styles.deleteModalTitle}>Delete Plan?</Text>
+            <Text style={styles.deleteModalSubtitle}>
+              This will permanently delete "{selectedPlanForEdit?.title || 'this plan'}". This action cannot be undone.
+            </Text>
+            <View style={styles.renameModalButtons}>
+              <TouchableOpacity 
+                style={styles.renameModalCancelButton}
+                onPress={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedPlanForEdit(null);
+                }}
+              >
+                <Text style={styles.renameModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.deleteModalConfirmButton}
+                onPress={async () => {
+                  if (selectedPlanForEdit) {
+                    await deletePlan(selectedPlanForEdit.id);
+                  }
+                  setShowDeleteConfirm(false);
+                  setSelectedPlanForEdit(null);
+                }}
+              >
+                <Text style={styles.deleteModalConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1668,5 +1824,99 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.background.primary,
+  },
+  historyCardWrapper: {
+    marginBottom: 0,
+  },
+  historyCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  historyCardAction: {
+    padding: 6,
+  },
+  renameModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  renameModalContent: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+  },
+  renameModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  renameInput: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 10,
+    padding: 14,
+    fontSize: 16,
+    color: Colors.text.primary,
+    marginBottom: 20,
+  },
+  renameModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  renameModalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.background.secondary,
+    alignItems: 'center',
+  },
+  renameModalCancelText: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+    fontWeight: '600',
+  },
+  renameModalSaveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.accent.coral,
+    alignItems: 'center',
+  },
+  renameModalSaveText: {
+    fontSize: 16,
+    color: Colors.background.primary,
+    fontWeight: '600',
+  },
+  deleteModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  deleteModalSubtitle: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  deleteModalConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F44336',
+    alignItems: 'center',
+  },
+  deleteModalConfirmText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
   },
 });
