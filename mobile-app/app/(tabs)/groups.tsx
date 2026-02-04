@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, RefreshControl, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -413,7 +414,11 @@ export default function GroupsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Groups</Text>
         <TouchableOpacity 
@@ -529,71 +534,99 @@ export default function GroupsScreen() {
       )}
 
       <Modal visible={showCreateGroup} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Group</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Group name"
-              placeholderTextColor={Colors.text.secondary}
-              value={newGroupName}
-              onChangeText={setNewGroupName}
-            />
-            <TextInput
-              style={[styles.modalInput, styles.textArea]}
-              placeholder="Description (optional)"
-              placeholderTextColor={Colors.text.secondary}
-              value={newGroupDescription}
-              onChangeText={setNewGroupDescription}
-              multiline
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreateGroup(false)}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleCreateGroup}>
-                <Text style={styles.confirmBtnText}>Create</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Create Group</Text>
+                  <TouchableOpacity onPress={() => setShowCreateGroup(false)}>
+                    <Ionicons name="close" size={24} color={Colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Group name"
+                  placeholderTextColor={Colors.text.secondary}
+                  value={newGroupName}
+                  onChangeText={setNewGroupName}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={[styles.modalInput, styles.textArea]}
+                  placeholder="Description (optional)"
+                  placeholderTextColor={Colors.text.secondary}
+                  value={newGroupDescription}
+                  onChangeText={setNewGroupDescription}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreateGroup(false)}>
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={handleCreateGroup}>
+                    <Text style={styles.confirmBtnText}>Create</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showCreatePoll} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Poll</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Poll question"
-              placeholderTextColor={Colors.text.secondary}
-              value={pollTitle}
-              onChangeText={setPollTitle}
-            />
-            <Text style={styles.categoryLabel}>Category:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.categoryBtn, pollCategory === cat && styles.activeCategoryBtn]}
-                  onPress={() => setPollCategory(cat)}
-                >
-                  <Text style={[styles.categoryBtnText, pollCategory === cat && styles.activeCategoryBtnText]}>
-                    {categoryLabels[cat]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreatePoll(false)}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleCreatePoll}>
-                <Text style={styles.confirmBtnText}>Create Poll</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Create Poll</Text>
+                  <TouchableOpacity onPress={() => setShowCreatePoll(false)}>
+                    <Ionicons name="close" size={24} color={Colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="Poll question"
+                  placeholderTextColor={Colors.text.secondary}
+                  value={pollTitle}
+                  onChangeText={setPollTitle}
+                />
+                <Text style={styles.categoryLabel}>Category:</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                  {CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={[styles.categoryBtn, pollCategory === cat && styles.activeCategoryBtn]}
+                      onPress={() => setPollCategory(cat)}
+                    >
+                      <Text style={[styles.categoryBtnText, pollCategory === cat && styles.activeCategoryBtnText]}>
+                        {categoryLabels[cat]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreatePoll(false)}>
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={handleCreatePoll}>
+                    <Text style={styles.confirmBtnText}>Create Poll</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showInviteFriend} animationType="slide" transparent>
@@ -626,7 +659,7 @@ export default function GroupsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -836,6 +869,9 @@ const styles = StyleSheet.create({
     color: Colors.background.primary,
     fontWeight: '600',
   },
+  keyboardAvoid: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -846,6 +882,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.secondary,
     borderRadius: 16,
     padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
