@@ -57,7 +57,6 @@ export default function SignupScreen() {
       
       // Use the user from the signup response directly
       const userId = data.user.id;
-      const trimmedEmail = email.trim().toLowerCase();
       const trimmedName = fullName.trim();
       
       // Create profile for new user via API (most reliable)
@@ -70,7 +69,6 @@ export default function SignupScreen() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             user_id: userId,
-            email: trimmedEmail,
             full_name: trimmedName,
           }),
         });

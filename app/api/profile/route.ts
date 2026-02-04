@@ -35,10 +35,10 @@ async function authenticateRequest(request: Request) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { user_id, email, full_name } = body;
+    const { user_id, full_name } = body;
 
-    if (!user_id || !email) {
-      return NextResponse.json({ error: 'user_id and email are required' }, { status: 400 });
+    if (!user_id) {
+      return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
     }
 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -64,12 +64,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ profile: existingProfile, message: 'Profile already exists' });
     }
 
-    // Create new profile
+    // Create new profile (note: email is stored in Supabase auth, not profiles table)
     const { data: profile, error } = await adminClient
       .from('profiles')
       .insert({
         id: user_id,
-        email: email,
         full_name: full_name || '',
       })
       .select()
