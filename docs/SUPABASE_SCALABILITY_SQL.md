@@ -11,11 +11,10 @@ This trigger automatically creates a profile row when a new user signs up, preve
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, email, created_at, updated_at)
+  INSERT INTO public.profiles (id, full_name, created_at, updated_at)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    NEW.email,
     NOW(),
     NOW()
   )
@@ -41,9 +40,6 @@ CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_category ON ratings(category);
 CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
-
--- Profiles table indexes
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
 
 -- Friends table indexes
 CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);

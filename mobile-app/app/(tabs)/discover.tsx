@@ -353,7 +353,6 @@ export default function DiscoverScreen() {
         console.log('Creating profile for user in Discover...');
         await supabase.from('profiles').insert({
           id: session.user.id,
-          email: session.user.email,
           full_name: session.user.user_metadata?.full_name || '',
         });
         
