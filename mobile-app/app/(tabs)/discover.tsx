@@ -649,7 +649,10 @@ export default function DiscoverScreen() {
     setIsSubmittingRating(true);
     try {
       const accessToken = await getAccessToken();
-      if (!accessToken) return;
+      if (!accessToken) {
+        Alert.alert('Error', 'Please sign in to rate items');
+        return;
+      }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/ratings`, {
@@ -657,6 +660,7 @@ export default function DiscoverScreen() {
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
         },
         body: JSON.stringify({
           item_id: selectedItem.id,
@@ -674,10 +678,14 @@ export default function DiscoverScreen() {
         setUserRating(0);
         setUserReview('');
         Alert.alert('Success', 'Your rating has been saved!');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Rating error:', errorData);
+        Alert.alert('Error', errorData.error || 'Failed to save rating');
       }
     } catch (error) {
       console.error('Error submitting rating:', error);
-      Alert.alert('Error', 'Failed to save rating');
+      Alert.alert('Error', 'Failed to save rating. Please try again.');
     } finally {
       setIsSubmittingRating(false);
     }

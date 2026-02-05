@@ -364,6 +364,33 @@ export default function DecideScreen() {
     // Save to storage
     saveStoredData(newHistory, newSeenIds);
 
+    // Save "yes" decisions as ratings (only save likes, not skips)
+    if (decision === 'yes') {
+      try {
+        const accessToken = await getAccessToken();
+        if (accessToken) {
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+          fetch(`${apiUrl}/api/ratings`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'X-Auth-Token': accessToken,
+            },
+            body: JSON.stringify({
+              item_id: item.id,
+              item_title: item.title,
+              category: item.category,
+              rating: 5,
+              is_favorite: true,
+            }),
+          }).catch(err => console.log('[Decide] Rating save error:', err));
+        }
+      } catch (e) {
+        console.log('[Decide] Could not save rating:', e);
+      }
+    }
+
     if (decision === 'yes') {
       setMatchedItem(item);
       setShowMatchPopup(true);
