@@ -111,7 +111,7 @@ export default function DecideScreen() {
   
   // Refs to hold latest values for use in panResponder
   const currentItemRef = useRef<DecideItem | null>(null);
-  const handleDecisionRef = useRef<(decision: 'yes' | 'no') => Promise<void>>();
+  const handleDecisionRef = useRef<((decision: 'yes' | 'no') => Promise<void>) | undefined>(undefined);
 
   // Initialize location on mount
   useEffect(() => {
@@ -1576,7 +1576,7 @@ const styles = StyleSheet.create({
   },
   expandedMetricLabel: {
     fontSize: 12,
-    color: Colors.text.tertiary,
+    color: Colors.text.muted,
     textTransform: 'uppercase',
   },
   expandedMetricValue: {

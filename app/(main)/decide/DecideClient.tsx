@@ -467,7 +467,6 @@ export default function DecideClient({ profile }: { profile: any }) {
               <ObjectCard
                 object={matchedItem.object || matchedItem}
                 explanation={matchedItem.explanation}
-                profile={profile}
               />
             </div>
             
