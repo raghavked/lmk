@@ -11,7 +11,6 @@ import { ErrorView } from '../../components/ErrorBoundary';
 interface UserProfile {
   id: string;
   full_name: string | null;
-  email: string;
   taste_profile?: any;
 }
 
@@ -156,7 +155,7 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Text style={styles.name}>{profile?.full_name || 'User'}</Text>
-        <Text style={styles.email}>{profile?.email}</Text>
+        <Text style={styles.email}>{session?.user?.email || ''}</Text>
       </View>
 
       <View style={styles.section}>

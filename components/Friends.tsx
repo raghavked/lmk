@@ -139,9 +139,9 @@ export default function Friends() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, email')
+        .select('id, full_name, avatar_url')
         .neq('id', user.id)
-        .or(`full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .ilike('full_name', `%${searchQuery}%`)
         .limit(20);
 
       // Filter out existing friends
@@ -491,7 +491,6 @@ export default function Friends() {
                       )}
                       <div>
                         <p className="font-semibold text-text-primary">{user.full_name || 'Unknown'}</p>
-                        {user.email && <p className="text-xs text-text-secondary">{user.email}</p>}
                       </div>
                     </div>
                     {isPending ? (

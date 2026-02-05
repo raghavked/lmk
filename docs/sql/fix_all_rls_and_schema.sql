@@ -1,14 +1,14 @@
 -- ============================================
--- LMK Beta-Ready Database Schema
--- Safe for existing databases - won't break existing data
--- Last updated: February 2026
+-- LMK: Fix All RLS Policies & Schema Issues
+-- Run this ONCE in Supabase SQL Editor
+-- Safe to re-run (idempotent)
 -- ============================================
 
--- 1. Add missing columns to existing tables (safe)
+-- STEP 1: Add missing columns if they don't exist
 DO $$ 
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'groups' AND column_name = 'creator_id') THEN
-    ALTER TABLE groups ADD COLUMN creator_id UUID REFERENCES profiles(id);
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'is_favorite') THEN
+    ALTER TABLE ratings ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE;
   END IF;
   
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'item_title') THEN
@@ -19,143 +19,21 @@ BEGIN
     ALTER TABLE ratings ADD COLUMN category TEXT;
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'ratings' AND column_name = 'is_favorite') THEN
-    ALTER TABLE ratings ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'groups' AND column_name = 'creator_id') THEN
+    ALTER TABLE groups ADD COLUMN creator_id UUID REFERENCES profiles(id);
   END IF;
 END $$;
 
--- 2. Create tables (only if they don't exist)
--- Note: email is stored in auth.users, NOT in profiles
-CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name TEXT,
-  avatar_url TEXT,
-  location JSONB,
-  taste_profile JSONB,
-  preferences_completed BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- STEP 2: Drop the email column from profiles if it exists (email lives in auth.users)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'email') THEN
+    DROP INDEX IF EXISTS idx_profiles_email;
+    ALTER TABLE profiles DROP COLUMN email;
+  END IF;
+END $$;
 
-CREATE TABLE IF NOT EXISTS ratings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  object_id TEXT NOT NULL,
-  item_title TEXT,
-  category TEXT,
-  rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-  review TEXT,
-  is_favorite BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS friends (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  friend_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS groups (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  creator_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-  avatar_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS group_members (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  role TEXT DEFAULT 'member',
-  joined_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS group_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  poll_id UUID,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS group_invites (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  invited_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS polls (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  category TEXT NOT NULL,
-  created_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS plan_sessions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  event_type TEXT NOT NULL,
-  city TEXT NOT NULL,
-  day_intent TEXT,
-  chat_history JSONB DEFAULT '[]',
-  categories JSONB DEFAULT '[]',
-  title TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Performance indexes
-CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
-CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
-CREATE INDEX IF NOT EXISTS idx_ratings_category ON ratings(category);
-CREATE INDEX IF NOT EXISTS idx_ratings_created_at ON ratings(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
-CREATE INDEX IF NOT EXISTS idx_ratings_is_favorite ON ratings(user_id, is_favorite) WHERE is_favorite = TRUE;
-
-CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
-CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
-CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
-CREATE INDEX IF NOT EXISTS idx_friends_user_status ON friends(user_id, status);
-
-CREATE INDEX IF NOT EXISTS idx_groups_creator_id ON groups(creator_id);
-CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups(created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
-CREATE INDEX IF NOT EXISTS idx_group_members_user_group ON group_members(user_id, group_id);
-
-CREATE INDEX IF NOT EXISTS idx_group_messages_group_id ON group_messages(group_id);
-CREATE INDEX IF NOT EXISTS idx_group_messages_sender_id ON group_messages(sender_id);
-CREATE INDEX IF NOT EXISTS idx_group_messages_created_at ON group_messages(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_group_messages_group_created ON group_messages(group_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_group_invites_user_id ON group_invites(user_id);
-CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON group_invites(group_id);
-CREATE INDEX IF NOT EXISTS idx_group_invites_status ON group_invites(status);
-CREATE INDEX IF NOT EXISTS idx_group_invites_user_status ON group_invites(user_id, status);
-
-CREATE INDEX IF NOT EXISTS idx_polls_group_id ON polls(group_id);
-CREATE INDEX IF NOT EXISTS idx_polls_created_by ON polls(created_by);
-
-CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_id ON plan_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_plan_sessions_updated_at ON plan_sessions(updated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_updated ON plan_sessions(user_id, updated_at DESC);
-
--- 4. Enable Row Level Security on ALL tables
+-- STEP 3: Enable RLS on ALL tables
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ratings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
@@ -166,21 +44,21 @@ ALTER TABLE group_invites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE plan_sessions ENABLE ROW LEVEL SECURITY;
 
--- 5. Drop ALL existing policies (prevents duplicates)
--- Profiles
-DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
-DROP POLICY IF EXISTS "Users can view other profiles" ON profiles;
+-- STEP 4: Remove ALL existing policies (clean slate, prevents duplicates)
+
+-- Profiles (remove all known duplicates)
 DROP POLICY IF EXISTS "Anyone can view profiles" ON profiles;
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can view public profiles" ON profiles;
 DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can view other profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can insert their own profile." ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update their own profile." ON profiles;
-DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can delete own profile" ON profiles;
 DROP POLICY IF EXISTS "Service role has full access" ON profiles;
 
@@ -232,36 +110,36 @@ DROP POLICY IF EXISTS "Users can create plans" ON plan_sessions;
 DROP POLICY IF EXISTS "Users can update own plans" ON plan_sessions;
 DROP POLICY IF EXISTS "Users can delete own plans" ON plan_sessions;
 
--- 6. Create clean security policies
+-- STEP 5: Create clean RLS policies
 
--- PROFILES: Anyone can view (needed for friends/groups), only you can edit your own
+-- PROFILES
 CREATE POLICY "Anyone can view profiles" ON profiles FOR SELECT USING (true);
 CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can delete own profile" ON profiles FOR DELETE USING (auth.uid() = id);
 
--- RATINGS: You can only see/manage your own ratings
+-- RATINGS
 CREATE POLICY "Users can view own ratings" ON ratings FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own ratings" ON ratings FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own ratings" ON ratings FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own ratings" ON ratings FOR DELETE USING (auth.uid() = user_id);
 
--- FRIENDS: You can see friendships you're part of, only send requests as yourself
+-- FRIENDS
 CREATE POLICY "Users can view friends" ON friends FOR SELECT USING (auth.uid() = user_id OR auth.uid() = friend_id);
 CREATE POLICY "Users can send friend requests" ON friends FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update friends" ON friends FOR UPDATE USING (auth.uid() = user_id OR auth.uid() = friend_id);
 CREATE POLICY "Users can delete friends" ON friends FOR DELETE USING (auth.uid() = user_id OR auth.uid() = friend_id);
 
--- GROUPS: Anyone can view groups, only create as yourself
+-- GROUPS
 CREATE POLICY "Users can view groups" ON groups FOR SELECT USING (true);
 CREATE POLICY "Users can create groups" ON groups FOR INSERT WITH CHECK (auth.uid() = creator_id);
 
--- GROUP MEMBERS: Anyone can view members, join/leave as yourself
+-- GROUP MEMBERS
 CREATE POLICY "Users can view group_members" ON group_members FOR SELECT USING (true);
 CREATE POLICY "Users can join groups" ON group_members FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can leave groups" ON group_members FOR DELETE USING (auth.uid() = user_id);
 
--- GROUP MESSAGES: Only group members can view/send messages
+-- GROUP MESSAGES
 CREATE POLICY "Users can view messages" ON group_messages FOR SELECT USING (
   EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid())
 );
@@ -269,13 +147,13 @@ CREATE POLICY "Users can send messages" ON group_messages FOR INSERT WITH CHECK 
   EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = group_messages.group_id AND group_members.user_id = auth.uid())
 );
 
--- GROUP INVITES: See invites you sent or received, create as yourself, accept/decline your own
+-- GROUP INVITES
 CREATE POLICY "Users can view invites" ON group_invites FOR SELECT USING (auth.uid() = user_id OR auth.uid() = invited_by);
 CREATE POLICY "Users can create invites" ON group_invites FOR INSERT WITH CHECK (auth.uid() = invited_by);
 CREATE POLICY "Users can update invites" ON group_invites FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete invites" ON group_invites FOR DELETE USING (auth.uid() = user_id OR auth.uid() = invited_by);
 
--- POLLS: Only group members can view/create polls
+-- POLLS
 CREATE POLICY "Users can view polls" ON polls FOR SELECT USING (
   EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = polls.group_id AND group_members.user_id = auth.uid())
 );
@@ -283,13 +161,13 @@ CREATE POLICY "Users can create polls" ON polls FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM group_members WHERE group_members.group_id = polls.group_id AND group_members.user_id = auth.uid())
 );
 
--- PLAN SESSIONS: Only you can see/manage your own plans
+-- PLAN SESSIONS
 CREATE POLICY "Users can view own plans" ON plan_sessions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can create plans" ON plan_sessions FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update own plans" ON plan_sessions FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own plans" ON plan_sessions FOR DELETE USING (auth.uid() = user_id);
 
--- 7. Auto-create profile on signup (no email column - email lives in auth.users)
+-- STEP 6: Fix the auto-create profile trigger (no email column)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -310,6 +188,37 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- STEP 7: Add performance indexes
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at ON profiles(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_object_id ON ratings(object_id);
+CREATE INDEX IF NOT EXISTS idx_ratings_category ON ratings(category);
+CREATE INDEX IF NOT EXISTS idx_ratings_created_at ON ratings(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ratings_user_category ON ratings(user_id, category);
+CREATE INDEX IF NOT EXISTS idx_ratings_is_favorite ON ratings(user_id, is_favorite) WHERE is_favorite = TRUE;
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status);
+CREATE INDEX IF NOT EXISTS idx_friends_user_status ON friends(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_groups_creator_id ON groups(creator_id);
+CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_group ON group_members(user_id, group_id);
+CREATE INDEX IF NOT EXISTS idx_group_messages_group_id ON group_messages(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_messages_sender_id ON group_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_group_messages_created_at ON group_messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_group_messages_group_created ON group_messages(group_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_group_invites_user_id ON group_invites(user_id);
+CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON group_invites(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_invites_status ON group_invites(status);
+CREATE INDEX IF NOT EXISTS idx_group_invites_user_status ON group_invites(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_polls_group_id ON polls(group_id);
+CREATE INDEX IF NOT EXISTS idx_polls_created_by ON polls(created_by);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_id ON plan_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_updated_at ON plan_sessions(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_plan_sessions_user_updated ON plan_sessions(user_id, updated_at DESC);
+
 -- ============================================
--- Database is now ready for beta testing!
+-- Done! All tables secured and optimized.
 -- ============================================

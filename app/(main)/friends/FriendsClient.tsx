@@ -144,9 +144,9 @@ export default function FriendsClient({ profile }: { profile: any }) {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, email')
+        .select('id, full_name, avatar_url')
         .neq('id', user.id)
-        .or(`full_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .ilike('full_name', `%${searchQuery}%`)
         .limit(20);
 
       const friendIds = friends.map(f => f.id);
@@ -496,7 +496,6 @@ export default function FriendsClient({ profile }: { profile: any }) {
                           )}
                           <div>
                             <p className="font-bold text-text-primary">{user.full_name || 'Unknown User'}</p>
-                            {user.email && <p className="text-sm text-text-secondary">{user.email}</p>}
                           </div>
                         </div>
                         {sentRequests.includes(user.id) ? (
