@@ -117,7 +117,7 @@ export default function DiscoverScreen() {
   const [customLocationName, setCustomLocationName] = useState<string | null>(null);
   const [apiCitySuggestions, setApiCitySuggestions] = useState<{ name: string; lat: number; lng: number }[]>([]);
   const [isSearchingCities, setIsSearchingCities] = useState(false);
-  const citySearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const citySearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Popular US cities for instant autocomplete (before API responds)
   const POPULAR_CITIES = [
@@ -497,7 +497,7 @@ export default function DiscoverScreen() {
         console.log('[Discover] No valid session, showing login message');
         setError('Please log in to see recommendations');
         setLoading(false);
-        return;
+        return 0;
       }
 
       const params = new URLSearchParams({
