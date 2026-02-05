@@ -64,6 +64,24 @@ export default function SignUpPage() {
     }
 
     try {
+      // Check if email already exists
+      const checkResponse = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      
+      const checkData = await checkResponse.json();
+      if (checkData.exists) {
+        setError('An account with this email already exists.');
+        setLoading(false);
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()));
+        }, 2000);
+        return;
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -78,7 +96,10 @@ export default function SignUpPage() {
       if (signUpError) {
         let errorMessage = signUpError.message || 'Failed to create account';
         if (signUpError.message?.includes('already registered')) {
-          errorMessage = 'An account with this email already exists. Please sign in instead.';
+          errorMessage = 'An account with this email already exists.';
+          setTimeout(() => {
+            router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()));
+          }, 2000);
         }
         setError(errorMessage);
         setLoading(false);

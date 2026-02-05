@@ -29,6 +29,25 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
+      // Check if email already exists
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const checkResponse = await fetch(`${apiUrl}/api/auth/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      
+      const checkData = await checkResponse.json();
+      if (checkData.exists) {
+        Alert.alert(
+          'Account Exists',
+          'An account with this email already exists.',
+          [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+        );
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -42,7 +61,13 @@ export default function SignupScreen() {
       if (error) {
         let errorMessage = error.message;
         if (error.message.includes('already registered')) {
-          errorMessage = 'An account with this email already exists. Please sign in instead.';
+          Alert.alert(
+            'Account Exists',
+            'An account with this email already exists.',
+            [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+          );
+          setLoading(false);
+          return;
         }
         Alert.alert('Sign Up Failed', errorMessage);
         setLoading(false);
