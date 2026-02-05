@@ -214,28 +214,32 @@ export default function QuizPage() {
         return;
       }
 
-      const { data: existingProfile, error: fetchError } = await supabase
+      // Update taste_profile via PATCH to existing profile
+      const { error: updateError } = await supabase
         .from('profiles')
-        .select('id')
-        .eq('id', session.user.id)
-        .single();
-
-      if (fetchError && fetchError.code === 'PGRST116') {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: session.user.id,
-            taste_profile: preferences,
+        .update({ taste_profile: preferences })
+        .eq('id', session.user.id);
+      
+      if (updateError) {
+        // If profile doesn't exist, create it via API first
+        if (updateError.code === 'PGRST116') {
+          await fetch('/api/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: session.user.id,
+              full_name: session.user.user_metadata?.full_name || '',
+            }),
           });
-        if (insertError) throw insertError;
-      } else if (fetchError) {
-        throw fetchError;
-      } else {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ taste_profile: preferences })
-          .eq('id', session.user.id);
-        if (updateError) throw updateError;
+          // Then update taste_profile
+          const { error: retryError } = await supabase
+            .from('profiles')
+            .update({ taste_profile: preferences })
+            .eq('id', session.user.id);
+          if (retryError) throw retryError;
+        } else {
+          throw updateError;
+        }
       }
 
       localStorage.setItem('lmk_quiz_completed', 'true');
