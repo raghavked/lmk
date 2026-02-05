@@ -100,6 +100,10 @@ export default function SignUpPage() {
           setTimeout(() => {
             router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()));
           }, 2000);
+        } else if (signUpError.message?.includes('rate') || signUpError.message?.includes('limit') || signUpError.status === 429) {
+          errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
+        } else if (signUpError.message?.includes('network') || signUpError.message?.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
         }
         setError(errorMessage);
         setLoading(false);

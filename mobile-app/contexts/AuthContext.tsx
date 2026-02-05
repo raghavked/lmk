@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,10 +29,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log('[AuthContext] Auth state changed:', _event, session ? 'session exists' : 'no session');
       setSession(session);
+
+      if (_event === 'SIGNED_IN' && session?.user) {
+        ensureProfileExists(session);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('[AuthContext] App resumed, refreshing session...');
+        try {
+          const { data: { session: refreshedSession }, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('[AuthContext] Session refresh error:', error.message);
+            const { data: { session: newSession } } = await supabase.auth.refreshSession();
+            if (newSession) {
+              setSession(newSession);
+            }
+          } else if (refreshedSession) {
+            setSession(refreshedSession);
+          }
+        } catch (e) {
+          console.error('[AuthContext] Error refreshing session on resume:', e);
+        }
+      }
+      appState.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, []);
+
+  const ensureProfileExists = async (session: Session) => {
+    try {
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'X-Auth-Token': session.access_token,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.profile) return;
+      }
+
+      await fetch(`${apiUrl}/api/profile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'X-Auth-Token': session.access_token,
+        },
+        body: JSON.stringify({
+          user_id: session.user.id,
+          full_name: session.user.user_metadata?.full_name || '',
+        }),
+      });
+      console.log('[AuthContext] Profile ensured for user:', session.user.id);
+    } catch (e) {
+      console.error('[AuthContext] Error ensuring profile:', e);
+    }
+  };
 
   const signOut = async () => {
     try {
@@ -51,14 +116,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const getAccessToken = async (): Promise<string | null> => {
-    console.log('[AuthContext] getAccessToken called, current session:', session ? 'exists' : 'null');
-    
     if (session?.access_token) {
-      console.log('[AuthContext] Using cached token, length:', session.access_token.length);
-      return session.access_token;
+      const expiresAt = session.expires_at;
+      if (expiresAt && expiresAt * 1000 > Date.now() + 60000) {
+        return session.access_token;
+      }
+
+      console.log('[AuthContext] Token near expiry, refreshing...');
+      try {
+        const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+        if (refreshed?.access_token) {
+          setSession(refreshed);
+          return refreshed.access_token;
+        }
+      } catch (e) {
+        console.error('[AuthContext] Token refresh error:', e);
+      }
     }
     
-    console.log('[AuthContext] No cached session, fetching fresh session...');
+    console.log('[AuthContext] Fetching fresh session...');
     const { data: { session: freshSession }, error } = await supabase.auth.getSession();
     
     if (error) {
@@ -67,7 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     if (freshSession?.access_token) {
-      console.log('[AuthContext] Got fresh token, length:', freshSession.access_token.length);
       setSession(freshSession);
       return freshSession.access_token;
     }

@@ -16,14 +16,32 @@ export async function POST(request: Request) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+    });
 
     if (error) {
       console.error('Error checking users:', error);
       return NextResponse.json({ exists: false });
     }
 
-    const userExists = data.users.some(
+    const { data: profileData } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
+
+    if (profileData) {
+      return NextResponse.json({ exists: true });
+    }
+
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
+    if (usersError) {
+      return NextResponse.json({ exists: false });
+    }
+
+    const userExists = usersData.users.some(
       (user) => user.email?.toLowerCase() === normalizedEmail
     );
 
