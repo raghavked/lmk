@@ -41,7 +41,10 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication
 - **Provider**: Supabase Auth, client-side `@supabase/auth-helpers-nextjs`.
-- **Middleware**: `middleware.ts` for authentication checks.
+- **Middleware**: `middleware.ts` for authentication checks and API rate limiting.
+- **Profile Creation**: Robust multi-layer approach - database trigger (Supabase), API fallback (`/api/profile` POST), and client-side retry in `useAuth` hook.
+- **Session Persistence**: Mobile AuthContext refreshes sessions on app resume (background → foreground) and proactively refreshes tokens near expiry.
+- **Rate Limiting**: In-memory rate limiter in middleware.ts with per-route limits (auth: 10/min, recommend: 30/min, etc.).
 
 ### Features
 - **Personalized Recommendations**: AI-driven suggestions across 5 categories based on user profiles and social signals.

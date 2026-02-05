@@ -1,0 +1,16 @@
+1. Configure Supabase Auth Rate Limits
+By default, Supabase has strict "safety locks" to prevent spam, but these will block legitimate new users if they sign up at the same time.
+Increase Email Rate Limits: Go to your Supabase Dashboard > Authentication > Settings > Rate Limits. Increase the "Email Rate Limit" from the default (usually 3 per hour) to a higher number like 30 or 50.
+Configure SMTP: To scale beyond a few users, you must connect a custom SMTP provider (like Resend, SendGrid, or Mailgun). Without this, Supabase uses a shared testing pool that is heavily throttled and will cause signups to fail frequently.
+2. Implement Robust Profile Creation
+A common point of failure is when a user is created in the Auth system, but the app fails to create their corresponding entry in the profiles table.
+Database Triggers: The most scalable way to handle this is to use a PostgreSQL Trigger in Supabase. This automatically creates a profile row the exact millisecond a user signs up, ensuring the app never "hangs" on a missing profile.
+Error Handling: Ensure your signup form handles "User already exists" or "Rate limit exceeded" errors gracefully, providing clear instructions to the user instead of a generic "Internal Server Error."
+3. Fix Hydration and Session Persistence
+As we discovered, mobile users often refresh the page or switch apps during signup.
+Hydration Guards: Ensure your signup form uses the "Hydration Guard" pattern I implemented in the code. This prevents the "Show Password" toggle and "Sign Up" buttons from breaking if the page is reloaded mid-process.
+Session Management: Use the onAuthStateChange listener to automatically redirect users to the walkthrough or discover feed the moment their session is confirmed, preventing them from getting stuck on the signup page.
+4. Database Scalability for New Users
+Indexes: Ensure the profiles table has an index on the id and email columns. As you get more users, searching for a profile during login will become slow without these indexes.
+Connection Pooling: Use Supabase Connection Pooling (PgBouncer) to handle the surge of database connections that happens when many users sign up or log in simultaneously.
+I have included the specific SQL commands and React code to implement these fixes in the SCALABILITY_AUDIT_REPORT.md and the REPLIT_AI_FIX_LIST.md files I provided. Applying those will make your signup flow production-ready.

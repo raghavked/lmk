@@ -1,0 +1,18 @@
+To ensure your mobile application can support multiple users effectively, you must address scalability across the entire stack—from the database and backend APIs to the frontend user experience. Based on the audit I conducted, here are the four most critical pillars for multi-user support:
+1. Database Scalability and Data Integrity
+When multiple users access the app simultaneously, the database becomes the primary bottleneck.
+Connection Pooling: You must implement a connection pooler (like Supabase's built-in PgBouncer) to manage database connections. Without this, the app will crash once the number of concurrent users exceeds the database's small default connection limit.
+Indexing: Ensure that columns used for lookups (like user_id, email, and object_id) are indexed. This prevents the database from scanning every single row for every request, which is essential as your user base grows.
+Row-Level Security (RLS): In a multi-user environment, you must ensure users can only see their own data. Use Supabase RLS policies to strictly isolate user data at the database level.
+2. API Performance and Rate Limiting
+Your app relies on external APIs (Claude, Yelp, TMDB) that have strict usage limits.
+Caching Strategy: Implement a caching layer (like Redis or simple in-memory caching) for AI recommendations. If two users have similar profiles, the app should serve a cached recommendation rather than calling the expensive Claude API twice.
+Request Throttling: Implement rate limiting on your own API routes to prevent a single user (or a bot) from overwhelming your server and exhausting your API credits.
+3. State Persistence and Synchronization
+For a seamless multi-user experience, data must persist across devices.
+Server-Side State: Move all critical user data (like the "Decide" swipe history or "Groups" messages) from localStorage to your Supabase database. This ensures that if a user logs in on a new phone, their progress and history are immediately available.
+Real-time Updates: Use WebSockets or Supabase Realtime to push updates (like new group messages or poll results) to users instantly without requiring a page refresh.
+4. Frontend Optimization
+A slow app feels broken to users, especially on mobile networks.
+Virtual Scrolling: For long lists like the Discover feed, use "Virtualization" to only render the items currently visible on the screen. This keeps the app fast even if there are thousands of recommendations.
+Image Optimization: Use a CDN or Next.js Image optimization to serve compressed, correctly-sized images based on the user's device.

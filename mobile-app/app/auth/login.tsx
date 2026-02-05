@@ -28,6 +28,10 @@ export default function LoginScreen() {
           errorMessage = 'Invalid email or password. Please try again.';
         } else if (error.message.includes('Email not confirmed')) {
           errorMessage = 'Please check your email and confirm your account before signing in.';
+        } else if (error.message.includes('rate') || error.message.includes('limit') || (error as any).status === 429) {
+          errorMessage = 'Too many login attempts. Please wait a minute and try again.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
         }
         Alert.alert('Sign In Failed', errorMessage);
         setLoading(false);

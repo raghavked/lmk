@@ -53,6 +53,10 @@ export default function SignInPage() {
           errorMessage = 'Invalid email or password. Please try again.';
         } else if (signInError.message?.includes('Email not confirmed')) {
           errorMessage = 'Please check your email and confirm your account before signing in.';
+        } else if (signInError.message?.includes('rate') || signInError.message?.includes('limit') || signInError.status === 429) {
+          errorMessage = 'Too many login attempts. Please wait a minute and try again.';
+        } else if (signInError.message?.includes('network') || signInError.message?.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
         }
         setError(errorMessage);
         setLoading(false);

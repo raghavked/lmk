@@ -59,7 +59,6 @@ export default function SignupScreen() {
       });
 
       if (error) {
-        let errorMessage = error.message;
         if (error.message.includes('already registered')) {
           Alert.alert(
             'Account Exists',
@@ -68,6 +67,15 @@ export default function SignupScreen() {
           );
           setLoading(false);
           return;
+        }
+        
+        let errorMessage = error.message;
+        if (error.message.includes('rate') || error.message.includes('limit') || (error as any).status === 429) {
+          errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('invalid') && error.message.includes('email')) {
+          errorMessage = 'Please enter a valid email address.';
         }
         Alert.alert('Sign Up Failed', errorMessage);
         setLoading(false);
