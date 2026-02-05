@@ -16,6 +16,34 @@ const openai = new OpenAI({
   apiKey: openaiKey,
 });
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+async function authenticateRequest(request: Request) {
+  const authHeader = request.headers.get('Authorization');
+  const xAuthToken = request.headers.get('X-Auth-Token');
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : xAuthToken;
+
+  if (token) {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+    if (!error && user) {
+      return user;
+    }
+  }
+
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (session?.user) {
+    return session.user;
+  }
+  
+  return null;
+}
+
 interface PlanMyDayRequest {
   event_type: 'date' | 'hangout' | 'solo' | 'other';
   city: string;
@@ -140,12 +168,6 @@ function getInitialPrompt(eventType: string): string {
       return '✨ Describe the kind of day you\'re trying to plan.';
   }
 }
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -379,18 +401,9 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization') || request.headers.get('x-auth-token');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'No auth token provided' }, { status: 401 });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const body = await request.json();
@@ -399,11 +412,6 @@ export async function PATCH(request: NextRequest) {
     if (!id || !title) {
       return NextResponse.json({ error: 'Plan ID and title are required' }, { status: 400 });
     }
-    
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
     
     const { error: updateError } = await supabaseAdmin
       .from('plan_sessions')
@@ -429,18 +437,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization') || request.headers.get('x-auth-token');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'No auth token provided' }, { status: 401 });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
+    const user = await authenticateRequest(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const { searchParams } = new URL(request.url);
@@ -449,11 +448,6 @@ export async function DELETE(request: NextRequest) {
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 });
     }
-    
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
     
     const { error: deleteError } = await supabaseAdmin
       .from('plan_sessions')
