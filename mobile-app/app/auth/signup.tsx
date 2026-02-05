@@ -80,39 +80,7 @@ export default function SignupScreen() {
         return;
       }
       
-      // Use the user from the signup response directly
-      const userId = data.user.id;
-      const trimmedName = fullName.trim();
-      
-      // Create profile for new user via API (most reliable)
-      let profileCreated = false;
-      
-      try {
-        const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-        const response = await fetch(`${apiUrl}/api/profile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            full_name: trimmedName,
-          }),
-        });
-        
-        if (response.ok) {
-          console.log('Profile created successfully via API');
-          profileCreated = true;
-        } else {
-          const errorData = await response.json();
-          console.error('API profile creation failed:', errorData);
-        }
-      } catch (apiError) {
-        console.error('API profile creation exception:', apiError);
-      }
-      
-      if (!profileCreated) {
-        console.warn('Profile creation failed, will retry on first login');
-      }
-      
+      // Profile will be created after email verification on first login
       Alert.alert('Success', 'Account created! Please check your email to verify.', [
         { text: 'OK', onPress: () => router.replace('/auth/login') }
       ]);
