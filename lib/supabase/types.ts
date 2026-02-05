@@ -5,45 +5,45 @@ export type Database = {
         Row: {
           id: string;
           full_name: string | null;
-          email: string;
-          profile_image: string | null;
-          taste_profile: string[] | null;
+          avatar_url: string | null;
+          taste_profile: any | null;
           location: {
             coordinates: [number, number];
             city?: string;
             state?: string;
             country?: string;
           } | null;
+          preferences_completed: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id: string;
           full_name?: string | null;
-          email: string;
-          profile_image?: string | null;
-          taste_profile?: string[] | null;
+          avatar_url?: string | null;
+          taste_profile?: any | null;
           location?: {
             coordinates: [number, number];
             city?: string;
             state?: string;
             country?: string;
           } | null;
+          preferences_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           full_name?: string | null;
-          email?: string;
-          profile_image?: string | null;
-          taste_profile?: string[] | null;
+          avatar_url?: string | null;
+          taste_profile?: any | null;
           location?: {
             coordinates: [number, number];
             city?: string;
             state?: string;
             country?: string;
           } | null;
+          preferences_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };

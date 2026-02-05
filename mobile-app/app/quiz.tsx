@@ -225,7 +225,7 @@ export default function QuizScreen() {
           .from('profiles')
           .insert({
             id: session.user.id,
-            email: session.user.email,
+            full_name: session.user.user_metadata?.full_name || '',
             taste_profile: preferences,
           });
         if (insertError) throw insertError;
