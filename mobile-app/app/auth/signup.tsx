@@ -89,9 +89,11 @@ export default function SignupScreen() {
       }
       
       // Profile will be created after email verification on first login
-      Alert.alert('Success', 'Account created! Please check your email to verify.', [
-        { text: 'OK', onPress: () => router.replace('/auth/login') }
-      ]);
+      Alert.alert(
+        'Check Your Email',
+        'We sent a verification link to your email. Tap the link to verify your account, then come back and sign in.',
+        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+      );
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }
