@@ -19,12 +19,37 @@ function VerifyContent() {
   const supabase = createClientComponentClient();
   
   const email = searchParams.get('email') || '';
+  const shouldRetry = searchParams.get('retry') === 'true';
 
   useEffect(() => {
     if (!email) {
       router.push('/auth/signup');
     }
   }, [email, router]);
+
+  useEffect(() => {
+    if (shouldRetry && email) {
+      const autoResend = async () => {
+        setResending(true);
+        try {
+          const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+          });
+          if (error) {
+            setError('The verification email could not be sent. Please tap "Resend" to try again, or check your spam folder.');
+          } else {
+            setSuccess('Verification email sent! Check your inbox.');
+          }
+        } catch (err: any) {
+          setError('Could not send verification email. Please tap "Resend" to try again.');
+        } finally {
+          setResending(false);
+        }
+      };
+      autoResend();
+    }
+  }, [shouldRetry, email, supabase]);
 
   const handleResend = async () => {
     setResending(true);
@@ -36,12 +61,22 @@ function VerifyContent() {
         email,
       });
       if (error) {
-        setError(error.message);
+        const fallbackResponse = await fetch('/api/auth/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const fallbackData = await fallbackResponse.json();
+        if (fallbackResponse.ok) {
+          setSuccess(fallbackData.message || 'Verification email sent! Check your inbox.');
+        } else {
+          setError(fallbackData.error || 'Could not send verification email. Please try again later.');
+        }
       } else {
         setSuccess('Verification email resent! Check your inbox.');
       }
     } catch (err: any) {
-      setError(err.message);
+      setError('Could not send verification email. Please try again later.');
     } finally {
       setResending(false);
     }
