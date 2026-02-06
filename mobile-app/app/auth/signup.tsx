@@ -29,99 +29,49 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      // Check if email already exists
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const checkResponse = await fetch(`${apiUrl}/api/auth/check-email`, {
+      const response = await fetch(`${apiUrl}/api/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      });
-      
-      const checkData = await checkResponse.json();
-      if (checkData.exists) {
-        Alert.alert(
-          'Account Exists',
-          'An account with this email already exists.',
-          [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
-        );
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          fullName: fullName.trim(),
+        }),
       });
 
-      if (error) {
-        if (error.message.includes('sending') && error.message.includes('email')) {
-          Alert.alert(
-            'Account Created',
-            'Your account was created but we had trouble sending the verification email. Try tapping "Resend" below, or check your spam folder.',
-            [
-              {
-                text: 'Resend Email',
-                onPress: async () => {
-                  try {
-                    await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
-                    Alert.alert('Email Sent', 'Check your inbox for the verification link, then come back and sign in.',
-                      [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-                    );
-                  } catch (e) {
-                    Alert.alert('Still Having Trouble', 'Please wait a moment and try signing up again.',
-                      [{ text: 'OK' }]
-                    );
-                  }
-                },
-              },
-              { text: 'Sign In', onPress: () => router.replace('/auth/login') },
-            ]
-          );
-          setLoading(false);
-          return;
-        }
+      const result = await response.json();
 
-        if (error.message.includes('already registered')) {
+      if (!response.ok) {
+        if (response.status === 409) {
           Alert.alert(
             'Account Exists',
             'An account with this email already exists.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
-          setLoading(false);
-          return;
+        } else if (response.status === 429) {
+          Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
+        } else {
+          Alert.alert('Sign Up Failed', result.error || 'Failed to create account');
         }
-        
-        let errorMessage = error.message;
-        if (error.message.includes('Database error saving new user') || error.message.includes('Database error')) {
-          errorMessage = 'There was a temporary issue creating your account. Please try again in a moment.';
-        } else if (error.message.includes('rate') || error.message.includes('limit') || (error as any).status === 429) {
-          errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        } else if (error.message.includes('invalid') && error.message.includes('email')) {
-          errorMessage = 'Please enter a valid email address.';
-        }
-        Alert.alert('Sign Up Failed', errorMessage);
         setLoading(false);
         return;
       }
 
-      if (!data?.user) {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-        setLoading(false);
-        return;
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (signInError) {
+        Alert.alert(
+          'Account Created',
+          'Your account is ready! Please sign in.',
+          [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+        );
+      } else {
+        router.replace('/(tabs)');
       }
-      
-      Alert.alert(
-        'Check Your Email',
-        'We sent a verification link to your email. Tap the link to verify your account, then come back and sign in.',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-      );
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }
