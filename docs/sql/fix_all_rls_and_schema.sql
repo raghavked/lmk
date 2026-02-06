@@ -168,6 +168,7 @@ CREATE POLICY "Users can update own plans" ON plan_sessions FOR UPDATE USING (au
 CREATE POLICY "Users can delete own plans" ON plan_sessions FOR DELETE USING (auth.uid() = user_id);
 
 -- STEP 6: Fix the auto-create profile trigger (no email column)
+-- IMPORTANT: Uses EXCEPTION handler so trigger failures never block user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -179,6 +180,9 @@ BEGIN
     NOW()
   )
   ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'Could not auto-create profile for user %: %', NEW.id, SQLERRM;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
