@@ -70,7 +70,9 @@ export default function SignupScreen() {
         }
         
         let errorMessage = error.message;
-        if (error.message.includes('rate') || error.message.includes('limit') || (error as any).status === 429) {
+        if (error.message.includes('Database error saving new user') || error.message.includes('Database error')) {
+          errorMessage = 'There was a temporary issue creating your account. Please try again in a moment.';
+        } else if (error.message.includes('rate') || error.message.includes('limit') || (error as any).status === 429) {
           errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
           errorMessage = 'Network error. Please check your connection and try again.';

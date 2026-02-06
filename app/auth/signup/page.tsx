@@ -100,6 +100,8 @@ export default function SignUpPage() {
           setTimeout(() => {
             router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()));
           }, 2000);
+        } else if (signUpError.message?.includes('Database error saving new user') || signUpError.message?.includes('Database error')) {
+          errorMessage = 'There was a temporary issue creating your account. Please try again in a moment.';
         } else if (signUpError.message?.includes('rate') || signUpError.message?.includes('limit') || signUpError.status === 429) {
           errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
         } else if (signUpError.message?.includes('network') || signUpError.message?.includes('fetch')) {
