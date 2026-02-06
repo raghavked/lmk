@@ -59,6 +59,33 @@ export default function SignupScreen() {
       });
 
       if (error) {
+        if (error.message.includes('sending') && error.message.includes('email')) {
+          Alert.alert(
+            'Account Created',
+            'Your account was created but we had trouble sending the verification email. Try tapping "Resend" below, or check your spam folder.',
+            [
+              {
+                text: 'Resend Email',
+                onPress: async () => {
+                  try {
+                    await supabase.auth.resend({ type: 'signup', email: email.trim().toLowerCase() });
+                    Alert.alert('Email Sent', 'Check your inbox for the verification link, then come back and sign in.',
+                      [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+                    );
+                  } catch (e) {
+                    Alert.alert('Still Having Trouble', 'Please wait a moment and try signing up again.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                },
+              },
+              { text: 'Sign In', onPress: () => router.replace('/auth/login') },
+            ]
+          );
+          setLoading(false);
+          return;
+        }
+
         if (error.message.includes('already registered')) {
           Alert.alert(
             'Account Exists',
@@ -90,7 +117,6 @@ export default function SignupScreen() {
         return;
       }
       
-      // Profile will be created after email verification on first login
       Alert.alert(
         'Check Your Email',
         'We sent a verification link to your email. Tap the link to verify your account, then come back and sign in.',

@@ -94,6 +94,12 @@ export default function SignUpPage() {
       });
 
       if (signUpError) {
+        if (signUpError.message?.includes('sending') && signUpError.message?.includes('email')) {
+          setSuccess(true);
+          router.push('/auth/verify-email?email=' + encodeURIComponent(email.trim().toLowerCase()) + '&retry=true');
+          return;
+        }
+
         let errorMessage = signUpError.message || 'Failed to create account';
         if (signUpError.message?.includes('already registered')) {
           errorMessage = 'An account with this email already exists.';
@@ -113,15 +119,11 @@ export default function SignUpPage() {
       }
 
       if (data?.user) {
-        // Profile will be created after email verification in callback
         setSuccess(true);
-        // Clear form
         setFullName('');
         setEmail('');
         setPassword('');
         setAgreeToTerms(false);
-        
-        // Redirect to verify email page
         router.push('/auth/verify-email?email=' + encodeURIComponent(email.trim().toLowerCase()));
       }
     } catch (err: any) {
