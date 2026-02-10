@@ -23,12 +23,11 @@ function RootLayoutNav() {
         <StatusBar style="light" backgroundColor={Colors.background.primary} />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: Colors.background.primary },
-            headerTintColor: Colors.text.primary,
-            headerTitleStyle: { fontWeight: 'bold' },
+            headerShown: false,
             contentStyle: { backgroundColor: Colors.background.primary },
           }}
         >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="auth" options={{ headerShown: false }} />
         </Stack>
       </>
