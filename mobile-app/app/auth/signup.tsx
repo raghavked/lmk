@@ -30,7 +30,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/auth/signup`, {
+      const response = await fetch(`${apiUrl}/api/auth/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
