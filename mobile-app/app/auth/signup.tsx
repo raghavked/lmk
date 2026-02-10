@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
 export default function SignupScreen() {
@@ -60,18 +59,11 @@ export default function SignupScreen() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (signInError) {
-        Alert.alert(
-          'Account Created',
-          'Your account is ready! Please sign in.',
-          [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
-        );
-      }
+      Alert.alert(
+        'Account Created!',
+        'Please check your email for a verification link to activate your account.',
+        [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+      );
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }

@@ -91,31 +91,11 @@ export default function SignUpPage() {
         return;
       }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-
-      if (signInError) {
-        setSuccess(true);
-        setFullName('');
-        setEmail('');
-        setPassword('');
-        setAgreeToTerms(false);
-        setTimeout(() => {
-          window.location.href = '/auth/login';
-        }, 1500);
-        return;
-      }
-
       setSuccess(true);
       setFullName('');
       setEmail('');
       setPassword('');
       setAgreeToTerms(false);
-      setTimeout(() => {
-        window.location.href = '/discover';
-      }, 500);
     } catch (err: any) {
       setError('Unable to connect. Please check your internet connection.');
     } finally {
@@ -141,8 +121,8 @@ export default function SignUpPage() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-50 mb-2">Account Created!</h2>
-          <p className="text-gray-400 mb-4">Welcome to LMK! Signing you in now...</p>
-          <p className="text-sm text-gray-500">Redirecting you...</p>
+          <p className="text-gray-400 mb-4">Check your email for a verification link to activate your account.</p>
+          <Link href="/auth/login" className="text-[#feafb0] font-bold hover:underline text-base">Go to Sign In</Link>
         </div>
       </div>
     );
