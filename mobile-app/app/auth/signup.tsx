@@ -32,7 +32,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const checkResponse = await fetch(`${apiUrl}/api/auth/signup/`, {
+      const response = await fetch(`${apiUrl}/api/auth/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,38 +42,32 @@ export default function SignupScreen() {
         }),
       });
 
-      const checkResult = await checkResponse.json();
+      const result = await response.json();
 
-      if (!checkResponse.ok) {
-        if (checkResponse.status === 409) {
+      if (!response.ok) {
+        if (response.status === 409) {
           Alert.alert(
             'Account Exists',
             'An account with this email already exists.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
-        } else if (checkResponse.status === 429) {
+        } else if (response.status === 429) {
           Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
         } else {
-          Alert.alert('Sign Up Failed', checkResult.error || 'Failed to create account');
+          Alert.alert('Sign Up Failed', result.error || 'Failed to create account');
         }
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
-      });
-
-      if (error) {
-        Alert.alert('Sign Up Failed', error.message || 'Failed to create account');
-        setLoading(false);
-        return;
+      if (result.needsClientResend) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: email.trim().toLowerCase(),
+        });
+        if (resendError) {
+          console.log('Resend error (non-critical):', resendError.message);
+        }
       }
 
       Alert.alert(
