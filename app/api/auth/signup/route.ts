@@ -25,18 +25,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 }
-      );
-    }
-
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase(),
       password,
@@ -48,6 +36,12 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Admin createUser error:', error);
+      if (error.message?.includes('already been registered') || error.message?.includes('already exists') || error.message?.includes('duplicate')) {
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
         { error: error.message || 'Failed to create account' },
         { status: 500 }
