@@ -60,7 +60,7 @@ export default function LoginScreen() {
           console.log('Creating profile for user:', user.id);
           try {
             const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/profile`, {
+            const response = await fetch(`${apiUrl}/api/profile/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -80,7 +80,7 @@ export default function LoginScreen() {
           console.log('Profile check returned no data, attempting insert via API');
           try {
             const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/profile`, {
+            const response = await fetch(`${apiUrl}/api/profile/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({

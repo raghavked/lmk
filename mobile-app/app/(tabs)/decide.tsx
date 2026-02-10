@@ -222,7 +222,7 @@ export default function DecideScreen() {
         const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
         console.log('[Decide] Fetching items for category:', selectedCategory, 'excluding', allSeenIds.length, 'seen IDs');
         
-        const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
+        const response = await fetch(`${apiUrl}/api/recommend/?${params}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -370,7 +370,7 @@ export default function DecideScreen() {
         const accessToken = await getAccessToken();
         if (accessToken) {
           const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-          fetch(`${apiUrl}/api/ratings`, {
+          fetch(`${apiUrl}/api/ratings/`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -436,7 +436,7 @@ export default function DecideScreen() {
           const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
           console.log('[Decide] Fetching more items, excluding', allExcludeIds.length, 'IDs');
           
-          const response = await fetch(`${apiUrl}/api/recommend?${params}`, {
+          const response = await fetch(`${apiUrl}/api/recommend/?${params}`, {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'X-Auth-Token': accessToken,

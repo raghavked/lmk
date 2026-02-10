@@ -519,7 +519,7 @@ export default function DiscoverScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const fullUrl = `${apiUrl}/api/recommend?${params}`;
+      const fullUrl = `${apiUrl}/api/recommend/?${params}`;
       
       console.log('[Discover] Making API request:', {
         url: fullUrl.substring(0, 60),
@@ -654,7 +654,7 @@ export default function DiscoverScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/ratings`, {
+      const response = await fetch(`${apiUrl}/api/ratings/`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
