@@ -72,7 +72,7 @@ export default function FriendsScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends`, {
+      const response = await fetch(`${apiUrl}/api/friends/`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export default function FriendsScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends`, {
+      const response = await fetch(`${apiUrl}/api/friends/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -190,7 +190,7 @@ export default function FriendsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends`, {
+      const response = await fetch(`${apiUrl}/api/friends/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -219,7 +219,7 @@ export default function FriendsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends`, {
+      const response = await fetch(`${apiUrl}/api/friends/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -256,7 +256,7 @@ export default function FriendsScreen() {
               if (!accessToken) return;
 
               const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-              const response = await fetch(`${apiUrl}/api/friends`, {
+              const response = await fetch(`${apiUrl}/api/friends/`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',

@@ -107,7 +107,7 @@ export default function GroupsScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/groups`, {
+      const response = await fetch(`${apiUrl}/api/groups/`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export default function GroupsScreen() {
       }
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/groups`, {
+      const response = await fetch(`${apiUrl}/api/groups/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -266,7 +266,7 @@ export default function GroupsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends`, {
+      const response = await fetch(`${apiUrl}/api/friends/`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ export default function GroupsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/groups`, {
+      const response = await fetch(`${apiUrl}/api/groups/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -327,7 +327,7 @@ export default function GroupsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/groups`, {
+      const response = await fetch(`${apiUrl}/api/groups/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
@@ -357,7 +357,7 @@ export default function GroupsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/groups`, {
+      const response = await fetch(`${apiUrl}/api/groups/`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

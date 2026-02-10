@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ensureProfileExists = async (session: Session) => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/profile`, {
+      const response = await fetch(`${apiUrl}/api/profile/`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'X-Auth-Token': session.access_token,
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.profile) return;
       }
 
-      await fetch(`${apiUrl}/api/profile`, {
+      await fetch(`${apiUrl}/api/profile/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
