@@ -102,7 +102,9 @@ export default function SignUpPage() {
         setEmail('');
         setPassword('');
         setAgreeToTerms(false);
-        router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()) + '&newAccount=true');
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 1500);
         return;
       }
 
@@ -111,7 +113,9 @@ export default function SignUpPage() {
       setEmail('');
       setPassword('');
       setAgreeToTerms(false);
-      router.push('/discover');
+      setTimeout(() => {
+        window.location.href = '/discover';
+      }, 500);
     } catch (err: any) {
       setError('Unable to connect. Please check your internet connection.');
     } finally {
@@ -137,7 +141,7 @@ export default function SignUpPage() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-50 mb-2">Account Created!</h2>
-          <p className="text-gray-400 mb-4">Check your email to verify your account.</p>
+          <p className="text-gray-400 mb-4">Welcome to LMK! Signing you in now...</p>
           <p className="text-sm text-gray-500">Redirecting you...</p>
         </div>
       </div>

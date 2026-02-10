@@ -73,7 +73,7 @@ export default function SignInPage() {
             .single();
           
           if (!existingProfile) {
-            await fetch('/api/profile', {
+            await fetch('/api/profile/', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
