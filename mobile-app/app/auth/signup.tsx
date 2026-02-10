@@ -71,8 +71,6 @@ export default function SignupScreen() {
           'Your account is ready! Please sign in.',
           [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
         );
-      } else {
-        router.replace('/(tabs)');
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
