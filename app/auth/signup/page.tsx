@@ -64,7 +64,7 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/signup/', {
+      const checkResponse = await fetch('/api/auth/signup/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,19 +74,32 @@ export default function SignUpPage() {
         }),
       });
 
-      const result = await response.json();
+      const checkResult = await checkResponse.json();
 
-      if (!response.ok) {
-        let errorMessage = result.error || 'Failed to create account';
-        if (response.status === 409) {
-          errorMessage = 'An account with this email already exists.';
-          setTimeout(() => {
-            router.push('/auth/login?email=' + encodeURIComponent(email.trim().toLowerCase()));
-          }, 2000);
-        } else if (response.status === 429) {
+      if (!checkResponse.ok) {
+        let errorMessage = checkResult.error || 'Failed to create account';
+        if (checkResponse.status === 409) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (checkResponse.status === 429) {
           errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
         }
         setError(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || 'Failed to create account');
         setLoading(false);
         return;
       }
