@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl, Modal } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -22,6 +22,17 @@ interface SearchResult {
   avatar_url?: string;
 }
 
+interface FriendRating {
+  id: string;
+  object_id: string;
+  item_title: string;
+  category: string;
+  rating: number;
+  review?: string;
+  is_favorite: boolean;
+  created_at: string;
+}
+
 export default function FriendsScreen() {
   const { getAccessToken } = useAuth();
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -34,6 +45,9 @@ export default function FriendsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'friends' | 'pending' | 'search'>('friends');
   const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [friendRatings, setFriendRatings] = useState<FriendRating[]>([]);
+  const [loadingRatings, setLoadingRatings] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -127,7 +141,7 @@ export default function FriendsScreen() {
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+      const response = await fetch(`${apiUrl}/api/users/search/?q=${encodeURIComponent(searchQuery)}`, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -283,6 +297,47 @@ export default function FriendsScreen() {
     );
   };
 
+  const viewFriendRatings = async (friend: Friend) => {
+    setSelectedFriend(friend);
+    setLoadingRatings(true);
+    setFriendRatings([]);
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/friends/ratings/?friendId=${friend.id}`, {
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setFriendRatings(data.ratings || []);
+      }
+    } catch (err) {
+      console.error('Error loading friend ratings:', err);
+    } finally {
+      setLoadingRatings(false);
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+  };
+
+  const categoryEmoji: Record<string, string> = {
+    restaurants: '🍽️',
+    movies: '🎬',
+    tv_shows: '📺',
+    reading: '📚',
+    activities: '🎯',
+  };
+
   const isFriend = (userId: string) => friends.some(f => f.id === userId);
   const hasSentRequest = (userId: string) => sentRequests.includes(userId);
 
@@ -380,10 +435,15 @@ export default function FriendsScreen() {
           ) : (
             friends.map((friend) => (
               <View key={friend.id} style={styles.friendCard}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{friend.full_name[0]?.toUpperCase()}</Text>
-                </View>
-                <Text style={styles.friendName}>{friend.full_name}</Text>
+                <TouchableOpacity style={styles.friendCardMain} onPress={() => viewFriendRatings(friend)}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>{friend.full_name[0]?.toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.friendName}>{friend.full_name}</Text>
+                    <Text style={styles.tapHint}>Tap to see ratings</Text>
+                  </View>
+                </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.unfriendBtn} 
                   onPress={() => unfriend(friend.id, friend.full_name)}
@@ -442,6 +502,47 @@ export default function FriendsScreen() {
           )
         )}
       </ScrollView>
+
+      <Modal visible={!!selectedFriend} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedFriend?.full_name}'s Ratings</Text>
+              <TouchableOpacity onPress={() => setSelectedFriend(null)}>
+                <Ionicons name="close" size={24} color={Colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            {loadingRatings ? (
+              <ActivityIndicator size="large" color={Colors.accent.coral} style={{ marginTop: 40 }} />
+            ) : friendRatings.length === 0 ? (
+              <View style={styles.emptyRatings}>
+                <Ionicons name="star-outline" size={48} color={Colors.text.secondary} />
+                <Text style={styles.emptyRatingsText}>No ratings yet</Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.ratingsList}>
+                {friendRatings.map((r) => (
+                  <View key={r.id} style={styles.ratingCard}>
+                    <View style={styles.ratingHeader}>
+                      <Text style={styles.ratingEmoji}>{categoryEmoji[r.category] || '📌'}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.ratingTitle}>{r.item_title}</Text>
+                        <Text style={styles.ratingStars}>{renderStars(r.rating)}</Text>
+                      </View>
+                      {r.is_favorite && (
+                        <Ionicons name="heart" size={18} color={Colors.accent.coral} />
+                      )}
+                    </View>
+                    {r.review ? (
+                      <Text style={styles.ratingReview}>"{r.review}"</Text>
+                    ) : null}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -524,6 +625,11 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  friendCardMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -539,7 +645,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   friendName: {
-    flex: 1,
     color: Colors.text.primary,
     fontSize: 16,
   },
@@ -577,5 +682,76 @@ const styles = StyleSheet.create({
   statusText: {
     color: Colors.text.secondary,
     fontSize: 12,
+  },
+  tapHint: {
+    color: Colors.text.secondary,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.primary,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+  },
+  emptyRatings: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyRatingsText: {
+    color: Colors.text.secondary,
+    marginTop: 12,
+    fontSize: 16,
+  },
+  ratingsList: {
+    maxHeight: 500,
+  },
+  ratingCard: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  ratingEmoji: {
+    fontSize: 24,
+  },
+  ratingTitle: {
+    color: Colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  ratingStars: {
+    color: '#FFD700',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  ratingReview: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
+    paddingLeft: 34,
   },
 });

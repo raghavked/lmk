@@ -23,6 +23,7 @@ interface Message {
   user_id: string;
   created_at: string;
   poll_id?: string;
+  sender_name?: string;
 }
 
 interface GroupInvite {
@@ -149,7 +150,24 @@ export default function GroupsScreen() {
         .eq('group_id', selectedGroup.id)
         .order('created_at', { ascending: true });
       
-      setMessages(data || []);
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(m => m.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+        
+        const nameMap: Record<string, string> = {};
+        profiles?.forEach(p => { nameMap[p.id] = p.full_name || 'Unknown'; });
+        
+        const messagesWithNames = data.map(m => ({
+          ...m,
+          sender_name: nameMap[m.user_id] || 'Unknown',
+        }));
+        setMessages(messagesWithNames);
+      } else {
+        setMessages([]);
+      }
     } catch (err) {
       console.error('Error loading messages:', err);
     }
@@ -217,8 +235,8 @@ export default function GroupsScreen() {
         .single();
 
       if (message) {
-        setMessages([...messages, message]);
         setNewMessage('');
+        loadMessages();
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -510,6 +528,9 @@ export default function GroupsScreen() {
                 ) : (
                   messages.map((msg) => (
                     <View key={msg.id} style={[styles.message, msg.user_id === profile?.id && styles.ownMessage]}>
+                      {msg.user_id !== profile?.id && (
+                        <Text style={styles.senderName}>{msg.sender_name || 'Unknown'}</Text>
+                      )}
                       <Text style={styles.messageText}>{msg.content}</Text>
                     </View>
                   ))
@@ -840,6 +861,12 @@ const styles = StyleSheet.create({
   ownMessage: {
     alignSelf: 'flex-end',
     backgroundColor: Colors.accent.coral,
+  },
+  senderName: {
+    color: Colors.accent.coral,
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
   },
   messageText: {
     color: Colors.text.primary,
