@@ -38,6 +38,14 @@ Preferred communication style: Simple, everyday language.
   - Columns: id (uuid), user_id (uuid), object_id (text), item_title (text), category (text), rating (integer 1-5), review (text), is_favorite (boolean), created_at, updated_at
 - **profiles table**: id matches Supabase auth user ID. Note: email is NOT stored in profiles, it lives in Supabase auth.users.
   - Columns: id (uuid), full_name (text), avatar_url (text), location (jsonb), taste_profile (jsonb), preferences_completed (boolean), created_at, updated_at
+- **group_messages table**: Uses `user_id` column (renamed from `sender_id`).
+  - Columns: id (uuid), group_id (uuid), user_id (uuid), content (text), poll_id (uuid nullable), created_at
+- **poll_options table**: Stores AI-generated options for group polls.
+  - Columns: id (uuid), poll_id (uuid FK), title (text), description (text), personalized_score (real), votes (int default 0), created_at
+- **poll_votes table**: Tracks user votes on polls (one vote per user per poll).
+  - Columns: id (uuid), poll_id (uuid FK), option_id (uuid FK), user_id (uuid), created_at, UNIQUE(poll_id, user_id)
+- **RLS**: Disabled on all tables (rowsecurity=false). Direct Supabase client queries work without policies.
+- **API trailing slashes**: next.config.js has `trailingSlash: true` - ALL API fetch calls must include trailing slashes to prevent 308 redirects.
 
 ### Authentication
 - **Provider**: Supabase Auth, client-side `@supabase/auth-helpers-nextjs`.
