@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
 export default function SignupScreen() {
@@ -31,7 +32,7 @@ export default function SignupScreen() {
     setLoading(true);
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/auth/signup/`, {
+      const checkResponse = await fetch(`${apiUrl}/api/auth/signup/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -41,28 +42,44 @@ export default function SignupScreen() {
         }),
       });
 
-      const result = await response.json();
+      const checkResult = await checkResponse.json();
 
-      if (!response.ok) {
-        if (response.status === 409) {
+      if (!checkResponse.ok) {
+        if (checkResponse.status === 409) {
           Alert.alert(
             'Account Exists',
             'An account with this email already exists.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
-        } else if (response.status === 429) {
+        } else if (checkResponse.status === 429) {
           Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
         } else {
-          Alert.alert('Sign Up Failed', result.error || 'Failed to create account');
+          Alert.alert('Sign Up Failed', checkResult.error || 'Failed to create account');
         }
         setLoading(false);
         return;
       }
 
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
+      });
+
+      if (error) {
+        Alert.alert('Sign Up Failed', error.message || 'Failed to create account');
+        setLoading(false);
+        return;
+      }
+
       Alert.alert(
-        'Account Created!',
-        'Please check your email for a verification link to activate your account.',
-        [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+        'Check Your Email',
+        'We sent a verification link to your email. Please click it to activate your account, then come back and sign in.',
+        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
       );
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
