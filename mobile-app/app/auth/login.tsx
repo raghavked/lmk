@@ -101,7 +101,6 @@ export default function LoginScreen() {
       // Don't block login - continue anyway
     }
     
-    router.replace('/(tabs)/discover');
     setLoading(false);
   };
 
