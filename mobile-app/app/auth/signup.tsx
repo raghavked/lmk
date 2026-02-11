@@ -31,50 +31,59 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/auth/signup/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          fullName: fullName.trim(),
-        }),
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 409) {
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
           Alert.alert(
             'Account Exists',
             'An account with this email already exists.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
-        } else if (response.status === 429) {
+        } else if (error.message.includes('rate') || error.status === 429) {
           Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
         } else {
-          Alert.alert('Sign Up Failed', result.error || 'Failed to create account');
+          Alert.alert('Sign Up Failed', error.message);
         }
         setLoading(false);
         return;
       }
 
-      if (result.needsClientResend) {
-        const { error: resendError } = await supabase.auth.resend({
-          type: 'signup',
-          email: email.trim().toLowerCase(),
-        });
-        if (resendError) {
-          console.log('Resend error (non-critical):', resendError.message);
+      if (data?.user && !data.session) {
+        try {
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+          await fetch(`${apiUrl}/api/profile/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              full_name: fullName.trim(),
+            }),
+          });
+        } catch (profileErr) {
+          console.log('Profile creation will happen on first login');
         }
-      }
 
-      Alert.alert(
-        'Check Your Email',
-        'We sent a verification link to your email. Please click it to activate your account, then come back and sign in.',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-      );
+        Alert.alert(
+          'Check Your Email',
+          'We sent a verification link to your email. Please click it to activate your account, then come back and sign in.',
+          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+        );
+      } else if (data?.session) {
+        Alert.alert(
+          'Account Created',
+          'Your account is ready! You can now sign in.',
+          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+        );
+      }
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }

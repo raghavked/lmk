@@ -20,7 +20,6 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Ensure component is hydrated before rendering interactive elements
   useEffect(() => {
     setIsHydrated(true);
   }, []);
@@ -30,7 +29,6 @@ export default function SignUpPage() {
     setLoading(true);
     setError(null);
 
-    // Validation
     if (!fullName.trim()) {
       setError('Full name is required');
       setLoading(false);
@@ -55,7 +53,6 @@ export default function SignUpPage() {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError('Please enter a valid email address');
@@ -64,35 +61,41 @@ export default function SignUpPage() {
     }
 
     try {
-      const response = await fetch('/api/auth/signup/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password,
-          fullName: fullName.trim(),
-        }),
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+          },
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        let errorMessage = result.error || 'Failed to create account';
-        if (response.status === 409) {
-          errorMessage = 'An account with this email already exists. Please sign in instead.';
-        } else if (response.status === 429) {
-          errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
+      if (signUpError) {
+        if (signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else if (signUpError.status === 429) {
+          setError('Too many signup attempts. Please wait a minute and try again.');
+        } else {
+          setError(signUpError.message);
         }
-        setError(errorMessage);
         setLoading(false);
         return;
       }
 
-      if (result.needsClientResend) {
-        await supabase.auth.resend({
-          type: 'signup',
-          email: email.trim().toLowerCase(),
-        });
+      if (data?.user) {
+        try {
+          await fetch('/api/profile/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              full_name: fullName.trim(),
+            }),
+          });
+        } catch (profileErr) {
+          console.log('Profile creation will happen on first login');
+        }
       }
 
       setSuccess(true);
@@ -134,9 +137,7 @@ export default function SignUpPage() {
 
   return (
     <div className="flex h-screen w-full flex-col md:flex-row bg-[#161B22]">
-      {/* Left Panel: Branding & Visuals */}
       <div className="relative hidden md:flex md:w-1/2 flex-col justify-between p-12 bg-[#0D1117] overflow-hidden">
-        {/* Background Decoration */}
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#feafb0]/10 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-[-5%] right-[-5%] w-[40%] h-[40%] bg-[#feafb0]/5 rounded-full blur-[100px]"></div>
         <div className="relative z-10 flex items-center gap-3">
@@ -154,9 +155,7 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Right Panel: Sign Up Form */}
       <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-16 bg-[#161B22] overflow-y-auto">
-        {/* Mobile Logo */}
         <div className="md:hidden flex items-center gap-2 mb-8">
           <Logo className="text-[#feafb0]" size={32} />
           <h2 className="text-gray-50 text-xl font-bold tracking-tight">LMK</h2>
@@ -175,7 +174,6 @@ export default function SignUpPage() {
           )}
 
           <form onSubmit={handleSignUp} className="flex flex-col gap-5">
-            {/* Full Name */}
             <div className="flex flex-col gap-2">
               <label className="text-gray-50 text-sm font-medium ml-1">Full Name</label>
               <div className="relative">
@@ -193,7 +191,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="flex flex-col gap-2">
               <label className="text-gray-50 text-sm font-medium ml-1">Email</label>
               <div className="relative">
@@ -211,7 +208,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-2">
               <label className="text-gray-50 text-sm font-medium ml-1">Password</label>
               <div className="relative">
@@ -248,7 +244,6 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Terms */}
             <div className="flex items-start gap-3 px-1 mt-2">
               <div className="flex items-center h-5">
                 <input
@@ -271,7 +266,6 @@ export default function SignUpPage() {
               </label>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !isHydrated}
