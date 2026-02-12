@@ -61,8 +61,28 @@ export default function SignUpPage() {
     }
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+
+      try {
+        const cleanupRes = await fetch('/api/auth/signup/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            action: 'cleanup-unconfirmed',
+          }),
+        });
+        if (cleanupRes.status === 409) {
+          setError('An account with this email is already verified. Please sign in instead.');
+          setLoading(false);
+          return;
+        }
+      } catch (cleanupErr) {
+        console.log('Cleanup check skipped');
+      }
+
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password,
         options: {
           data: {
@@ -98,11 +118,15 @@ export default function SignUpPage() {
         }
       }
 
-      setSuccess(true);
-      setFullName('');
-      setEmail('');
-      setPassword('');
-      setAgreeToTerms(false);
+      if (data?.session) {
+        router.push('/');
+      } else {
+        setSuccess(true);
+        setFullName('');
+        setEmail('');
+        setPassword('');
+        setAgreeToTerms(false);
+      }
     } catch (err: any) {
       setError('Unable to connect. Please check your internet connection.');
     } finally {

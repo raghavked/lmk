@@ -31,8 +31,33 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+
+      try {
+        const cleanupRes = await fetch(`${apiUrl}/api/auth/signup/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: normalizedEmail,
+            action: 'cleanup-unconfirmed',
+          }),
+        });
+        if (cleanupRes.status === 409) {
+          Alert.alert(
+            'Account Exists',
+            'An account with this email is already verified. Please sign in instead.',
+            [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+          );
+          setLoading(false);
+          return;
+        }
+      } catch (cleanupErr) {
+        console.log('Cleanup check skipped');
+      }
+
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         password,
         options: {
           data: {
@@ -45,7 +70,7 @@ export default function SignupScreen() {
         if (error.message.includes('already registered') || error.message.includes('already been registered')) {
           Alert.alert(
             'Account Exists',
-            'An account with this email already exists.',
+            'An account with this email already exists. Please sign in instead.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
         } else if (error.message.includes('rate') || error.status === 429) {
@@ -59,7 +84,6 @@ export default function SignupScreen() {
 
       if (data?.user && !data.session) {
         try {
-          const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
           await fetch(`${apiUrl}/api/profile/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -78,11 +102,7 @@ export default function SignupScreen() {
           [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
         );
       } else if (data?.session) {
-        Alert.alert(
-          'Account Created',
-          'Your account is ready! You can now sign in.',
-          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
-        );
+        router.replace('/(tabs)');
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
