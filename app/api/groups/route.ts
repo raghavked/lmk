@@ -112,11 +112,15 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Not a member of this group' }, { status: 403 });
       }
 
+      const msgLimit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 500);
+      const msgOffset = parseInt(searchParams.get('offset') || '0', 10);
+
       const { data: messages } = await supabaseAdmin
         .from('group_messages')
         .select('*')
         .eq('group_id', groupId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .range(msgOffset, msgOffset + msgLimit - 1);
 
       if (messages && messages.length > 0) {
         const userIds = [...new Set(messages.map(m => m.user_id))];

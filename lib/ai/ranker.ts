@@ -28,13 +28,21 @@ export interface RankedResult {
   };
 }
 
+const MAX_CACHE_SIZE = 500;
 const aiCache = new Map<string, { data: RankedResult[], timestamp: number }>();
-const AI_CACHE_TTL = 30 * 60 * 1000; // 30 minutes for better cost efficiency
+const AI_CACHE_TTL = 30 * 60 * 1000;
 
-// Rate limiting for AI API calls
+const MAX_RATE_LIMIT_ENTRIES = 5000;
 const userRateLimits = new Map<string, { count: number, resetTime: number }>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 20; // Max AI requests per user per minute
+const RATE_LIMIT_WINDOW = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 20;
+
+function evictCache<T>(cache: Map<string, T>, maxSize: number) {
+  if (cache.size > maxSize) {
+    const keysToDelete = Array.from(cache.keys()).slice(0, cache.size - maxSize + Math.floor(maxSize * 0.2));
+    for (const key of keysToDelete) cache.delete(key);
+  }
+}
 
 function hashPreferences(tasteProfile: any): string {
   if (!tasteProfile || typeof tasteProfile !== 'object') return 'default';
@@ -52,6 +60,7 @@ function checkRateLimit(userId: string): boolean {
   const limit = userRateLimits.get(userId);
   
   if (!limit || now > limit.resetTime) {
+    evictCache(userRateLimits, MAX_RATE_LIMIT_ENTRIES);
     userRateLimits.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return true;
   }
@@ -107,6 +116,7 @@ export class AIRanker {
       }
       
       const batchResults = await this.rankBatch(batch, user, context, claudeApiKey, openAIApiKey);
+      evictCache(aiCache, MAX_CACHE_SIZE);
       aiCache.set(cacheKey, { data: batchResults, timestamp: Date.now() });
       allResults.push(...batchResults);
     }
