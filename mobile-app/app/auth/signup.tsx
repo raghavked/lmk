@@ -45,11 +45,15 @@ export default function SignupScreen() {
 
       if (!response.ok) {
         if (response.status === 409) {
-          Alert.alert(
-            'Account Exists',
-            'An account with this email already exists. Please sign in instead.',
-            [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
-          );
+          if (result.error?.includes('display name')) {
+            Alert.alert('Name Taken', result.error);
+          } else {
+            Alert.alert(
+              'Account Exists',
+              'An account with this email already exists. Please sign in instead.',
+              [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
+            );
+          }
         } else if (response.status === 429) {
           Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
         } else {

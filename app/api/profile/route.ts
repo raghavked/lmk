@@ -64,12 +64,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ profile: existingProfile, message: 'Profile already exists' });
     }
 
-    // Create new profile (note: email is stored in Supabase auth, not profiles table)
+    const trimmedName = (full_name || '').trim();
+    if (trimmedName) {
+      const { data: existingName } = await adminClient
+        .from('profiles')
+        .select('id')
+        .ilike('full_name', trimmedName)
+        .limit(1);
+
+      if (existingName && existingName.length > 0) {
+        return NextResponse.json({ error: 'This display name is already taken. Please choose a different name.' }, { status: 409 });
+      }
+    }
+
     const { data: profile, error } = await adminClient
       .from('profiles')
       .insert({
         id: user_id,
-        full_name: full_name || '',
+        full_name: trimmedName,
       })
       .select()
       .single();
@@ -130,7 +142,22 @@ export async function PATCH(request: NextRequest) {
     const { full_name, profile_image, taste_profile, location } = body;
 
     const updates: any = {};
-    if (full_name !== undefined) updates.full_name = full_name;
+    if (full_name !== undefined) {
+      const trimmedName = full_name.trim();
+      if (trimmedName) {
+        const { data: existingName } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .ilike('full_name', trimmedName)
+          .neq('id', user.id)
+          .limit(1);
+
+        if (existingName && existingName.length > 0) {
+          return NextResponse.json({ error: 'This display name is already taken. Please choose a different name.' }, { status: 409 });
+        }
+      }
+      updates.full_name = trimmedName;
+    }
     if (profile_image !== undefined) updates.profile_image = profile_image;
     if (taste_profile !== undefined) updates.taste_profile = taste_profile;
     if (location !== undefined) updates.location = location;
