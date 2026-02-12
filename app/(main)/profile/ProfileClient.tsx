@@ -45,7 +45,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   
   const loadRatings = async () => {
     try {
-      const response = await fetch('/api/ratings');
+      const response = await fetch('/api/ratings/');
       if (!response.ok) throw new Error('Failed to load ratings');
       const data = await response.json();
       setRatings(data.ratings || []);
@@ -59,7 +59,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   
   const loadFavorites = async () => {
     try {
-      const response = await fetch('/api/ratings?type=favorites');
+      const response = await fetch('/api/ratings/?type=favorites');
       if (!response.ok) throw new Error('Failed to load favorites');
       const data = await response.json();
       setFavorites(data.ratings || []);
@@ -70,7 +70,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
 
   const handlePreferenceComplete = async () => {
     try {
-      const response = await fetch('/api/profile');
+      const response = await fetch('/api/profile/');
       if (response.ok) {
         const data = await response.json();
         setProfile(data.profile);
@@ -86,7 +86,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
   const handleRetakeTest = async () => {
     setResettingPreferences(true);
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch('/api/profile/', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ taste_profile: {} }),
@@ -124,7 +124,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     setSettingsSaving(true);
     setSettingsMessage(null);
     try {
-      const response = await fetch('/api/profile', {
+      const response = await fetch('/api/profile/', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -154,7 +154,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     setSettingsSaving(true);
     setSettingsMessage(null);
     try {
-      const response = await fetch('/api/auth/password', {
+      const response = await fetch('/api/auth/password/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newPassword }),
@@ -179,7 +179,7 @@ export default function ProfileClient({ profile: initialProfile }: { profile: an
     setSettingsSaving(true);
     setSettingsMessage(null);
     try {
-      const response = await fetch('/api/profile', { method: 'DELETE' });
+      const response = await fetch('/api/profile/', { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       await supabase.auth.signOut();

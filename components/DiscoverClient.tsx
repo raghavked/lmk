@@ -115,7 +115,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         params.append('seen_ids', Array.from(seenIds).join(','));
       }
       
-      const response = await fetch(`/api/recommend?${params.toString()}`);
+      const response = await fetch(`/api/recommend/?${params.toString()}`);
       const data = await response.json();
       
       if (!response.ok) throw new Error(data.message || data.error || 'Failed to load recommendations');

@@ -139,7 +139,7 @@ export default function DiscoverClient({ profile }: { profile: any }) {
         params.append('seen_ids', Array.from(seenIdsRef.current).join(','));
       }
       
-      const response = await fetch(`/api/recommend?${params.toString()}`, {
+      const response = await fetch(`/api/recommend/?${params.toString()}`, {
         signal: abortControllerRef.current?.signal
       });
       const data = await response.json();

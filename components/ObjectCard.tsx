@@ -37,7 +37,7 @@ export default function ObjectCard({ object, rank, score, distance, explanation 
     
     setIsSubmittingRating(true);
     try {
-      const response = await fetch('/api/ratings', {
+      const response = await fetch('/api/ratings/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -169,35 +169,29 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
         .select('*')
         .in('poll_id', pollIds);
 
-      const { data: votesData } = await supabase
+      const { data: allVotesData } = await supabase
         .from('poll_votes')
         .select('*')
-        .in('poll_id', pollIds)
-        .eq('user_id', profile.id);
+        .in('poll_id', pollIds);
 
       const pollMap: Record<string, Poll> = {};
       pollsData?.forEach((p: any) => {
-        let metadata: any[] = [];
-        try {
-          metadata = typeof p.description === 'string' ? JSON.parse(p.description) : (p.description || []);
-        } catch {}
-        
         const rawOptions = (optionsData || []).filter((o: any) => o.poll_id === p.id);
+        const pollVotes = (allVotesData || []).filter((v: any) => v.poll_id === p.id);
         const enrichedOptions = rawOptions.map((o: any, idx: number) => {
-          const meta = metadata[idx] || {};
-          const voteCount = (votesData || []).filter((v: any) => v.option_id === o.id).length;
+          const voteCount = pollVotes.filter((v: any) => v.option_id === o.id).length;
           return {
             ...o,
-            title: meta.title || o.title || `Option ${idx + 1}`,
-            description: meta.description || o.description || '',
-            votes: o.votes || voteCount || 0,
+            title: o.title || `Option ${idx + 1}`,
+            description: o.description || '',
+            votes: voteCount,
           };
         });
 
         pollMap[p.id] = {
           ...p,
           options: enrichedOptions,
-          userVote: votesData?.find((v: any) => v.poll_id === p.id)?.option_id,
+          userVote: pollVotes.find((v: any) => v.user_id === profile.id)?.option_id,
         };
       });
       setPolls(prev => ({ ...prev, ...pollMap }));
@@ -351,15 +345,18 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
           title: pollTitle,
           category: pollCategory,
           created_by: profile.id,
-          description: JSON.stringify(optionsMetadata),
         })
         .select()
         .single();
 
       if (poll) {
         if (optionsMetadata.length > 0) {
-          const pollOptionRows = optionsMetadata.map(() => ({
+          const pollOptionRows = optionsMetadata.map((opt: any) => ({
             poll_id: poll.id,
+            title: opt.title || 'Option',
+            description: opt.description || '',
+            personalized_score: opt.personalized_score || 50,
+            votes: 0,
           }));
           await supabase.from('poll_options').insert(pollOptionRows);
         }

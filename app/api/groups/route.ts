@@ -176,11 +176,6 @@ export async function GET(request: Request) {
         creatorProfiles?.forEach(p => { creatorMap[p.id] = p.full_name || 'Unknown'; });
 
         const enrichedPolls = polls.map(p => {
-          let aiOptions: any[] = [];
-          try {
-            aiOptions = JSON.parse(p.description || '[]');
-          } catch {}
-
           const pollOptions = (options || []).filter(o => o.poll_id === p.id);
           const pollVotes = (votes || []).filter(v => v.poll_id === p.id);
 
@@ -190,10 +185,11 @@ export async function GET(request: Request) {
           });
 
           const enrichedOptions = pollOptions.map((opt: any, idx: number) => ({
-            ...opt,
-            title: aiOptions[idx]?.title || `Option ${idx + 1}`,
-            description: aiOptions[idx]?.description || '',
-            personalized_score: aiOptions[idx]?.personalized_score || 50,
+            id: opt.id,
+            poll_id: opt.poll_id,
+            title: opt.title || `Option ${idx + 1}`,
+            description: opt.description || '',
+            personalized_score: opt.personalized_score || 50,
             votes: voteCounts[opt.id] || 0,
           }));
 
@@ -578,17 +574,15 @@ Respond in JSON format only:
 
       const optionRows = aiOptions.map((opt: any) => ({
         poll_id: poll.id,
-        object_id: crypto.randomUUID(),
+        title: opt.title || 'Option',
+        description: opt.description || '',
+        personalized_score: opt.personalized_score || 50,
+        votes: 0,
       }));
 
       if (optionRows.length > 0) {
         await supabaseAdmin.from('poll_options').insert(optionRows);
       }
-
-      await supabaseAdmin
-        .from('polls')
-        .update({ description: JSON.stringify(aiOptions) })
-        .eq('id', poll.id);
 
       const { data: profile } = await supabaseAdmin
         .from('profiles')
@@ -610,19 +604,15 @@ Respond in JSON format only:
         .select('*')
         .eq('poll_id', poll.id);
 
-      const enrichedOptions = (insertedOptions || []).map((opt: any, idx: number) => ({
-        ...opt,
-        title: aiOptions[idx]?.title || `Option ${idx + 1}`,
-        description: aiOptions[idx]?.description || '',
-        personalized_score: aiOptions[idx]?.personalized_score || 50,
-        votes: 0,
-      }));
-
       return NextResponse.json({ 
         poll: {
           ...poll,
+          description: undefined,
           creator_name: profile?.full_name || 'Unknown',
-          options: enrichedOptions,
+          options: (insertedOptions || []).map((opt: any) => ({
+            ...opt,
+            votes: 0,
+          })),
           votes: [],
           user_voted: false,
         }

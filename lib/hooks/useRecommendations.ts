@@ -48,7 +48,7 @@ export function useRecommendations(category: string, profile: any) {
           }, {} as Record<string, string>)
         ).toString();
 
-        const response = await fetch(`/api/recommend?${queryString}`, {
+        const response = await fetch(`/api/recommend/?${queryString}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });

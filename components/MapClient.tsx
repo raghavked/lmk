@@ -42,7 +42,7 @@ export default function MapClient({ profile }: { profile: any }) {
     setSelectedItem(null);
 
     try {
-      const response = await fetch(`/api/recommend?category=${selectedCategory}&limit=20`, {
+      const response = await fetch(`/api/recommend/?category=${selectedCategory}&limit=20`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
