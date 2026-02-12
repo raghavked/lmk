@@ -24,6 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[AuthContext] Initial session:', session ? 'exists' : 'null');
       setSession(session);
       setLoading(false);
+      if (session?.user) {
+        ensureProfileExists(session);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -67,6 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const ensureProfileExists = async (session: Session) => {
     try {
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      console.log('[AuthContext] Checking profile for user:', session.user.id);
+      
       const response = await fetch(`${apiUrl}/api/profile/`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -76,10 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.profile) return;
+        if (data.profile) {
+          console.log('[AuthContext] Profile already exists');
+          return;
+        }
       }
 
-      await fetch(`${apiUrl}/api/profile/`, {
+      console.log('[AuthContext] Creating profile for user:', session.user.id);
+      const createResponse = await fetch(`${apiUrl}/api/profile/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,10 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           user_id: session.user.id,
-          full_name: session.user.user_metadata?.full_name || '',
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '',
         }),
       });
-      console.log('[AuthContext] Profile ensured for user:', session.user.id);
+      
+      const createData = await createResponse.json();
+      console.log('[AuthContext] Profile creation result:', createResponse.status, createData);
     } catch (e) {
       console.error('[AuthContext] Error ensuring profile:', e);
     }

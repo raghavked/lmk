@@ -102,6 +102,10 @@ export async function GET(request: NextRequest) {
       .eq('id', user.id)
       .single();
 
+    if (error && error.code === 'PGRST116') {
+      return NextResponse.json({ profile: null });
+    }
+
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

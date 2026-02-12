@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         .insert({
           name,
           description: description || '',
-          created_by: user.id,
+          creator_id: user.id,
         })
         .select()
         .single();

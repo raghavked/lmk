@@ -95,8 +95,10 @@ export default function FriendsScreen() {
         },
       });
 
+      console.log('[Friends] Loading friends, status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[Friends] Loaded:', { friends: data.friends?.length || 0, pending: data.pending?.length || 0, sent: data.sentRequests?.length || 0 });
         
         const allFriends: Friend[] = (data.friends || []).map((f: any) => ({
           id: f.id,
@@ -117,7 +119,7 @@ export default function FriendsScreen() {
         setSentRequests(data.sentRequests || []);
       } else {
         const errorText = await response.text();
-        console.error('Error loading friends:', errorText);
+        console.error('[Friends] Error loading friends:', response.status, errorText);
         setError('Could not load friends. Please try again.');
       }
     } catch (err: any) {
@@ -150,12 +152,17 @@ export default function FriendsScreen() {
         },
       });
 
+      console.log('[Friends] Search response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[Friends] Search found:', data.users?.length || 0, 'users');
         setSearchResults(data.users || []);
+      } else {
+        const errorText = await response.text();
+        console.error('[Friends] Search error:', response.status, errorText);
       }
     } catch (err) {
-      console.error('Error searching users:', err);
+      console.error('[Friends] Error searching users:', err);
     } finally {
       setSearching(false);
     }
