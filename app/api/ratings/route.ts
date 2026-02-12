@@ -196,8 +196,8 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const type = requestUrl.searchParams.get('type') || 'all';
   const category = requestUrl.searchParams.get('category');
-  const limit = Math.min(parseInt(requestUrl.searchParams.get('limit') || '100', 10), 500);
-  const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
+  const limit = Math.max(1, Math.min(parseInt(requestUrl.searchParams.get('limit') || '100', 10) || 100, 500));
+  const offset = Math.max(0, parseInt(requestUrl.searchParams.get('offset') || '0', 10) || 0);
 
   try {
     let query = supabase
