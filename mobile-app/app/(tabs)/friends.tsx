@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl, Modal, Dimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
@@ -28,7 +28,12 @@ interface FriendRating {
   item_title: string;
   category: string;
   rating: number;
-  review?: string;
+  description?: string;
+  metric1?: number;
+  metric2?: number;
+  metric3?: number;
+  price_level?: number;
+  photos?: string[];
   is_favorite: boolean;
   created_at: string;
 }
@@ -48,6 +53,7 @@ export default function FriendsScreen() {
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [friendRatings, setFriendRatings] = useState<FriendRating[]>([]);
   const [loadingRatings, setLoadingRatings] = useState(false);
+  const [ratingsCategoryFilter, setRatingsCategoryFilter] = useState('all');
 
   useFocusEffect(
     useCallback(() => {
@@ -304,16 +310,22 @@ export default function FriendsScreen() {
     );
   };
 
-  const viewFriendRatings = async (friend: Friend) => {
+  const viewFriendRatings = async (friend: Friend, categoryFilter: string = 'all') => {
     setSelectedFriend(friend);
     setLoadingRatings(true);
     setFriendRatings([]);
+    setRatingsCategoryFilter(categoryFilter);
     try {
       const accessToken = await getAccessToken();
       if (!accessToken) return;
 
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/friends/ratings/?friendId=${friend.id}`, {
+      let url = `${apiUrl}/api/friends/ratings/?friendId=${friend.id}`;
+      if (categoryFilter && categoryFilter !== 'all') {
+        url += `&category=${categoryFilter}`;
+      }
+
+      const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -334,8 +346,28 @@ export default function FriendsScreen() {
   };
 
   const renderStars = (rating: number) => {
-    return '★'.repeat(rating) + '☆'.repeat(5 - rating);
+    const fullStars = Math.floor(rating);
+    const hasHalf = rating % 1 >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
+    return '★'.repeat(fullStars) + (hasHalf ? '½' : '') + '☆'.repeat(emptyStars);
   };
+
+  const PRICE_LABELS = ['$', '$$', '$$$', '$$$$'];
+  const METRIC_LABELS: Record<string, string[]> = {
+    restaurants: ['Food', 'Service', 'Ambiance'],
+    movies: ['Acting', 'Story', 'Cinematography'],
+    tv_shows: ['Acting', 'Plot', 'Production'],
+    reading: ['Writing', 'Story', 'Engagement'],
+    activities: ['Fun', 'Value', 'Access'],
+  };
+  const CATEGORY_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'restaurants', label: '🍽️' },
+    { key: 'movies', label: '🎬' },
+    { key: 'tv_shows', label: '📺' },
+    { key: 'reading', label: '📚' },
+    { key: 'activities', label: '🎯' },
+  ];
 
   const categoryEmoji: Record<string, string> = {
     restaurants: '🍽️',
@@ -521,6 +553,23 @@ export default function FriendsScreen() {
                 <Ionicons name="close" size={24} color={Colors.text.secondary} />
               </TouchableOpacity>
             </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilterRow}>
+              {CATEGORY_FILTERS.map((cf) => (
+                <TouchableOpacity
+                  key={cf.key}
+                  style={[styles.categoryFilterBtn, ratingsCategoryFilter === cf.key && styles.categoryFilterBtnActive]}
+                  onPress={() => {
+                    if (selectedFriend) viewFriendRatings(selectedFriend, cf.key);
+                  }}
+                >
+                  <Text style={[styles.categoryFilterText, ratingsCategoryFilter === cf.key && styles.categoryFilterTextActive]}>
+                    {cf.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             {loadingRatings ? (
               <ActivityIndicator size="large" color={Colors.accent.coral} style={{ marginTop: 40 }} />
             ) : friendRatings.length === 0 ? (
@@ -530,23 +579,46 @@ export default function FriendsScreen() {
               </View>
             ) : (
               <ScrollView style={styles.ratingsList}>
-                {friendRatings.map((r) => (
-                  <View key={r.id} style={styles.ratingCard}>
-                    <View style={styles.ratingHeader}>
-                      <Text style={styles.ratingEmoji}>{categoryEmoji[r.category] || '📌'}</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.ratingTitle}>{r.item_title}</Text>
-                        <Text style={styles.ratingStars}>{renderStars(r.rating)}</Text>
+                {friendRatings.map((r) => {
+                  const metricLabels = METRIC_LABELS[r.category] || ['Metric 1', 'Metric 2', 'Metric 3'];
+                  return (
+                    <View key={r.id} style={styles.ratingCard}>
+                      <View style={styles.ratingHeader}>
+                        <Text style={styles.ratingEmoji}>{categoryEmoji[r.category] || '📌'}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.ratingTitle}>{r.item_title}</Text>
+                          <View style={styles.ratingStarsRow}>
+                            <Text style={styles.ratingStars}>{renderStars(r.rating)}</Text>
+                            <Text style={styles.ratingValue}>{r.rating}/5</Text>
+                          </View>
+                        </View>
+                        {r.price_level ? (
+                          <Text style={styles.priceTag}>{PRICE_LABELS[r.price_level - 1]}</Text>
+                        ) : null}
                       </View>
-                      {r.is_favorite && (
-                        <Ionicons name="heart" size={18} color={Colors.accent.coral} />
-                      )}
+
+                      {(r.metric1 || r.metric2 || r.metric3) ? (
+                        <View style={styles.metricsRow}>
+                          {r.metric1 ? <Text style={styles.metricChip}>{metricLabels[0]}: {r.metric1}/10</Text> : null}
+                          {r.metric2 ? <Text style={styles.metricChip}>{metricLabels[1]}: {r.metric2}/10</Text> : null}
+                          {r.metric3 ? <Text style={styles.metricChip}>{metricLabels[2]}: {r.metric3}/10</Text> : null}
+                        </View>
+                      ) : null}
+
+                      {r.description ? (
+                        <Text style={styles.ratingReview}>"{r.description}"</Text>
+                      ) : null}
+
+                      {r.photos && r.photos.length > 0 ? (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
+                          {r.photos.map((photo, i) => (
+                            <Image key={i} source={{ uri: photo }} style={styles.ratingPhoto} />
+                          ))}
+                        </ScrollView>
+                      ) : null}
                     </View>
-                    {r.review ? (
-                      <Text style={styles.ratingReview}>"{r.review}"</Text>
-                    ) : null}
-                  </View>
-                ))}
+                  );
+                })}
               </ScrollView>
             )}
           </View>
@@ -755,10 +827,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  ratingStarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
   ratingStars: {
     color: '#FFD700',
     fontSize: 14,
-    marginTop: 2,
+  },
+  ratingValue: {
+    color: Colors.text.secondary,
+    fontSize: 12,
+  },
+  priceTag: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+    paddingLeft: 34,
+  },
+  metricChip: {
+    backgroundColor: Colors.background.primary,
+    color: Colors.text.secondary,
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    overflow: 'hidden',
   },
   ratingReview: {
     color: Colors.text.secondary,
@@ -766,5 +868,38 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 8,
     paddingLeft: 34,
+  },
+  photosScroll: {
+    marginTop: 8,
+    paddingLeft: 34,
+  },
+  ratingPhoto: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    marginRight: 6,
+  },
+  categoryFilterRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    maxHeight: 40,
+  },
+  categoryFilterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.background.secondary,
+    marginRight: 8,
+  },
+  categoryFilterBtnActive: {
+    backgroundColor: Colors.accent.coral,
+  },
+  categoryFilterText: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+  },
+  categoryFilterTextActive: {
+    color: Colors.background.primary,
+    fontWeight: '600',
   },
 });

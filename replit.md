@@ -35,9 +35,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Database Schema Notes
 - **ratings table**: Uses `object_id` column (NOT `item_id`) to store item identifiers. Code accepts `item_id` in API requests but maps to `object_id` in database.
-  - Columns: id (uuid), user_id (uuid), object_id (text), item_title (text), category (text), rating (integer 1-5), review (text), is_favorite (boolean), created_at, updated_at
-- **profiles table**: id matches Supabase auth user ID. Note: email is NOT stored in profiles, it lives in Supabase auth.users.
-  - Columns: id (uuid), full_name (text), avatar_url (text), location (jsonb), taste_profile (jsonb), preferences_completed (boolean), created_at, updated_at
+  - Columns: id (uuid), user_id (uuid), object_id (text), item_title (text), category (text), rating (integer, stored as rating*2 for 0.5 star increments), review (text, stores JSON with extended data), is_favorite (boolean), created_at, updated_at
+  - **Extended rating data**: The `review` column stores JSON: `{ description, metric1, metric2, metric3, price_level, photos }`. The API unpacks this and returns flat fields. Rating is stored as integer*2 (e.g., 3.5 stars = 7). API returns rating/2.
+  - **Photo uploads**: Stored in Supabase Storage bucket `rating-photos`, uploaded via `/api/ratings/upload/` endpoint, URLs stored in review JSON.
+  - **Category-specific metrics (1-10)**: restaurants (Food Quality, Service, Ambiance), movies (Acting, Story, Cinematography), tv_shows (Acting, Plot, Production), reading (Writing, Story, Engagement), activities (Fun Factor, Value, Accessibility)
+- **profiles table**: id matches Supabase auth user ID. Note: email is NOT stored in profiles, it lives in Supabase auth.users. Display names must be unique (case-insensitive, enforced in signup + profile POST/PATCH APIs).
+  - Columns: id (uuid), full_name (text, unique), location (jsonb), taste_profile (jsonb), preferences_completed (boolean), created_at, updated_at
+  - Note: Supabase profiles table does NOT have `avatar_url` column - do not query for it
 - **group_messages table**: Uses `user_id` column (renamed from `sender_id`).
   - Columns: id (uuid), group_id (uuid), user_id (uuid), content (text), poll_id (uuid nullable), created_at
 - **poll_options table**: Stores AI-generated options for group polls.

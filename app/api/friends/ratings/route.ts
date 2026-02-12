@@ -39,6 +39,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const friendId = url.searchParams.get('friendId');
+  const category = url.searchParams.get('category');
 
   if (!friendId) {
     return NextResponse.json({ error: 'Friend ID is required' }, { status: 400 });
@@ -65,11 +66,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'You are not friends with this user' }, { status: 403 });
     }
 
-    const { data: ratings, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('ratings')
       .select('*')
-      .eq('user_id', friendId)
-      .order('created_at', { ascending: false });
+      .eq('user_id', friendId);
+
+    if (category && category !== 'all') {
+      query = query.eq('category', category);
+    }
+
+    const { data: ratings, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
 
@@ -79,8 +85,37 @@ export async function GET(request: Request) {
       .eq('id', friendId)
       .single();
 
+    const formattedRatings = (ratings || []).map((row: any) => {
+      let details: any = {};
+      try {
+        if (row.review) {
+          const parsed = JSON.parse(row.review);
+          if (typeof parsed === 'object') details = parsed;
+          else details = { description: row.review };
+        }
+      } catch {
+        details = { description: row.review };
+      }
+
+      return {
+        id: row.id,
+        object_id: row.object_id,
+        item_title: row.item_title,
+        category: row.category,
+        rating: row.rating / 2,
+        description: details.description || null,
+        metric1: details.metric1 ?? null,
+        metric2: details.metric2 ?? null,
+        metric3: details.metric3 ?? null,
+        price_level: details.price_level ?? null,
+        photos: details.photos || [],
+        is_favorite: row.is_favorite,
+        created_at: row.created_at,
+      };
+    });
+
     return NextResponse.json({
-      ratings: ratings || [],
+      ratings: formattedRatings,
       friend: profile || { full_name: 'Unknown' },
     });
   } catch (error: any) {
