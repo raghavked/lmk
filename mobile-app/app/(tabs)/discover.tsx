@@ -13,6 +13,7 @@ import { CardListSkeleton } from '../../components/SkeletonLoader';
 import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
+import RatingModal from '../../components/RatingModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
@@ -100,9 +101,6 @@ export default function DiscoverScreen() {
   const [showDistancePicker, setShowDistancePicker] = useState(false);
   const [selectedItem, setSelectedItem] = useState<RecommendationItem | null>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [userRating, setUserRating] = useState(0);
-  const [userReview, setUserReview] = useState('');
-  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const [offset, setOffset] = useState(0);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [hasMore, setHasMore] = useState(true);
@@ -642,10 +640,17 @@ export default function DiscoverScreen() {
     }
   };
 
-  const handleSubmitRating = async () => {
-    if (!selectedItem || userRating < 1) return;
+  const handleSubmitRating = async (data: {
+    rating: number;
+    description: string;
+    metric1: number;
+    metric2: number;
+    metric3: number;
+    price_level: number;
+    photos: string[];
+  }) => {
+    if (!selectedItem) return;
     
-    setIsSubmittingRating(true);
     try {
       const accessToken = await getAccessToken();
       if (!accessToken) {
@@ -665,8 +670,13 @@ export default function DiscoverScreen() {
           item_id: selectedItem.id,
           item_title: selectedItem.title,
           category: selectedItem.category,
-          rating: userRating,
-          review: userReview || null,
+          rating: data.rating,
+          description: data.description || null,
+          metric1: data.metric1,
+          metric2: data.metric2,
+          metric3: data.metric3,
+          price_level: data.price_level || null,
+          photos: data.photos,
           is_favorite: false,
         }),
       });
@@ -674,8 +684,6 @@ export default function DiscoverScreen() {
       if (response.ok) {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowRatingModal(false);
-        setUserRating(0);
-        setUserReview('');
         Alert.alert('Success', 'Your rating has been saved!');
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -685,8 +693,43 @@ export default function DiscoverScreen() {
     } catch (error) {
       console.error('Error submitting rating:', error);
       Alert.alert('Error', 'Failed to save rating. Please try again.');
-    } finally {
-      setIsSubmittingRating(false);
+    }
+  };
+
+  const uploadRatingPhoto = async (uri: string): Promise<string | null> => {
+    try {
+      const accessToken = await getAccessToken();
+      if (!accessToken) return null;
+
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('file', {
+        uri,
+        name: filename,
+        type,
+      } as any);
+
+      const response = await fetch(`${apiUrl}/api/ratings/upload/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Auth-Token': accessToken,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      return null;
     }
   };
 
@@ -1074,44 +1117,14 @@ export default function DiscoverScreen() {
         </View>
       </Modal>
 
-      <Modal visible={showRatingModal} transparent animationType="fade">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowRatingModal(false)}>
-          <View style={styles.ratingModal} onStartShouldSetResponder={() => true}>
-            <Text style={styles.ratingTitle}>Rate {selectedItem?.title}</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setUserRating(star)}>
-                  <Ionicons 
-                    name={star <= userRating ? "star" : "star-outline"} 
-                    size={36} 
-                    color={Colors.accent.coral} 
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.reviewInput}
-              placeholder="Add a review (optional)"
-              placeholderTextColor={Colors.text.secondary}
-              value={userReview}
-              onChangeText={setUserReview}
-              multiline
-              numberOfLines={3}
-            />
-            <TouchableOpacity 
-              style={[styles.submitRatingButton, userRating < 1 && styles.submitRatingButtonDisabled]}
-              onPress={handleSubmitRating}
-              disabled={userRating < 1 || isSubmittingRating}
-            >
-              {isSubmittingRating ? (
-                <ActivityIndicator size="small" color={Colors.background.primary} />
-              ) : (
-                <Text style={styles.submitRatingText}>Submit Rating</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <RatingModal
+        visible={showRatingModal}
+        itemTitle={selectedItem?.title || ''}
+        category={selectedItem?.category || 'activities'}
+        onClose={() => setShowRatingModal(false)}
+        onSubmit={handleSubmitRating}
+        uploadPhoto={uploadRatingPhoto}
+      />
 
       {/* Plan My Day Floating Button */}
       <TouchableOpacity
@@ -1734,55 +1747,6 @@ const styles = StyleSheet.create({
   },
   openButtonText: {
     color: Colors.accent.coral,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  ratingModal: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 16,
-    padding: 24,
-    width: width - 48,
-    maxWidth: 360,
-    alignItems: 'center',
-  },
-  ratingTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  starsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  reviewInput: {
-    width: '100%',
-    backgroundColor: Colors.background.primary,
-    borderRadius: 12,
-    padding: 14,
-    color: Colors.text.primary,
-    fontSize: 14,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  submitRatingButton: {
-    backgroundColor: Colors.accent.coral,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
-  submitRatingButtonDisabled: {
-    opacity: 0.5,
-  },
-  submitRatingText: {
-    color: Colors.background.primary,
     fontSize: 16,
     fontWeight: '600',
   },
