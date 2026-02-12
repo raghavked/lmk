@@ -404,7 +404,7 @@ Location: ${user.location?.city || 'Unknown'}
         title: r.item_title || r.title || 'Unknown Item',
         category: r.category || '',
         score: r.rating ?? r.score ?? 0,
-        review: r.review || r.feedback || '',
+        review: r.review || r.feedback || r.description || '',
       }));
       
       // Group ratings by score to show patterns
