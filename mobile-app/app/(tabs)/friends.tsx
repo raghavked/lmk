@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Image, Alert, RefreshControl, Modal, Dimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
@@ -12,14 +12,12 @@ import * as Haptics from 'expo-haptics';
 interface Friend {
   id: string;
   full_name: string;
-  avatar_url?: string;
   status: 'pending' | 'accepted';
 }
 
 interface SearchResult {
   id: string;
   full_name: string;
-  avatar_url?: string;
 }
 
 interface FriendRating {
@@ -109,7 +107,6 @@ export default function FriendsScreen() {
         const allFriends: Friend[] = (data.friends || []).map((f: any) => ({
           id: f.id,
           full_name: f.full_name || 'Unknown User',
-          avatar_url: f.avatar_url,
           status: 'accepted' as const,
         }));
         setFriends(allFriends);
@@ -117,7 +114,6 @@ export default function FriendsScreen() {
         const pending: Friend[] = (data.pending || []).map((f: any) => ({
           id: f.id,
           full_name: f.full_name || 'Unknown User',
-          avatar_url: f.avatar_url,
           status: 'pending' as const,
         }));
         setPendingRequests(pending);
@@ -362,19 +358,28 @@ export default function FriendsScreen() {
   };
   const CATEGORY_FILTERS = [
     { key: 'all', label: 'All' },
-    { key: 'restaurants', label: '🍽️' },
-    { key: 'movies', label: '🎬' },
-    { key: 'tv_shows', label: '📺' },
-    { key: 'reading', label: '📚' },
-    { key: 'activities', label: '🎯' },
+    { key: 'restaurants', label: 'Restaurants' },
+    { key: 'movies', label: 'Movies' },
+    { key: 'tv_shows', label: 'TV' },
+    { key: 'reading', label: 'Books' },
+    { key: 'activities', label: 'Activities' },
   ];
 
-  const categoryEmoji: Record<string, string> = {
-    restaurants: '🍽️',
-    movies: '🎬',
-    tv_shows: '📺',
-    reading: '📚',
-    activities: '🎯',
+  const getCategoryIcon = (category: string, size: number = 18, color: string = Colors.accent.coral) => {
+    switch (category) {
+      case 'restaurants':
+        return <Ionicons name="restaurant" size={size} color={color} />;
+      case 'movies':
+        return <MaterialCommunityIcons name="movie-open" size={size} color={color} />;
+      case 'tv_shows':
+        return <Ionicons name="tv" size={size} color={color} />;
+      case 'reading':
+        return <Ionicons name="book" size={size} color={color} />;
+      case 'activities':
+        return <MaterialCommunityIcons name="star-four-points" size={size} color={color} />;
+      default:
+        return <Ionicons name="ellipse" size={size} color={color} />;
+    }
   };
 
   const isFriend = (userId: string) => friends.some(f => f.id === userId);
@@ -555,19 +560,25 @@ export default function FriendsScreen() {
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryFilterRow}>
-              {CATEGORY_FILTERS.map((cf) => (
-                <TouchableOpacity
-                  key={cf.key}
-                  style={[styles.categoryFilterBtn, ratingsCategoryFilter === cf.key && styles.categoryFilterBtnActive]}
-                  onPress={() => {
-                    if (selectedFriend) viewFriendRatings(selectedFriend, cf.key);
-                  }}
-                >
-                  <Text style={[styles.categoryFilterText, ratingsCategoryFilter === cf.key && styles.categoryFilterTextActive]}>
-                    {cf.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {CATEGORY_FILTERS.map((cf) => {
+                const isActive = ratingsCategoryFilter === cf.key;
+                return (
+                  <TouchableOpacity
+                    key={cf.key}
+                    style={[styles.categoryFilterBtn, isActive && styles.categoryFilterBtnActive]}
+                    onPress={() => {
+                      if (selectedFriend) viewFriendRatings(selectedFriend, cf.key);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      {cf.key !== 'all' && getCategoryIcon(cf.key, 14, isActive ? Colors.background.primary : Colors.text.secondary)}
+                      <Text style={[styles.categoryFilterText, isActive && styles.categoryFilterTextActive]}>
+                        {cf.label}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             {loadingRatings ? (
@@ -584,7 +595,9 @@ export default function FriendsScreen() {
                   return (
                     <View key={r.id} style={styles.ratingCard}>
                       <View style={styles.ratingHeader}>
-                        <Text style={styles.ratingEmoji}>{categoryEmoji[r.category] || '📌'}</Text>
+                        <View style={styles.ratingIconContainer}>
+                          {getCategoryIcon(r.category, 20, Colors.accent.coral)}
+                        </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.ratingTitle}>{r.item_title}</Text>
                           <View style={styles.ratingStarsRow}>
@@ -819,8 +832,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  ratingEmoji: {
-    fontSize: 24,
+  ratingIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(254, 175, 176, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   ratingTitle: {
     color: Colors.text.primary,

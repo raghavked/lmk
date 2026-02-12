@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Users, BarChart3, X, Send, UserPlus, Check } from 'lucide-react';
+import { Loader2, Plus, Users, BarChart3, X, Send, UserPlus, Check, Utensils, Clapperboard, Tv, BookOpen, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
@@ -177,9 +177,26 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
 
       const pollMap: Record<string, Poll> = {};
       pollsData?.forEach((p: any) => {
+        let metadata: any[] = [];
+        try {
+          metadata = typeof p.description === 'string' ? JSON.parse(p.description) : (p.description || []);
+        } catch {}
+        
+        const rawOptions = (optionsData || []).filter((o: any) => o.poll_id === p.id);
+        const enrichedOptions = rawOptions.map((o: any, idx: number) => {
+          const meta = metadata[idx] || {};
+          const voteCount = (votesData || []).filter((v: any) => v.option_id === o.id).length;
+          return {
+            ...o,
+            title: meta.title || o.title || `Option ${idx + 1}`,
+            description: meta.description || o.description || '',
+            votes: o.votes || voteCount || 0,
+          };
+        });
+
         pollMap[p.id] = {
           ...p,
-          options: (optionsData || []).filter((o: any) => o.poll_id === p.id),
+          options: enrichedOptions,
           userVote: votesData?.find((v: any) => v.poll_id === p.id)?.option_id,
         };
       });
@@ -199,6 +216,7 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
           name: newGroupName,
           description: newGroupDescription,
           created_by: profile.id,
+          creator_id: profile.id,
         })
         .select()
         .single();
@@ -306,6 +324,26 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
 
     setCreatingPoll(true);
     try {
+      let optionsMetadata: any[] = [];
+      const params = new URLSearchParams();
+      params.append('category', pollCategory);
+      params.append('limit', '5');
+      if (profile?.taste_profile) {
+        params.append('taste_profile', JSON.stringify(profile.taste_profile));
+      }
+
+      try {
+        const response = await fetch(`/api/recommend/?${params.toString()}`);
+        const data = await response.json();
+        optionsMetadata = (data.results || []).map((r: any) => ({
+          title: r.object?.title || r.title || 'Option',
+          description: r.explanation?.why_youll_like || r.description || '',
+          personalized_score: r.personalized_score || 0,
+        }));
+      } catch (recErr) {
+        console.error('Error fetching recommendations for poll:', recErr);
+      }
+
       const { data: poll } = await supabase
         .from('polls')
         .insert({
@@ -313,34 +351,17 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
           title: pollTitle,
           category: pollCategory,
           created_by: profile.id,
+          description: JSON.stringify(optionsMetadata),
         })
         .select()
         .single();
 
       if (poll) {
-        const params = new URLSearchParams();
-        params.append('category', pollCategory);
-        params.append('limit', '5');
-        if (profile?.taste_profile) {
-          params.append('taste_profile', JSON.stringify(profile.taste_profile));
-        }
-
-        try {
-          const response = await fetch(`/api/recommend/?${params.toString()}`);
-          const data = await response.json();
-          const pollOptions = data.results?.map((r: any) => ({
+        if (optionsMetadata.length > 0) {
+          const pollOptionRows = optionsMetadata.map(() => ({
             poll_id: poll.id,
-            title: r.object?.title || r.title || 'Option',
-            description: r.explanation?.why_youll_like || r.description || '',
-            personalized_score: r.personalized_score || 0,
-            votes: 0,
-          })) || [];
-
-          if (pollOptions.length > 0) {
-            await supabase.from('poll_options').insert(pollOptions);
-          }
-        } catch (recErr) {
-          console.error('Error fetching recommendations for poll:', recErr);
+          }));
+          await supabase.from('poll_options').insert(pollOptionRows);
         }
 
         await supabase
@@ -348,7 +369,7 @@ export default function GroupsClient({ profile, friends }: { profile: any; frien
           .insert({
             group_id: selectedGroup.id,
             user_id: profile.id,
-            content: `📊 Created a poll: ${pollTitle}`,
+            content: `Created a poll: ${pollTitle}`,
             poll_id: poll.id,
           });
 

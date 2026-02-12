@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, RefreshControl, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/colors';
 import { ErrorView, NetworkError } from '../../components/ErrorBoundary';
@@ -78,11 +78,28 @@ interface Recommendation {
 
 const CATEGORIES = ['restaurants', 'movies', 'tv_shows', 'reading', 'activities'];
 const categoryLabels: Record<string, string> = {
-  restaurants: '🍽️ Restaurants',
-  movies: '🎬 Movies',
-  tv_shows: '📺 TV Shows',
-  reading: '📚 Reading',
-  activities: '🎯 Activities',
+  restaurants: 'Restaurants',
+  movies: 'Movies',
+  tv_shows: 'TV Shows',
+  reading: 'Reading',
+  activities: 'Activities',
+};
+
+const getCategoryIcon = (category: string, size: number = 16, color: string = Colors.accent.coral) => {
+  switch (category) {
+    case 'restaurants':
+      return <Ionicons name="restaurant" size={size} color={color} />;
+    case 'movies':
+      return <MaterialCommunityIcons name="movie-open" size={size} color={color} />;
+    case 'tv_shows':
+      return <Ionicons name="tv" size={size} color={color} />;
+    case 'reading':
+      return <Ionicons name="book" size={size} color={color} />;
+    case 'activities':
+      return <MaterialCommunityIcons name="star-four-points" size={size} color={color} />;
+    default:
+      return null;
+  }
 };
 
 export default function GroupsScreen() {
@@ -652,8 +669,14 @@ export default function GroupsScreen() {
     return (
       <View key={poll.id} style={styles.pollCard}>
         <View style={styles.pollHeader}>
-          <Text style={styles.pollTitle}>📊 {poll.title}</Text>
-          <Text style={styles.pollMeta}>{categoryLabels[poll.category]} · by {poll.creator_name}</Text>
+          <View style={styles.pollTitleRow}>
+            <Ionicons name="bar-chart" size={16} color={Colors.accent.coral} />
+            <Text style={styles.pollTitle}>{poll.title}</Text>
+          </View>
+          <View style={styles.pollMetaRow}>
+            {getCategoryIcon(poll.category, 13, Colors.text.secondary)}
+            <Text style={styles.pollMeta}>{categoryLabels[poll.category]} · by {poll.creator_name}</Text>
+          </View>
         </View>
         {poll.options.map((option) => {
           const isVoted = poll.user_vote_option === option.id;
@@ -995,17 +1018,23 @@ export default function GroupsScreen() {
                 />
                 <Text style={styles.categoryLabel}>Category:</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-                  {CATEGORIES.map((cat) => (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[styles.categoryBtn, pollCategory === cat && styles.activeCategoryBtn]}
-                      onPress={() => setPollCategory(cat)}
-                    >
-                      <Text style={[styles.categoryBtnText, pollCategory === cat && styles.activeCategoryBtnText]}>
-                        {categoryLabels[cat]}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                  {CATEGORIES.map((cat) => {
+                    const isActive = pollCategory === cat;
+                    return (
+                      <TouchableOpacity
+                        key={cat}
+                        style={[styles.categoryBtn, isActive && styles.activeCategoryBtn]}
+                        onPress={() => setPollCategory(cat)}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {getCategoryIcon(cat, 14, isActive ? Colors.background.primary : Colors.accent.coral)}
+                          <Text style={[styles.categoryBtnText, isActive && styles.activeCategoryBtnText]}>
+                            {categoryLabels[cat]}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
                 <View style={styles.modalButtons}>
                   <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCreatePoll(false)}>
@@ -1131,17 +1160,23 @@ export default function GroupsScreen() {
             <Text style={styles.modalSubtitle}>AI-powered picks for your whole group</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={[styles.categoryBtn, recCategory === cat && styles.activeCategoryBtn]}
-                  onPress={() => setRecCategory(cat)}
-                >
-                  <Text style={[styles.categoryBtnText, recCategory === cat && styles.activeCategoryBtnText]}>
-                    {categoryLabels[cat]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {CATEGORIES.map((cat) => {
+                const isActive = recCategory === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.categoryBtn, isActive && styles.activeCategoryBtn]}
+                    onPress={() => setRecCategory(cat)}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {getCategoryIcon(cat, 14, isActive ? Colors.background.primary : Colors.accent.coral)}
+                      <Text style={[styles.categoryBtnText, isActive && styles.activeCategoryBtnText]}>
+                        {categoryLabels[cat]}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
 
             <TouchableOpacity 
@@ -1501,6 +1536,17 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(254, 175, 176, 0.15)',
     borderRadius: 10,
+  },
+  pollTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pollMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
   },
   pollOptionContent: {
     flexDirection: 'row',
