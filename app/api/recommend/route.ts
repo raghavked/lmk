@@ -16,9 +16,23 @@ const API_MAP: Record<string, any> = {
   activities: ActivitiesAPI,
 };
 
+const MAX_CACHE_ENTRIES = 200;
 const recommendationCache = new Map<string, { data: any[], timestamp: number }>();
 const rankedResultsCache = new Map<string, { data: any[], timestamp: number, total: number }>();
-const CACHE_TTL = 15 * 60 * 1000; // 15 minutes for better performance at scale
+const CACHE_TTL = 15 * 60 * 1000;
+
+function evictOldEntries<T extends { timestamp: number }>(cache: Map<string, T>, maxSize: number) {
+  if (cache.size <= maxSize) return;
+  const now = Date.now();
+  for (const [key, val] of cache.entries()) {
+    if (now - val.timestamp > CACHE_TTL) cache.delete(key);
+  }
+  if (cache.size > maxSize) {
+    const excess = cache.size - maxSize + Math.floor(maxSize * 0.2);
+    const keys = Array.from(cache.keys()).slice(0, excess);
+    for (const k of keys) cache.delete(k);
+  }
+}
 
 function getCacheKey(category: string, lat?: string | null, lng?: string | null, radius?: string | null, query?: string): string {
   return `${category}:${lat || ''}:${lng || ''}:${radius || ''}:${query || ''}`;
@@ -251,7 +265,7 @@ export async function GET(request: Request) {
         
         console.log(`[Recommend API] Fetched ${pageResults.length} items, ${newItems.length} new (total: ${rawRecommendations.length})`);
         
-        // Update cache with expanded data
+        evictOldEntries(recommendationCache, MAX_CACHE_ENTRIES);
         recommendationCache.set(cacheKey, { data: rawRecommendations, timestamp: now });
       } catch (apiError) {
         console.error(`Error fetching from ${category} API:`, apiError);
@@ -443,7 +457,7 @@ export async function GET(request: Request) {
       rank: idx + 1,
     }));
     
-    // Cache ranked results for fast pagination (Show More)
+    evictOldEntries(rankedResultsCache, MAX_CACHE_ENTRIES);
     rankedResultsCache.set(rankedCacheKey, { 
       data: rankedResults, 
       timestamp: now,

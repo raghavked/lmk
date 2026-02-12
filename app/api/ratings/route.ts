@@ -196,11 +196,13 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const type = requestUrl.searchParams.get('type') || 'all';
   const category = requestUrl.searchParams.get('category');
+  const limit = Math.min(parseInt(requestUrl.searchParams.get('limit') || '100', 10), 500);
+  const offset = parseInt(requestUrl.searchParams.get('offset') || '0', 10);
 
   try {
     let query = supabase
       .from('ratings')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', user.id);
 
     if (type === 'favorites') {
@@ -211,7 +213,9 @@ export async function GET(request: Request) {
       query = query.eq('category', category);
     }
 
-    const { data: ratings, error } = await query.order('created_at', { ascending: false });
+    const { data: ratings, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error fetching ratings:', error);
@@ -219,7 +223,13 @@ export async function GET(request: Request) {
     }
 
     const formattedRatings = (ratings || []).map(formatRatingResponse);
-    return NextResponse.json({ ratings: formattedRatings });
+    return NextResponse.json({ 
+      ratings: formattedRatings,
+      total: count || formattedRatings.length,
+      offset,
+      limit,
+      hasMore: (offset + limit) < (count || 0),
+    });
   } catch (error) {
     console.error('[Ratings API] Fatal error:', error);
     return NextResponse.json({ 

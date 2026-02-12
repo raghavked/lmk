@@ -2,6 +2,7 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const MAX_RATE_LIMIT_ENTRIES = 10000;
 const apiRateLimits = new Map<string, { count: number; resetTime: number }>();
 
 const RATE_CONFIGS: Record<string, { windowMs: number; max: number }> = {
@@ -26,7 +27,7 @@ function checkApiRateLimit(ip: string, route: string): { allowed: boolean; remai
   const key = `${ip}:${route}`;
   const now = Date.now();
 
-  if (now % 60000 < 1000) {
+  if (apiRateLimits.size > MAX_RATE_LIMIT_ENTRIES || now % 60000 < 1000) {
     for (const [k, v] of apiRateLimits.entries()) {
       if (now > v.resetTime) apiRateLimits.delete(k);
     }

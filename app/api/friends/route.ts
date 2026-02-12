@@ -38,29 +38,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data: friendsData1 } = await supabaseAdmin
-      .from('friends')
-      .select('friend_id')
-      .eq('user_id', user.id)
-      .eq('status', 'accepted');
-
-    const { data: friendsData2 } = await supabaseAdmin
-      .from('friends')
-      .select('user_id')
-      .eq('friend_id', user.id)
-      .eq('status', 'accepted');
-
-    const { data: pendingData } = await supabaseAdmin
-      .from('friends')
-      .select('user_id')
-      .eq('friend_id', user.id)
-      .eq('status', 'pending');
-
-    const { data: sentData } = await supabaseAdmin
-      .from('friends')
-      .select('friend_id')
-      .eq('user_id', user.id)
-      .eq('status', 'pending');
+    const [
+      { data: friendsData1 },
+      { data: friendsData2 },
+      { data: pendingData },
+      { data: sentData },
+    ] = await Promise.all([
+      supabaseAdmin.from('friends').select('friend_id').eq('user_id', user.id).eq('status', 'accepted'),
+      supabaseAdmin.from('friends').select('user_id').eq('friend_id', user.id).eq('status', 'accepted'),
+      supabaseAdmin.from('friends').select('user_id').eq('friend_id', user.id).eq('status', 'pending'),
+      supabaseAdmin.from('friends').select('friend_id').eq('user_id', user.id).eq('status', 'pending'),
+    ]);
 
     const friendIds = [
       ...(friendsData1?.map(f => f.friend_id) || []),
@@ -70,24 +58,19 @@ export async function GET(request: Request) {
     const pendingIds = pendingData?.map(f => f.user_id) || [];
     const sentIds = sentData?.map(f => f.friend_id) || [];
 
-    let friends: any[] = [];
-    let pending: any[] = [];
-
-    if (friendIds.length > 0) {
-      const { data: friendProfiles } = await supabaseAdmin
+    const allProfileIds = [...new Set([...friendIds, ...pendingIds])];
+    let profileMap: Record<string, string> = {};
+    
+    if (allProfileIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin
         .from('profiles')
         .select('id, full_name')
-        .in('id', friendIds);
-      friends = friendProfiles || [];
+        .in('id', allProfileIds);
+      profiles?.forEach(p => { profileMap[p.id] = p.full_name || 'Unknown'; });
     }
 
-    if (pendingIds.length > 0) {
-      const { data: pendingProfiles } = await supabaseAdmin
-        .from('profiles')
-        .select('id, full_name')
-        .in('id', pendingIds);
-      pending = pendingProfiles || [];
-    }
+    const friends = friendIds.map(id => ({ id, full_name: profileMap[id] || 'Unknown' }));
+    const pending = pendingIds.map(id => ({ id, full_name: profileMap[id] || 'Unknown' }));
 
     return NextResponse.json({ friends, pending, sentRequests: sentIds });
   } catch (error: any) {
