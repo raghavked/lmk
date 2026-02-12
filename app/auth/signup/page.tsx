@@ -3,13 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Loader2 } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 export default function SignUpPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,72 +59,35 @@ export default function SignUpPage() {
     }
 
     try {
-      const normalizedEmail = email.trim().toLowerCase();
-
-      try {
-        const cleanupRes = await fetch('/api/auth/signup/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: normalizedEmail,
-            action: 'cleanup-unconfirmed',
-          }),
-        });
-        if (cleanupRes.status === 409) {
-          setError('An account with this email is already verified. Please sign in instead.');
-          setLoading(false);
-          return;
-        }
-      } catch (cleanupErr) {
-        console.log('Cleanup check skipped');
-      }
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
+      const response = await fetch('/api/auth/signup/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          fullName: fullName.trim(),
+        }),
       });
 
-      if (signUpError) {
-        if (signUpError.message.includes('already registered') || signUpError.message.includes('already been registered')) {
-          setError('An account with this email already exists. Please sign in instead.');
-        } else if (signUpError.status === 429) {
-          setError('Too many signup attempts. Please wait a minute and try again.');
-        } else {
-          setError(signUpError.message);
+      const result = await response.json();
+
+      if (!response.ok) {
+        let errorMessage = result.error || 'Failed to create account';
+        if (response.status === 409) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (response.status === 429) {
+          errorMessage = 'Too many signup attempts. Please wait a minute and try again.';
         }
+        setError(errorMessage);
         setLoading(false);
         return;
       }
 
-      if (data?.user) {
-        try {
-          await fetch('/api/profile/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: data.user.id,
-              full_name: fullName.trim(),
-            }),
-          });
-        } catch (profileErr) {
-          console.log('Profile creation will happen on first login');
-        }
-      }
-
-      if (data?.session) {
-        router.push('/');
-      } else {
-        setSuccess(true);
-        setFullName('');
-        setEmail('');
-        setPassword('');
-        setAgreeToTerms(false);
-      }
+      setSuccess(true);
+      setFullName('');
+      setEmail('');
+      setPassword('');
+      setAgreeToTerms(false);
     } catch (err: any) {
       setError('Unable to connect. Please check your internet connection.');
     } finally {

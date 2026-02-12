@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../lib/supabase';
 import { Colors } from '../../constants/colors';
 
 export default function SignupScreen() {
@@ -31,78 +30,47 @@ export default function SignupScreen() {
 
     setLoading(true);
     try {
-      const normalizedEmail = email.trim().toLowerCase();
       const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-
-      try {
-        const cleanupRes = await fetch(`${apiUrl}/api/auth/signup/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: normalizedEmail,
-            action: 'cleanup-unconfirmed',
-          }),
-        });
-        if (cleanupRes.status === 409) {
-          Alert.alert(
-            'Account Exists',
-            'An account with this email is already verified. Please sign in instead.',
-            [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
-          );
-          setLoading(false);
-          return;
-        }
-      } catch (cleanupErr) {
-        console.log('Cleanup check skipped');
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-          },
-        },
+      const response = await fetch(`${apiUrl}/api/auth/signup/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+          fullName: fullName.trim(),
+        }),
       });
 
-      if (error) {
-        if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 409) {
           Alert.alert(
             'Account Exists',
             'An account with this email already exists. Please sign in instead.',
             [{ text: 'Sign In', onPress: () => router.replace('/auth/login') }]
           );
-        } else if (error.message.includes('rate') || error.status === 429) {
+        } else if (response.status === 429) {
           Alert.alert('Too Many Attempts', 'Please wait a minute and try again.');
         } else {
-          Alert.alert('Sign Up Failed', error.message);
+          Alert.alert('Sign Up Failed', result.error || 'Failed to create account');
         }
         setLoading(false);
         return;
       }
 
-      if (data?.user && !data.session) {
-        try {
-          await fetch(`${apiUrl}/api/profile/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              user_id: data.user.id,
-              full_name: fullName.trim(),
-            }),
-          });
-        } catch (profileErr) {
-          console.log('Profile creation will happen on first login');
-        }
-
+      if (result.emailSent) {
         Alert.alert(
           'Check Your Email',
           'We sent a verification link to your email. Please click it to activate your account, then come back and sign in.',
           [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
         );
-      } else if (data?.session) {
-        router.replace('/(tabs)');
+      } else {
+        Alert.alert(
+          'Account Created',
+          result.message || 'Your account was created. Please check your email for verification.',
+          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+        );
       }
     } catch (e) {
       Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
