@@ -149,17 +149,12 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   }, [category, currentMode, query, userLocation, radius]);
 
   useEffect(() => {
-    const walkthroughCompleted = localStorage.getItem('lmk_walkthrough_completed');
-    const preferencesCompleted = profile?.preferences_completed;
-    const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
-    
-    if (!walkthroughCompleted) {
-      setShowWalkthrough(true);
-    } else if (!preferencesCompleted && !hasTasteProfile) {
-      setShowPreferenceTest(true);
-    } else {
+    if (profile?.onboarding_seen) {
       detectLocation();
+      return;
     }
+    
+    setShowWalkthrough(true);
   }, [profile, detectLocation]);
 
   useEffect(() => {
@@ -207,7 +202,6 @@ export default function DiscoverClient({ profile }: { profile: any }) {
 
   const handlePreferenceTestComplete = () => {
     setShowPreferenceTest(false);
-    localStorage.setItem('lmk_preferences_completed', 'true');
     detectLocation();
   };
 

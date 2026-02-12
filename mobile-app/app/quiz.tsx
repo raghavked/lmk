@@ -220,30 +220,29 @@ export default function QuizScreen() {
         .single();
 
       if (fetchError && fetchError.code === 'PGRST116') {
-        // Profile doesn't exist, create it with just taste_profile
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: session.user.id,
             full_name: session.user.user_metadata?.full_name || '',
             taste_profile: preferences,
+            preferences_completed: true,
+            onboarding_seen: true,
           });
         if (insertError) throw insertError;
       } else if (fetchError) {
         throw fetchError;
       } else {
-        // Profile exists, update just taste_profile
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ 
             taste_profile: preferences,
+            preferences_completed: true,
+            onboarding_seen: true,
           })
           .eq('id', session.user.id);
         if (updateError) throw updateError;
       }
-
-      // Clear onboarding flag so the discover screen knows we completed
-      await AsyncStorage.setItem('lmk_quiz_completed', 'true');
       
       Alert.alert('All Set!', 'Your preferences have been saved. Enjoy your personalized recommendations!', [
         { text: 'Let\'s Go!', onPress: () => router.replace('/(tabs)/discover') }
@@ -262,7 +261,20 @@ export default function QuizScreen() {
       'Setting up preferences helps us give you better recommendations. You can always do this later in your profile.',
       [
         { text: 'Continue Setup', style: 'cancel' },
-        { text: 'Skip for Now', onPress: () => router.replace('/(tabs)/discover') }
+        { text: 'Skip for Now', onPress: async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              await supabase
+                .from('profiles')
+                .update({ onboarding_seen: true })
+                .eq('id', session.user.id);
+            }
+          } catch (e) {
+            console.error('Error marking onboarding seen:', e);
+          }
+          router.replace('/(tabs)/discover');
+        }}
       ]
     );
   };

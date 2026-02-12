@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 
 const { width } = Dimensions.get('window');
@@ -44,17 +43,25 @@ const STEPS = [
 export default function OnboardingScreen() {
   const [step, setStep] = useState(0);
 
-  useEffect(() => {
-    // Mark onboarding as seen - this only happens once ever
-    AsyncStorage.setItem('lmk_onboarding_seen', 'true').catch(() => {
-      console.log('Could not save walkthrough status');
-    });
-  }, []);
+  const markOnboardingSeen = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase
+          .from('profiles')
+          .update({ onboarding_seen: true })
+          .eq('id', session.user.id);
+      }
+    } catch (e) {
+      console.error('Error marking onboarding seen:', e);
+    }
+  };
 
   const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
+      await markOnboardingSeen();
       router.replace('/quiz');
     }
   };
@@ -65,7 +72,8 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    await markOnboardingSeen();
     router.replace('/quiz');
   };
 

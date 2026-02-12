@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import Logo from './Logo';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface WalkthroughProps {
   onComplete: () => void;
@@ -11,26 +10,6 @@ interface WalkthroughProps {
 
 export default function Walkthrough({ onComplete }: WalkthroughProps) {
   const [step, setStep] = useState(0);
-  const supabase = createClientComponentClient();
-
-  useEffect(() => {
-    localStorage.setItem('lmk_walkthrough_completed', 'true');
-    
-    const saveWalkthroughSeen = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.id) {
-          await supabase
-            .from('profiles')
-            .update({ walkthrough_seen: true })
-            .eq('id', session.user.id);
-        }
-      } catch (error) {
-        console.log('Could not save walkthrough status to profile');
-      }
-    };
-    saveWalkthroughSeen();
-  }, [supabase]);
 
   const steps = [
     {

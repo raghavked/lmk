@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const STEPS = [
   {
@@ -39,16 +40,28 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const [step, setStep] = useState(0);
 
-  useEffect(() => {
-    localStorage.setItem('lmk_onboarding_seen', 'true');
-  }, []);
+  const markOnboardingSeen = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ onboarding_seen: true })
+          .eq('id', user.id);
+      }
+    } catch (e) {
+      console.error('Error marking onboarding seen:', e);
+    }
+  };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step < STEPS.length - 1) {
       setStep(step + 1);
     } else {
+      await markOnboardingSeen();
       router.push('/quiz');
     }
   };
@@ -59,7 +72,8 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    await markOnboardingSeen();
     router.push('/quiz');
   };
 

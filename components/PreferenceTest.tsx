@@ -200,32 +200,30 @@ export default function PreferenceTest({ onComplete }: PreferenceTestProps) {
         .single();
 
       if (fetchError && fetchError.code === 'PGRST116') {
-        // Profile doesn't exist, create it
         const { error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: user.id,
-            email: user.email,
             taste_profile: preferences,
+            preferences_completed: true,
+            onboarding_seen: true,
           });
         if (insertError) {
           console.error('Error creating profile:', insertError);
         }
       } else if (!fetchError) {
-        // Profile exists, update it
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
             taste_profile: preferences,
+            preferences_completed: true,
+            onboarding_seen: true,
           })
           .eq('id', user.id);
         if (updateError) {
           console.error('Error updating profile:', updateError);
         }
       }
-      
-      // Mark quiz as completed in localStorage
-      localStorage.setItem('lmk_quiz_completed', 'true');
       
       onComplete(preferences);
     } catch (error) {
