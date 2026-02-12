@@ -138,6 +138,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
     }
 
+    const trimmedName = fullName.trim();
+    const { data: existingName } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .ilike('full_name', trimmedName)
+      .limit(1);
+
+    if (existingName && existingName.length > 0) {
+      return NextResponse.json({ error: 'This display name is already taken. Please choose a different name.' }, { status: 409 });
+    }
+
     const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 50 });
     const existingUser = users?.find(u => u.email?.toLowerCase() === normalizedEmail);
 

@@ -494,7 +494,9 @@ export default function FriendsScreen() {
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>{user.full_name[0]?.toUpperCase()}</Text>
                 </View>
-                <Text style={styles.friendName}>{user.full_name}</Text>
+                <View style={styles.searchResultInfo}>
+                  <Text style={styles.friendName} numberOfLines={1}>{user.full_name}</Text>
+                </View>
                 {isFriend(user.id) ? (
                   <Text style={styles.statusText}>Already friends</Text>
                 ) : hasSentRequest(user.id) ? (
@@ -650,6 +652,10 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  searchResultInfo: {
+    flex: 1,
+    marginRight: 12,
   },
   friendName: {
     color: Colors.text.primary,
