@@ -19,9 +19,18 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('[Login] Attempting sign in for:', email.trim().toLowerCase());
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
+      });
+
+      console.log('[Login] Sign in result:', {
+        hasData: !!data,
+        hasSession: !!data?.session,
+        hasUser: !!data?.user,
+        error: error?.message || null,
       });
 
       if (error) {
@@ -39,68 +48,33 @@ export default function LoginScreen() {
         setLoading(false);
         return;
       }
-    } catch (e) {
-      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
-      setLoading(false);
-      return;
-    }
-    
-    // Ensure profile exists (fallback for users who signed up before profiles were auto-created)
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: existingProfile, error: fetchError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .single();
-        
-        if (fetchError && fetchError.code === 'PGRST116') {
-          // Profile doesn't exist, create it via API
-          console.log('Creating profile for user:', user.id);
-          try {
-            const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/profile/`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                user_id: user.id,
-                full_name: user.user_metadata?.full_name || '',
-              }),
-            });
-            if (response.ok) {
-              console.log('Profile created successfully on login');
-            } else {
-              console.error('Profile creation failed on login');
-            }
-          } catch (apiError) {
-            console.error('Profile API error:', apiError);
-          }
-        } else if (!existingProfile) {
-          console.log('Profile check returned no data, attempting insert via API');
-          try {
-            const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
-            const response = await fetch(`${apiUrl}/api/profile/`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                user_id: user.id,
-                full_name: user.user_metadata?.full_name || '',
-              }),
-            });
-            if (!response.ok) {
-              console.error('Profile insert failed');
-            }
-          } catch (apiError) {
-            console.error('Profile API error:', apiError);
-          }
+
+      if (data?.session) {
+        console.log('[Login] Sign in successful, session established');
+        try {
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || '';
+          await fetch(`${apiUrl}/api/profile/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`,
+            },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              full_name: data.user.user_metadata?.full_name || '',
+            }),
+          });
+        } catch (profileErr) {
+          console.log('[Login] Profile creation skipped (may already exist)');
         }
+      } else {
+        console.log('[Login] No session returned - sign in may have failed silently');
+        Alert.alert('Sign In Failed', 'Unable to sign in. Please try again.');
       }
-    } catch (profileError) {
-      console.error('Profile check/create exception:', profileError);
-      // Don't block login - continue anyway
+    } catch (e: any) {
+      console.error('[Login] Exception:', e?.message || e);
+      Alert.alert('Error', 'Unable to connect. Please check your internet connection.');
     }
-    
     setLoading(false);
   };
 
