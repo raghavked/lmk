@@ -223,7 +223,7 @@ export default function QuizPage() {
       if (updateError) {
         // If profile doesn't exist, create it via API first
         if (updateError.code === 'PGRST116') {
-          await fetch('/api/profile', {
+          await fetch('/api/profile/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

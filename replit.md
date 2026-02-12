@@ -45,9 +45,10 @@ Preferred communication style: Simple, everyday language.
   - Note: Supabase profiles table does NOT have `avatar_url` column - do not query for it
 - **group_messages table**: Uses `user_id` column (renamed from `sender_id`).
   - Columns: id (uuid), group_id (uuid), user_id (uuid), content (text), poll_id (uuid nullable), created_at
-- **poll_options table**: Has only `object_id` (uuid). AI-generated poll option data (title/description/score) stored in `polls.description` as JSON array.
-  - Columns: id (uuid), poll_id (uuid FK), object_id (uuid), created_at
-- **poll_votes table**: Tracks user votes on polls (one vote per user per poll). Vote counts calculated from this table, not stored on poll_options.
+- **poll_options table**: Stores poll option data directly in columns. AI-generated options populate title/description/personalized_score on creation.
+  - Columns: id (uuid PK), poll_id (uuid FK NOT NULL), title (text NOT NULL), description (text), personalized_score (real), votes (integer default 0), created_at
+  - Note: Vote counts are tracked via `poll_votes` table for accuracy; `votes` column may be used for display caching.
+- **poll_votes table**: Tracks user votes on polls (one vote per user per poll). Vote counts calculated from this table.
   - Columns: id (uuid), poll_id (uuid FK), option_id (uuid FK), user_id (uuid), created_at, UNIQUE(poll_id, user_id)
 - **groups table**: Both `created_by` (uuid NOT NULL) and `creator_id` (uuid) columns must be set. `group_members` has NO `role` column.
 - **RLS**: Disabled on all tables (rowsecurity=false). Direct Supabase client queries work without policies.

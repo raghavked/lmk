@@ -61,7 +61,7 @@ function VerifyContent() {
         email,
       });
       if (error) {
-        const fallbackResponse = await fetch('/api/auth/resend-verification', {
+        const fallbackResponse = await fetch('/api/auth/resend-verification/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),

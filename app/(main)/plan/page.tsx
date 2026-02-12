@@ -98,7 +98,7 @@ export default function PlanMyDayPage() {
 
   const loadSavedPlans = async () => {
     try {
-      const response = await fetch('/api/plan-my-day');
+      const response = await fetch('/api/plan-my-day/');
       const data = await response.json();
       if (data.plans) {
         setSavedPlans(data.plans);
@@ -113,7 +113,7 @@ export default function PlanMyDayPage() {
   const loadPlan = async (planId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/plan-my-day?id=${planId}`);
+      const response = await fetch(`/api/plan-my-day/?id=${planId}`);
       const plan = await response.json();
       
       if (plan.id) {
@@ -143,7 +143,7 @@ export default function PlanMyDayPage() {
 
   const renamePlan = async (planId: string, newTitle: string) => {
     try {
-      const response = await fetch('/api/plan-my-day', {
+      const response = await fetch('/api/plan-my-day/', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: planId, title: newTitle })
@@ -161,7 +161,7 @@ export default function PlanMyDayPage() {
 
   const deletePlan = async (planId: string) => {
     try {
-      const response = await fetch(`/api/plan-my-day?id=${planId}`, {
+      const response = await fetch(`/api/plan-my-day/?id=${planId}`, {
         method: 'DELETE'
       });
       
@@ -224,7 +224,7 @@ export default function PlanMyDayPage() {
       setStage('chat');
       
       try {
-        const response = await fetch('/api/plan-my-day', {
+        const response = await fetch('/api/plan-my-day/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -272,7 +272,7 @@ export default function PlanMyDayPage() {
         .filter(m => !m.categories)
         .map(m => ({ role: m.role, content: m.content }));
 
-      const response = await fetch('/api/plan-my-day', {
+      const response = await fetch('/api/plan-my-day/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

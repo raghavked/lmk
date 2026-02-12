@@ -119,7 +119,7 @@ export default function DecideClient({ profile }: { profile: any }) {
         params.append('radius', (distanceFilter * 1609).toString());
       }
 
-      const response = await fetch(`/api/recommend?${params.toString()}`, {
+      const response = await fetch(`/api/recommend/?${params.toString()}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
