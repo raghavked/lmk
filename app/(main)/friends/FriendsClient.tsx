@@ -2,21 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { UserPlus, UserCheck, UserX, Search, Loader2, Star, Eye, X, Users } from 'lucide-react';
+import { UserPlus, UserCheck, UserX, Search, Loader2, Star, Eye, X, Users, Utensils, Clapperboard, Tv, BookOpen, Sparkles } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import ModeNavigation from '@/components/ModeNavigation';
 
 interface Friend {
   id: string;
   full_name: string;
-  avatar_url?: string;
   status: 'pending' | 'accepted' | 'blocked';
 }
 
 interface SearchResult {
   id: string;
   full_name: string;
-  avatar_url?: string;
   email?: string;
 }
 
@@ -29,6 +27,32 @@ interface FriendRating {
   review?: string;
   created_at: string;
 }
+
+const getCategoryIcon = (category: string) => {
+  const iconClass = 'w-4 h-4';
+  switch (category) {
+    case 'restaurants':
+      return <Utensils className={iconClass} />;
+    case 'movies':
+      return <Clapperboard className={iconClass} />;
+    case 'tv_shows':
+      return <Tv className={iconClass} />;
+    case 'reading':
+      return <BookOpen className={iconClass} />;
+    case 'activities':
+      return <Sparkles className={iconClass} />;
+    default:
+      return null;
+  }
+};
+
+const categoryLabels: Record<string, string> = {
+  restaurants: 'Restaurants',
+  movies: 'Movies',
+  tv_shows: 'TV Shows',
+  reading: 'Reading',
+  activities: 'Activities',
+};
 
 export default function FriendsClient({ profile }: { profile: any }) {
   const supabase = createClientComponentClient();
@@ -68,19 +92,19 @@ export default function FriendsClient({ profile }: { profile: any }) {
 
       const { data: friendsData1 } = await supabase
         .from('friends')
-        .select('friend_id, profiles!friends_friend_id_fkey(id, full_name, avatar_url)')
+        .select('friend_id, profiles!friends_friend_id_fkey(id, full_name)')
         .eq('user_id', user.id)
         .eq('status', 'accepted');
 
       const { data: friendsData2 } = await supabase
         .from('friends')
-        .select('user_id, profiles!friends_user_id_fkey(id, full_name, avatar_url)')
+        .select('user_id, profiles!friends_user_id_fkey(id, full_name)')
         .eq('friend_id', user.id)
         .eq('status', 'accepted');
 
       const { data: pendingData } = await supabase
         .from('friends')
-        .select('user_id, profiles!friends_user_id_fkey(id, full_name, avatar_url)')
+        .select('user_id, profiles!friends_user_id_fkey(id, full_name)')
         .eq('friend_id', user.id)
         .eq('status', 'pending');
 
@@ -97,7 +121,6 @@ export default function FriendsClient({ profile }: { profile: any }) {
           allFriends.push({
             id: f.profiles.id,
             full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
             status: 'accepted',
           });
         }
@@ -108,7 +131,6 @@ export default function FriendsClient({ profile }: { profile: any }) {
           allFriends.push({
             id: f.profiles.id,
             full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
             status: 'accepted',
           });
         }
@@ -120,7 +142,6 @@ export default function FriendsClient({ profile }: { profile: any }) {
           pending.push({
             id: f.profiles.id,
             full_name: f.profiles.full_name || 'Unknown User',
-            avatar_url: f.profiles.avatar_url,
             status: 'pending',
           });
         }
@@ -144,7 +165,7 @@ export default function FriendsClient({ profile }: { profile: any }) {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name')
         .neq('id', user.id)
         .ilike('full_name', `%${searchQuery}%`)
         .limit(20);
@@ -282,13 +303,9 @@ export default function FriendsClient({ profile }: { profile: any }) {
             <div className="bg-background-tertiary rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
               <div className="p-6 border-b border-border-color flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  {selectedFriend.avatar_url ? (
-                    <img src={selectedFriend.avatar_url} alt={selectedFriend.full_name} className="w-16 h-16 rounded-full" />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-coral/20 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-coral">{selectedFriend.full_name.charAt(0)}</span>
-                    </div>
-                  )}
+                  <div className="w-16 h-16 rounded-full bg-coral/20 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-coral">{selectedFriend.full_name.charAt(0)}</span>
+                  </div>
                   <div>
                     <h2 className="text-2xl font-extrabold text-text-primary">{selectedFriend.full_name}</h2>
                     <p className="text-text-secondary">Ratings & Recommendations</p>
@@ -312,11 +329,16 @@ export default function FriendsClient({ profile }: { profile: any }) {
                 ) : (
                   <div className="space-y-4">
                     {friendRatings.map((rating) => (
-                      <div key={rating.id} className="bg-background-secondary p-4 rounded-lg border border-border-color">
+                      <div key={rating.id} className="bg-background-secondary p-4 rounded-lg border border-border-color hover:border-coral/20 transition">
                         <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-bold text-text-primary">{rating.item_title}</h3>
-                            <p className="text-sm text-coral capitalize">{rating.category?.replace('_', ' ')}</p>
+                          <div className="flex items-start gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-coral/10 flex items-center justify-center text-coral mt-0.5">
+                              {getCategoryIcon(rating.category)}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-text-primary">{rating.item_title}</h3>
+                              <p className="text-sm text-coral">{categoryLabels[rating.category] || rating.category?.replace('_', ' ')}</p>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -397,15 +419,11 @@ export default function FriendsClient({ profile }: { profile: any }) {
                   </div>
                 ) : (
                   friends.map((friend) => (
-                    <div key={friend.id} className="flex items-center justify-between p-4 bg-background-secondary rounded-2xl border border-border-color">
+                    <div key={friend.id} className="flex items-center justify-between p-4 bg-background-secondary rounded-2xl border border-border-color hover:border-coral/30 transition">
                       <div className="flex items-center gap-3">
-                        {friend.avatar_url ? (
-                          <img src={friend.avatar_url} alt={friend.full_name} className="w-12 h-12 rounded-full" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
-                            <span className="text-lg font-bold text-coral">{friend.full_name.charAt(0)}</span>
-                          </div>
-                        )}
+                        <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
+                          <span className="text-lg font-bold text-coral">{friend.full_name.charAt(0)}</span>
+                        </div>
                         <div>
                           <p className="font-bold text-text-primary">{friend.full_name}</p>
                           <p className="text-sm text-text-secondary">Friend</p>
@@ -432,13 +450,9 @@ export default function FriendsClient({ profile }: { profile: any }) {
                   pendingRequests.map((request) => (
                     <div key={request.id} className="flex items-center justify-between p-4 bg-background-secondary rounded-2xl border border-border-color">
                       <div className="flex items-center gap-3">
-                        {request.avatar_url ? (
-                          <img src={request.avatar_url} alt={request.full_name} className="w-12 h-12 rounded-full" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
-                            <span className="text-lg font-bold text-coral">{request.full_name.charAt(0)}</span>
-                          </div>
-                        )}
+                        <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
+                          <span className="text-lg font-bold text-coral">{request.full_name.charAt(0)}</span>
+                        </div>
                         <div>
                           <p className="font-bold text-text-primary">{request.full_name}</p>
                           <p className="text-sm text-text-secondary">Wants to be friends</p>
@@ -487,13 +501,9 @@ export default function FriendsClient({ profile }: { profile: any }) {
                     {searchResults.map((user) => (
                       <div key={user.id} className="flex items-center justify-between p-4 bg-background-secondary rounded-2xl border border-border-color">
                         <div className="flex items-center gap-3">
-                          {user.avatar_url ? (
-                            <img src={user.avatar_url} alt={user.full_name} className="w-12 h-12 rounded-full" />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
-                              <span className="text-lg font-bold text-coral">{user.full_name?.charAt(0) || '?'}</span>
-                            </div>
-                          )}
+                          <div className="w-12 h-12 rounded-full bg-coral/20 flex items-center justify-center">
+                            <span className="text-lg font-bold text-coral">{user.full_name?.charAt(0) || '?'}</span>
+                          </div>
                           <div>
                             <p className="font-bold text-text-primary">{user.full_name || 'Unknown User'}</p>
                           </div>

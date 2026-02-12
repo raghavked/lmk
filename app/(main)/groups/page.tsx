@@ -26,13 +26,13 @@ export default async function GroupsPage() {
   // Load user's friends for group invites
   const { data: friendsData1 } = await supabase
     .from('friends')
-    .select('friend_id, profiles!friends_friend_id_fkey(id, full_name, avatar_url)')
+    .select('friend_id, profiles!friends_friend_id_fkey(id, full_name)')
     .eq('user_id', session.user.id)
     .eq('status', 'accepted');
 
   const { data: friendsData2 } = await supabase
     .from('friends')
-    .select('user_id, profiles!friends_user_id_fkey(id, full_name, avatar_url)')
+    .select('user_id, profiles!friends_user_id_fkey(id, full_name)')
     .eq('friend_id', session.user.id)
     .eq('status', 'accepted');
 
@@ -43,7 +43,6 @@ export default async function GroupsPage() {
       friends.push({
         id: f.profiles.id,
         full_name: f.profiles.full_name || 'Unknown User',
-        avatar_url: f.profiles.avatar_url,
       });
     }
   });
@@ -53,7 +52,6 @@ export default async function GroupsPage() {
       friends.push({
         id: f.profiles.id,
         full_name: f.profiles.full_name || 'Unknown User',
-        avatar_url: f.profiles.avatar_url,
       });
     }
   });
