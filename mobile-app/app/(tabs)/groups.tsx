@@ -14,7 +14,7 @@ interface Group {
   id: string;
   name: string;
   description: string;
-  created_by: string;
+  creator_id: string;
 }
 
 interface Message {
@@ -117,15 +117,18 @@ export default function GroupsScreen() {
         },
       });
 
+      console.log('[Groups] Load response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[Groups] Loaded:', { groups: data.groups?.length || 0, invites: data.invites?.length || 0 });
         setGroups(data.groups || []);
         setInvites(data.invites || []);
         if (data.groups && data.groups.length > 0 && !selectedGroup) {
           setSelectedGroup(data.groups[0]);
         }
       } else {
-        console.error('Error loading groups:', await response.text());
+        const errorText = await response.text();
+        console.error('[Groups] Error loading groups:', response.status, errorText);
         setError('Could not load groups. Please try again.');
       }
     } catch (err: any) {
