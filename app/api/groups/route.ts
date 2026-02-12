@@ -112,8 +112,8 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Not a member of this group' }, { status: 403 });
       }
 
-      const msgLimit = Math.min(parseInt(searchParams.get('limit') || '100', 10), 500);
-      const msgOffset = parseInt(searchParams.get('offset') || '0', 10);
+      const msgLimit = Math.max(1, Math.min(parseInt(searchParams.get('limit') || '100', 10) || 100, 500));
+      const msgOffset = Math.max(0, parseInt(searchParams.get('offset') || '0', 10) || 0);
 
       const { data: messages } = await supabaseAdmin
         .from('group_messages')
