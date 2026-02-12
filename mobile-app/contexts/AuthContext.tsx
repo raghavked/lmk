@@ -111,8 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       const keysToRemove = [
-        'lmk_onboarding_completed',
-        'lmk_quiz_completed',
         'lmk_decision_history',
         'lmk_seen_ids',
         'lmk_last_category',

@@ -179,24 +179,12 @@ export default function DiscoverClient({ profile }: { profile: any }) {
   useEffect(() => {
     let isMounted = true;
     
-    const hasTasteProfile = profile?.taste_profile && Object.keys(profile.taste_profile).length > 0;
-    
-    // If user has already completed preferences (has taste_profile), skip onboarding
-    if (hasTasteProfile) {
+    if (profile?.onboarding_seen) {
       if (isMounted) detectLocation();
       return () => { isMounted = false; };
     }
     
-    // Check if onboarding was seen (only show once - first login after signup)
-    const onboardingSeen = localStorage.getItem('lmk_onboarding_seen');
-    
-    if (!onboardingSeen) {
-      if (isMounted) setShowWalkthrough(true);
-    } else {
-      // User has seen onboarding before but no preferences - just continue
-      // They can set up preferences later from profile if they want
-      if (isMounted) detectLocation();
-    }
+    if (isMounted) setShowWalkthrough(true);
     
     return () => { isMounted = false; };
   }, [profile, detectLocation]);
@@ -250,11 +238,21 @@ export default function DiscoverClient({ profile }: { profile: any }) {
     }
   };
 
-  const handleWalkthroughComplete = () => {
-    // Mark onboarding as seen (only happens once ever)
-    localStorage.setItem('lmk_onboarding_seen', 'true');
+  const handleWalkthroughComplete = async () => {
+    try {
+      const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs');
+      const supabase = createClientComponentClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ onboarding_seen: true })
+          .eq('id', user.id);
+      }
+    } catch (e) {
+      console.error('Error marking onboarding seen:', e);
+    }
     setShowWalkthrough(false);
-    // Show preference quiz after walkthrough
     setShowPreferenceTest(true);
   };
 
