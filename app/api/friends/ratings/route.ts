@@ -75,13 +75,13 @@ export async function GET(request: Request) {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('full_name, avatar_url')
+      .select('full_name')
       .eq('id', friendId)
       .single();
 
     return NextResponse.json({
       ratings: ratings || [],
-      friend: profile || { full_name: 'Unknown', avatar_url: null },
+      friend: profile || { full_name: 'Unknown' },
     });
   } catch (error: any) {
     console.error('Error fetching friend ratings:', error);

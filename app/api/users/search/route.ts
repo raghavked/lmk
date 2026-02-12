@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   try {
     const { data, error } = await supabaseAdmin
       .from('profiles')
-      .select('id, full_name, avatar_url')
+      .select('id, full_name')
       .ilike('full_name', `%${query}%`)
       .neq('id', user.id)
       .limit(10);
