@@ -262,14 +262,17 @@ export async function GET(request: Request) {
       }
     }
 
-    // Build set of already-rated item IDs to exclude from results
     const ratedItemIds = new Set<string>();
     if (userRatings && userRatings.length > 0) {
       for (const rating of userRatings) {
-        // Database uses object_id column, but may also have item_id in response
-        const itemId = rating.object_id || rating.item_id;
-        if (itemId) {
-          ratedItemIds.add(String(itemId));
+        const ctx = rating.context || {};
+        const originalId = ctx.original_id;
+        if (originalId) {
+          ratedItemIds.add(String(originalId));
+        }
+        const objId = rating.object_id || rating.item_id;
+        if (objId) {
+          ratedItemIds.add(String(objId));
         }
       }
       console.log(`[Recommend API] User has rated ${ratedItemIds.size} items - will exclude from results`);

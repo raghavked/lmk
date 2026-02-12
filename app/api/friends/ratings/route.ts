@@ -86,29 +86,19 @@ export async function GET(request: Request) {
       .single();
 
     const formattedRatings = (ratings || []).map((row: any) => {
-      let details: any = {};
-      try {
-        if (row.review) {
-          const parsed = JSON.parse(row.review);
-          if (typeof parsed === 'object') details = parsed;
-          else details = { description: row.review };
-        }
-      } catch {
-        details = { description: row.review };
-      }
-
+      const ctx = row.context || {};
       return {
         id: row.id,
-        object_id: row.object_id,
+        object_id: ctx.original_id || row.object_id,
         item_title: row.item_title,
         category: row.category,
-        rating: row.rating / 2,
-        description: details.description || null,
-        metric1: details.metric1 ?? null,
-        metric2: details.metric2 ?? null,
-        metric3: details.metric3 ?? null,
-        price_level: details.price_level ?? null,
-        photos: details.photos || [],
+        rating: Number(row.score) || 0,
+        description: row.description || null,
+        metric1: ctx.metric1 ?? null,
+        metric2: ctx.metric2 ?? null,
+        metric3: ctx.metric3 ?? null,
+        price_level: ctx.price_level ?? null,
+        photos: row.photos || [],
         is_favorite: row.is_favorite,
         created_at: row.created_at,
       };

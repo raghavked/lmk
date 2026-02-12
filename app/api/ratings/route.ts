@@ -2,11 +2,20 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+function stringToUUID(input: string): string {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(input)) return input;
+
+  const hash = createHash('sha256').update(input).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+}
 
 async function authenticateRequest(request: Request) {
   const authHeader = request.headers.get('Authorization');
@@ -31,47 +40,21 @@ async function authenticateRequest(request: Request) {
   return null;
 }
 
-interface RatingDetails {
-  description?: string;
-  metric1?: number;
-  metric2?: number;
-  metric3?: number;
-  price_level?: number;
-  photos?: string[];
-}
-
-function packReview(details: RatingDetails): string {
-  return JSON.stringify(details);
-}
-
-function unpackReview(review: string | null): RatingDetails {
-  if (!review) return {};
-  try {
-    const parsed = JSON.parse(review);
-    if (typeof parsed === 'object' && parsed !== null) {
-      return parsed as RatingDetails;
-    }
-    return { description: review };
-  } catch {
-    return { description: review };
-  }
-}
-
 function formatRatingResponse(row: any) {
-  const details = unpackReview(row.review);
+  const ctx = row.context || {};
   return {
     id: row.id,
     user_id: row.user_id,
-    object_id: row.object_id,
+    object_id: ctx.original_id || row.object_id,
     item_title: row.item_title,
     category: row.category,
-    rating: row.rating / 2,
-    description: details.description || null,
-    metric1: details.metric1 ?? null,
-    metric2: details.metric2 ?? null,
-    metric3: details.metric3 ?? null,
-    price_level: details.price_level ?? null,
-    photos: details.photos || [],
+    rating: Number(row.score) || 0,
+    description: row.description || null,
+    metric1: ctx.metric1 ?? null,
+    metric2: ctx.metric2 ?? null,
+    metric3: ctx.metric3 ?? null,
+    price_level: ctx.price_level ?? null,
+    photos: row.photos || [],
     is_favorite: row.is_favorite,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -116,24 +99,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Price level must be between 1 and 4' }, { status: 400 });
     }
 
-    const ratingStored = Math.round(rating * 2);
+    const objectId = stringToUUID(item_id);
 
-    const reviewData: RatingDetails = {
-      description: description || review || undefined,
-      metric1: metric1 || undefined,
-      metric2: metric2 || undefined,
-      metric3: metric3 || undefined,
-      price_level: price_level || undefined,
-      photos: photos?.length > 0 ? photos : undefined,
-    };
+    const { data: existingObj } = await supabase
+      .from('lmk_objects')
+      .select('id')
+      .eq('id', objectId)
+      .single();
 
-    const reviewJson = Object.values(reviewData).some(v => v !== undefined) ? packReview(reviewData) : null;
+    if (!existingObj) {
+      const { error: objError } = await supabase
+        .from('lmk_objects')
+        .insert({
+          id: objectId,
+          category,
+          title: item_title,
+        });
+      if (objError) {
+        console.error('Error creating lmk_object:', objError);
+      }
+    }
+
+    const contextData: any = {};
+    if (metric1 !== undefined) contextData.metric1 = metric1;
+    if (metric2 !== undefined) contextData.metric2 = metric2;
+    if (metric3 !== undefined) contextData.metric3 = metric3;
+    if (price_level !== undefined) contextData.price_level = price_level;
+    contextData.original_id = item_id;
+    const contextJson = contextData;
+
+    const descriptionText = description || review || null;
+    const photoArray = photos?.length > 0 ? photos : null;
 
     const { data: existingRating } = await supabase
       .from('ratings')
       .select('id')
       .eq('user_id', user.id)
-      .eq('object_id', item_id)
+      .eq('object_id', objectId)
       .single();
 
     let result;
@@ -141,8 +143,10 @@ export async function POST(request: Request) {
       result = await supabase
         .from('ratings')
         .update({
-          rating: ratingStored,
-          review: reviewJson,
+          score: rating,
+          description: descriptionText,
+          context: contextJson,
+          photos: photoArray,
           is_favorite: is_favorite || false,
           updated_at: new Date().toISOString(),
         })
@@ -154,11 +158,13 @@ export async function POST(request: Request) {
         .from('ratings')
         .insert({
           user_id: user.id,
-          object_id: item_id,
+          object_id: objectId,
           item_title,
           category,
-          rating: ratingStored,
-          review: reviewJson,
+          score: rating,
+          description: descriptionText,
+          context: contextJson,
+          photos: photoArray,
           is_favorite: is_favorite || false,
         })
         .select()

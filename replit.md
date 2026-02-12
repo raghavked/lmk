@@ -34,20 +34,22 @@ Preferred communication style: Simple, everyday language.
 - **Caching**: 15-minute recommendation cache, 30-minute AI response cache, user-aware caching of AI responses.
 
 ### Database Schema Notes
-- **ratings table**: Uses `object_id` column (NOT `item_id`) to store item identifiers. Code accepts `item_id` in API requests but maps to `object_id` in database.
-  - Columns: id (uuid), user_id (uuid), object_id (text), item_title (text), category (text), rating (integer, stored as rating*2 for 0.5 star increments), review (text, stores JSON with extended data), is_favorite (boolean), created_at, updated_at
-  - **Extended rating data**: The `review` column stores JSON: `{ description, metric1, metric2, metric3, price_level, photos }`. The API unpacks this and returns flat fields. Rating is stored as integer*2 (e.g., 3.5 stars = 7). API returns rating/2.
-  - **Photo uploads**: Stored in Supabase Storage bucket `rating-photos`, uploaded via `/api/ratings/upload/` endpoint, URLs stored in review JSON.
+- **lmk_objects table**: Central object catalog. Ratings FK to this table. Must upsert objects before creating ratings.
+  - Columns: id (uuid PK), created_at, updated_at, category (text NOT NULL), title (text), description (text), primary_image (text), secondary_images, external_ids, external_ratings, lmk_score, lmk_rating_count (int default 0), lmk_avg_rating, tags (array), mood_tags (array), location, price_level, time_commitment, availability, source_links (array), last_fetched, data_stale (bool default false)
+- **ratings table**: Uses `object_id` (uuid FK to lmk_objects) to store item identifiers. API accepts `item_id` (string), converts to deterministic UUID via SHA256 hash, stores original ID in `context.original_id`.
+  - Columns: id (uuid), user_id (uuid FK to profiles), object_id (uuid FK to lmk_objects), item_title (text), category (text), score (numeric), description (text), context (jsonb - stores metrics, original_id), photos (text[]), is_favorite (boolean), created_at, updated_at. Also has: rating (integer), review (text), feedback (text) columns.
+  - **UUID conversion**: String item IDs (Yelp/TMDB) are converted to UUIDs via `stringToUUID()` using SHA256. Original ID stored in `context.original_id` and returned as `object_id` in API responses.
   - **Category-specific metrics (1-10)**: restaurants (Food Quality, Service, Ambiance), movies (Acting, Story, Cinematography), tv_shows (Acting, Plot, Production), reading (Writing, Story, Engagement), activities (Fun Factor, Value, Accessibility)
 - **profiles table**: id matches Supabase auth user ID. Note: email is NOT stored in profiles, it lives in Supabase auth.users. Display names must be unique (case-insensitive, enforced in signup + profile POST/PATCH APIs).
   - Columns: id (uuid), full_name (text, unique), location (jsonb), taste_profile (jsonb), preferences_completed (boolean), created_at, updated_at
   - Note: Supabase profiles table does NOT have `avatar_url` column - do not query for it
 - **group_messages table**: Uses `user_id` column (renamed from `sender_id`).
   - Columns: id (uuid), group_id (uuid), user_id (uuid), content (text), poll_id (uuid nullable), created_at
-- **poll_options table**: Stores AI-generated options for group polls.
-  - Columns: id (uuid), poll_id (uuid FK), title (text), description (text), personalized_score (real), votes (int default 0), created_at
-- **poll_votes table**: Tracks user votes on polls (one vote per user per poll).
+- **poll_options table**: Has only `object_id` (uuid). AI-generated poll option data (title/description/score) stored in `polls.description` as JSON array.
+  - Columns: id (uuid), poll_id (uuid FK), object_id (uuid), created_at
+- **poll_votes table**: Tracks user votes on polls (one vote per user per poll). Vote counts calculated from this table, not stored on poll_options.
   - Columns: id (uuid), poll_id (uuid FK), option_id (uuid FK), user_id (uuid), created_at, UNIQUE(poll_id, user_id)
+- **groups table**: Both `created_by` (uuid NOT NULL) and `creator_id` (uuid) columns must be set. `group_members` has NO `role` column.
 - **RLS**: Disabled on all tables (rowsecurity=false). Direct Supabase client queries work without policies.
 - **API trailing slashes**: next.config.js has `trailingSlash: true` - ALL API fetch calls must include trailing slashes to prevent 308 redirects.
 

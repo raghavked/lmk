@@ -47,7 +47,7 @@ async function verifyGroupCreator(userId: string, groupId: string): Promise<bool
     .from('groups')
     .select('id')
     .eq('id', groupId)
-    .eq('creator_id', userId)
+    .or(`creator_id.eq.${userId},created_by.eq.${userId}`)
     .single();
   return !!data;
 }
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
       const { data: members } = await supabaseAdmin
         .from('group_members')
-        .select('user_id, role, joined_at')
+        .select('user_id, joined_at')
         .eq('group_id', groupId);
 
       if (members && members.length > 0) {
@@ -86,16 +86,18 @@ export async function GET(request: Request) {
 
         const { data: group } = await supabaseAdmin
           .from('groups')
-          .select('creator_id')
+          .select('creator_id, created_by')
           .eq('id', groupId)
           .single();
+
+        const creatorId = group?.creator_id || group?.created_by;
 
         const enrichedMembers = members.map(m => ({
           user_id: m.user_id,
           full_name: profileMap[m.user_id] || 'Unknown',
-          role: m.role || 'member',
+          role: creatorId === m.user_id ? 'admin' : 'member',
           joined_at: m.joined_at,
-          is_creator: group?.creator_id === m.user_id,
+          is_creator: creatorId === m.user_id,
         }));
 
         return NextResponse.json({ members: enrichedMembers });
@@ -169,14 +171,38 @@ export async function GET(request: Request) {
         const creatorMap: Record<string, string> = {};
         creatorProfiles?.forEach(p => { creatorMap[p.id] = p.full_name || 'Unknown'; });
 
-        const enrichedPolls = polls.map(p => ({
-          ...p,
-          creator_name: creatorMap[p.created_by] || 'Unknown',
-          options: (options || []).filter(o => o.poll_id === p.id),
-          votes: (votes || []).filter(v => v.poll_id === p.id),
-          user_voted: (votes || []).some(v => v.poll_id === p.id && v.user_id === user.id),
-          user_vote_option: (votes || []).find(v => v.poll_id === p.id && v.user_id === user.id)?.option_id,
-        }));
+        const enrichedPolls = polls.map(p => {
+          let aiOptions: any[] = [];
+          try {
+            aiOptions = JSON.parse(p.description || '[]');
+          } catch {}
+
+          const pollOptions = (options || []).filter(o => o.poll_id === p.id);
+          const pollVotes = (votes || []).filter(v => v.poll_id === p.id);
+
+          const voteCounts: Record<string, number> = {};
+          pollVotes.forEach((v: any) => {
+            voteCounts[v.option_id] = (voteCounts[v.option_id] || 0) + 1;
+          });
+
+          const enrichedOptions = pollOptions.map((opt: any, idx: number) => ({
+            ...opt,
+            title: aiOptions[idx]?.title || `Option ${idx + 1}`,
+            description: aiOptions[idx]?.description || '',
+            personalized_score: aiOptions[idx]?.personalized_score || 50,
+            votes: voteCounts[opt.id] || 0,
+          }));
+
+          return {
+            ...p,
+            description: undefined,
+            creator_name: creatorMap[p.created_by] || 'Unknown',
+            options: enrichedOptions,
+            votes: pollVotes,
+            user_voted: pollVotes.some(v => v.user_id === user.id),
+            user_vote_option: pollVotes.find(v => v.user_id === user.id)?.option_id,
+          };
+        });
 
         return NextResponse.json({ polls: enrichedPolls });
       }
@@ -243,6 +269,7 @@ export async function POST(request: Request) {
         .insert({
           name,
           description: description || '',
+          created_by: user.id,
           creator_id: user.id,
         })
         .select()
@@ -255,7 +282,6 @@ export async function POST(request: Request) {
         .insert({
           group_id: group.id,
           user_id: user.id,
-          role: 'admin',
         });
 
       return NextResponse.json({ group });
@@ -498,15 +524,15 @@ export async function POST(request: Request) {
 
         const { data: memberRatings } = await supabaseAdmin
           .from('ratings')
-          .select('user_id, item_title, category, rating')
+          .select('user_id, item_title, category, score')
           .in('user_id', memberIds)
           .eq('category', pollCategory || 'restaurants')
-          .order('rating', { ascending: false })
+          .order('score', { ascending: false })
           .limit(50);
 
         const profileSummary = memberProfiles?.map(p => {
           const userRatings = memberRatings?.filter(r => r.user_id === p.id) || [];
-          const topRated = userRatings.slice(0, 5).map(r => `${r.item_title} (${r.rating/2}★)`).join(', ');
+          const topRated = userRatings.slice(0, 5).map(r => `${r.item_title} (${Number(r.score)}★)`).join(', ');
           return `${p.full_name}: taste=${JSON.stringify(p.taste_profile || {})}${topRated ? `, top rated: ${topRated}` : ''}`;
         }).join('\n') || 'No profiles available';
 
@@ -546,17 +572,19 @@ Respond in JSON format only:
         ];
       }
 
-      if (aiOptions.length > 0) {
-        const optionRows = aiOptions.map((opt: any) => ({
-          poll_id: poll.id,
-          title: opt.title,
-          description: opt.description || '',
-          personalized_score: opt.personalized_score || 50,
-          votes: 0,
-        }));
+      const optionRows = aiOptions.map((opt: any) => ({
+        poll_id: poll.id,
+        object_id: crypto.randomUUID(),
+      }));
 
+      if (optionRows.length > 0) {
         await supabaseAdmin.from('poll_options').insert(optionRows);
       }
+
+      await supabaseAdmin
+        .from('polls')
+        .update({ description: JSON.stringify(aiOptions) })
+        .eq('id', poll.id);
 
       const { data: profile } = await supabaseAdmin
         .from('profiles')
@@ -578,11 +606,19 @@ Respond in JSON format only:
         .select('*')
         .eq('poll_id', poll.id);
 
+      const enrichedOptions = (insertedOptions || []).map((opt: any, idx: number) => ({
+        ...opt,
+        title: aiOptions[idx]?.title || `Option ${idx + 1}`,
+        description: aiOptions[idx]?.description || '',
+        personalized_score: aiOptions[idx]?.personalized_score || 50,
+        votes: 0,
+      }));
+
       return NextResponse.json({ 
         poll: {
           ...poll,
           creator_name: profile?.full_name || 'Unknown',
-          options: insertedOptions || [],
+          options: enrichedOptions,
           votes: [],
           user_voted: false,
         }
@@ -620,21 +656,7 @@ Respond in JSON format only:
         if (existingVote.option_id === optionId) {
           return NextResponse.json({ error: 'Already voted for this option' }, { status: 400 });
         }
-
-        const oldOptionId = existingVote.option_id;
         await supabaseAdmin.from('poll_votes').delete().eq('id', existingVote.id);
-
-        const { data: oldOption } = await supabaseAdmin
-          .from('poll_options')
-          .select('votes')
-          .eq('id', oldOptionId)
-          .single();
-        if (oldOption && oldOption.votes > 0) {
-          await supabaseAdmin
-            .from('poll_options')
-            .update({ votes: oldOption.votes - 1 })
-            .eq('id', oldOptionId);
-        }
       }
 
       const { error: voteError } = await supabaseAdmin
@@ -647,23 +669,41 @@ Respond in JSON format only:
 
       if (voteError) throw voteError;
 
-      const { data: optionData } = await supabaseAdmin
-        .from('poll_options')
-        .select('votes')
-        .eq('id', optionId)
+      const { data: pollData } = await supabaseAdmin
+        .from('polls')
+        .select('description')
+        .eq('id', pollId)
         .single();
 
-      await supabaseAdmin
-        .from('poll_options')
-        .update({ votes: (optionData?.votes || 0) + 1 })
-        .eq('id', optionId);
+      let aiOptions: any[] = [];
+      try {
+        aiOptions = JSON.parse(pollData?.description || '[]');
+      } catch {}
 
-      const { data: updatedOptions } = await supabaseAdmin
+      const { data: updatedDbOptions } = await supabaseAdmin
         .from('poll_options')
         .select('*')
         .eq('poll_id', pollId);
 
-      return NextResponse.json({ success: true, options: updatedOptions });
+      const { data: allVotes } = await supabaseAdmin
+        .from('poll_votes')
+        .select('option_id')
+        .eq('poll_id', pollId);
+
+      const voteCounts: Record<string, number> = {};
+      (allVotes || []).forEach((v: any) => {
+        voteCounts[v.option_id] = (voteCounts[v.option_id] || 0) + 1;
+      });
+
+      const enrichedOptions = (updatedDbOptions || []).map((opt: any, idx: number) => ({
+        ...opt,
+        title: aiOptions[idx]?.title || `Option ${idx + 1}`,
+        description: aiOptions[idx]?.description || '',
+        personalized_score: aiOptions[idx]?.personalized_score || 50,
+        votes: voteCounts[opt.id] || 0,
+      }));
+
+      return NextResponse.json({ success: true, options: enrichedOptions });
     }
 
     if (action === 'get_recommendations') {
@@ -690,16 +730,16 @@ Respond in JSON format only:
 
       const { data: memberRatings } = await supabaseAdmin
         .from('ratings')
-        .select('user_id, item_title, category, rating, review')
+        .select('user_id, item_title, category, score, description')
         .in('user_id', memberIds)
         .eq('category', pollCategory)
-        .order('rating', { ascending: false })
+        .order('score', { ascending: false })
         .limit(100);
 
       const profileSummary = memberProfiles?.map(p => {
         const userRatings = memberRatings?.filter(r => r.user_id === p.id) || [];
-        const loved = userRatings.filter(r => r.rating >= 8).map(r => r.item_title).join(', ');
-        const disliked = userRatings.filter(r => r.rating <= 4).map(r => r.item_title).join(', ');
+        const loved = userRatings.filter(r => Number(r.score) >= 4).map(r => r.item_title).join(', ');
+        const disliked = userRatings.filter(r => Number(r.score) <= 2).map(r => r.item_title).join(', ');
         return `${p.full_name}: preferences=${JSON.stringify(p.taste_profile || {})}${loved ? `, loved: ${loved}` : ''}${disliked ? `, disliked: ${disliked}` : ''}`;
       }).join('\n') || 'No profiles available';
 
