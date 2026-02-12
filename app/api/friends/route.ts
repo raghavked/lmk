@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     if (friendIds.length > 0) {
       const { data: friendProfiles } = await supabaseAdmin
         .from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name')
         .in('id', friendIds);
       friends = friendProfiles || [];
     }
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
     if (pendingIds.length > 0) {
       const { data: pendingProfiles } = await supabaseAdmin
         .from('profiles')
-        .select('id, full_name, avatar_url')
+        .select('id, full_name')
         .in('id', pendingIds);
       pending = pendingProfiles || [];
     }
