@@ -15,27 +15,27 @@ async function sendVerificationEmail(email: string, confirmationUrl: string) {
   }
 
   const htmlContent = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #0D1117; color: #f0f0f0;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #0D1117; color: #fea3a6;">
       <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="color: #feafb0; font-size: 32px; margin: 0;">LMK</h1>
-        <p style="color: #8b949e; font-size: 14px; margin-top: 4px;">Personalized Recommendations</p>
+        <h1 style="color: #fea3a6; font-size: 32px; margin: 0;">LMK</h1>
+        <p style="color: #fea3a6; opacity: 0.6; font-size: 14px; margin-top: 4px;">Personalized Recommendations</p>
       </div>
-      <div style="background-color: #161B22; border-radius: 12px; padding: 32px; border: 1px solid #30363D;">
-        <h2 style="color: #f0f0f0; font-size: 20px; margin-top: 0;">Verify your email address</h2>
-        <p style="color: #8b949e; font-size: 15px; line-height: 1.6;">
+      <div style="background-color: #161B22; border-radius: 12px; padding: 32px; border: 1px solid rgba(254,163,166,0.2);">
+        <h2 style="color: #fea3a6; font-size: 20px; margin-top: 0;">Verify your email address</h2>
+        <p style="color: #fea3a6; opacity: 0.7; font-size: 15px; line-height: 1.6;">
           Thanks for signing up for LMK! Please click the button below to verify your email address and activate your account.
         </p>
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${confirmationUrl}" style="display: inline-block; background-color: #feafb0; color: #0D1117; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none;">
+          <a href="${confirmationUrl}" style="display: inline-block; background-color: #fea3a6; color: #0D1117; font-weight: 600; font-size: 16px; padding: 14px 32px; border-radius: 8px; text-decoration: none;">
             Verify Email Address
           </a>
         </div>
-        <p style="color: #8b949e; font-size: 13px; line-height: 1.5;">
+        <p style="color: #fea3a6; opacity: 0.5; font-size: 13px; line-height: 1.5;">
           If the button doesn't work, copy and paste this link into your browser:<br/>
-          <a href="${confirmationUrl}" style="color: #feafb0; word-break: break-all;">${confirmationUrl}</a>
+          <a href="${confirmationUrl}" style="color: #fea3a6; word-break: break-all;">${confirmationUrl}</a>
         </p>
       </div>
-      <p style="color: #484f58; font-size: 12px; text-align: center; margin-top: 24px;">
+      <p style="color: #fea3a6; opacity: 0.35; font-size: 12px; text-align: center; margin-top: 24px;">
         If you didn't create an account, you can safely ignore this email.
       </p>
     </div>
