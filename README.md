@@ -1,179 +1,82 @@
-# LMK - Personalized Recommendations
+# LMK — AI-Ranked Personal Recommendations
 
-LMK is an AI-powered recommendation engine that provides personalized suggestions across multiple categories including restaurants, movies, TV shows, YouTube videos, books, and activities.
+LMK ("let me know") turns a short taste quiz into ranked recommendations across
+**restaurants, movies, TV, YouTube, books and activities**. Candidates come from
+live data sources (Yelp, TMDB, YouTube, Open Library, NewsAPI); an LLM ranking
+layer then scores each one against the user's taste profile and friends'
+ratings and explains *why* it fits.
 
-## Features
+**Stack:** Next.js · React · TypeScript · Tailwind CSS · Supabase (Postgres, Auth, RLS) ·
+Anthropic Claude & OpenAI APIs · Capacitor · React Native / Expo
 
-- **AI-Powered Recommendations**: Uses Claude AI to generate personalized recommendations based on user taste profiles
-- **Multi-Category Support**: Restaurants, Movies, TV Shows, YouTube, Reading, and Activities
-- **Personalized Metrics**: Each recommendation includes unique, category-specific metrics
-- **Social Signals**: Trending items and community ratings inform recommendations
-- **User Ratings**: Rate recommendations to improve future suggestions
-- **Fast Pagination**: Efficient "Show More" functionality with no duplicates
-- **Responsive Design**: Beautiful UI that works on desktop, tablet, and mobile
+## What's interesting here
 
-## Tech Stack
+- **LLM ranking with grounded output.** `lib/ai/ranker.ts` sends the candidate set and
+  the user's taste profile to the model, validates the structured response, and
+  returns a personalized score plus a short explanation and category-specific ratings
+  for each item. It uses Claude by default and falls back to OpenAI when only that key is configured.
+  If the model's JSON is malformed or empty, a deterministic fallback ranking takes over, so the feed never comes back empty.
+- **Cost and abuse controls.** Responses are cached in-memory with a 30-minute TTL and
+  size-bounded eviction. Requests are rate-limited per user (20/min).
+- **Taste profiles that learn.** A quiz seeds the profile (`lib/tasteProfileBuilder.ts`),
+  and later ratings update it (`lib/updateTasteProfiles.ts`).
+- **Social layer.** Friend ratings feed the ranking context, and groups get their own
+  polls for choosing together. A separate **Decide** mode narrows choices down to one.
+- **Plan My Day.** It assembles an itinerary from the user's recommendations
+  (`app/api/plan-my-day`).
+- **Multi-user security.** Row-level security protects every Supabase table. The schema
+  and indexes are in `docs/SUPABASE_SCHEMA.md` and `docs/SUPABASE_SCALABILITY_SQL.md`.
+- **Three clients, one backend.** The web app ships through Capacitor for iOS and
+  Android, and a separate native Expo app lives in `mobile-app/`.
 
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **AI**: Anthropic Claude API
-- **External APIs**: Yelp, TMDB, YouTube, NewsAPI, OpenLibrary
+## Architecture
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- Supabase account
-- API keys for: Claude, Yelp, TMDB, YouTube, NewsAPI
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/raghavked/lmk.git
-cd lmk
+```
+Browser / Capacitor / Expo
+        │
+        ▼
+Next.js API routes  (app/api/*: recommend, plan-my-day, groups, friends, ratings, profile)
+        │
+        ├── Source adapters ── Yelp · TMDB · YouTube · Open Library · NewsAPI   (lib/api, lib/*.ts)
+        ├── AI ranker ──────── Claude (primary) · OpenAI (fallback), cached + rate-limited  (lib/ai)
+        └── Supabase ───────── Postgres + RLS · Auth · taste profiles · ratings
 ```
 
-2. Install dependencies:
+## Running locally
+
+Requirements: Node 18+, a Supabase project, and API keys for the sources you want to use.
+
 ```bash
+git clone https://github.com/raghavked/lmk.git && cd lmk
 npm install
+cp .env.local.example .env.local   # fill in Supabase URL/anon key and API keys
+npm run dev                        # http://localhost:5000
 ```
 
-3. Set up environment variables:
-```bash
-cp .env.local.example .env.local
-```
+Database setup steps are in [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md). Other checks:
+`npm run lint`, `npm run type-check`, `npm run build`.
 
-4. Fill in your API keys in `.env.local`:
-```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-CLAUDE_API_KEY=your_claude_api_key
-YELP_API_KEY=your_yelp_api_key
-TMDB_API_KEY=your_tmdb_api_key
-YOUTUBE_API_KEY=your_youtube_api_key
-NEWS_API_KEY=your_news_api_key
-```
+## API
 
-5. Run the development server:
-```bash
-npm run dev
-```
+`GET /api/recommend?category=movies&limit=10&offset=0&seen_ids=…`
 
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
+Valid categories are `restaurants`, `movies`, `tv_shows`, `youtube_videos`, `reading`
+and `activities`. The endpoint returns ranked results, each with `personalized_score`
+and an `explanation` (`hook`, `why_youll_like`, `detailed_ratings`). `seen_ids` keeps
+pagination free of duplicates.
 
-## Project Structure
+## Repository layout
 
 ```
-lmk/
-├── app/                      # Next.js app directory
-│   ├── (main)/              # Main app routes (protected)
-│   │   ├── discover/        # Recommendation feed
-│   │   └── layout.tsx       # Main layout with auth check
-│   ├── api/                 # API routes
-│   │   └── recommend/       # Recommendation endpoint
-│   ├── layout.tsx           # Root layout
-│   ├── page.tsx             # Home page (redirects to /discover)
-│   ├── loading.tsx          # Loading state
-│   ├── error.tsx            # Error boundary
-│   └── not-found.tsx        # 404 page
-├── components/              # React components
-│   ├── ObjectCard.tsx       # Recommendation card
-│   ├── Navigation.tsx       # App navigation
-│   ├── RatingModal.tsx      # Rating modal
-│   └── Walkthrough.tsx      # Onboarding walkthrough
-├── lib/                     # Utilities and libraries
-│   ├── api/                 # External API wrappers
-│   │   ├── yelp.ts
-│   │   ├── tmdb.ts
-│   │   ├── youtube.ts
-│   │   ├── articles.ts
-│   │   └── openLibrary.ts
-│   ├── ai/                  # AI integration
-│   │   └── ranker.ts        # Claude-based ranking
-│   ├── hooks/               # Custom React hooks
-│   │   ├── useAuth.ts
-│   │   └── useRecommendations.ts
-│   ├── supabase/            # Supabase utilities
-│   │   ├── client.ts
-│   │   └── types.ts
-│   ├── types/               # TypeScript types
-│   │   └── index.ts
-│   ├── constants.ts         # App constants
-│   ├── haptics.ts           # Haptic feedback
-│   └── socialSignals.ts     # Social signals
-├── middleware.ts            # Next.js middleware
-├── package.json             # Dependencies
-├── tsconfig.json            # TypeScript config
-├── next.config.js           # Next.js config
-├── tailwind.config.ts       # Tailwind config
-└── postcss.config.js        # PostCSS config
+app/            Next.js App Router: pages (discover, decide, plan, friends, groups, quiz, profile) and API routes
+components/     UI components (recommendation cards, rating modal, onboarding)
+lib/            AI ranker, source adapters, taste-profile logic, Supabase clients, types
+mobile-app/     Native React Native / Expo client
+docs/           Setup, schema, design specs, beta-testing guide; dev-notes/ holds debugging reports
+design/         UI mockups and design system notes
 ```
 
-## API Endpoints
+## Status
 
-### GET /api/recommend
-
-Fetch personalized recommendations for a category.
-
-**Query Parameters:**
-- `category` (required): One of `restaurants`, `movies`, `tv_shows`, `youtube_videos`, `reading`, `activities`
-- `limit` (optional): Number of results (default: 10)
-- `offset` (optional): Pagination offset (default: 0)
-- `seen_ids` (optional): Comma-separated IDs to exclude from results
-
-**Response:**
-```json
-{
-  "results": [
-    {
-      "rank": 1,
-      "object": { ... },
-      "personalized_score": 8.5,
-      "explanation": {
-        "hook": "...",
-        "why_youll_like": "...",
-        "detailed_ratings": { ... }
-      }
-    }
-  ]
-}
-```
-
-## Development
-
-### Running Tests
-```bash
-npm run test
-```
-
-### Building for Production
-```bash
-npm run build
-npm run start
-```
-
-### Linting
-```bash
-npm run lint
-```
-
-## Environment Variables
-
-See `.env.local.example` for all required environment variables.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, email support@lmk.app or open an issue on GitHub.
+This is a working prototype built by [Raghav Kedia](https://github.com/raghavked), and
+it is not deployed publicly.

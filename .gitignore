@@ -38,3 +38,8 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Local tooling
+.replit
+replit.md
+attached_assets/
